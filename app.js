@@ -1,47 +1,48 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+const helmet = require('helmet');
+const cors = require('cors');
+const connectDB = require('./config/db');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const app = express();
+connectDB();
 
-var app = express();
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'hbs');
-
-app.use(logger('dev'));
+// Middleware
+app.use(helmet());
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(morgan('dev'));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+// Routes (API only)
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/movies', require('./routes/movies'));
+app.use('/api/showtimes', require('./routes/showtimes'));
+app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/payments', require('./routes/payments'));
+// app.use('/api/cinemas', require('./routes/cinemas'));
+// app.use('/api/rooms', require('./routes/rooms'));
+// app.use('/api/seats', require('./routes/seats'));
+app.use('/api/vouchers', require('./routes/vouchers'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/reports', require('./routes/reports'));
+// app.use('/api/notifications', require('./routes/notifications'));
+// app.use('/api/news', require('./routes/news'));
+// app.use('/api/memberships', require('./routes/memberships'));
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+// Health check
+app.get('/', (req, res) => {
+  res.json({ message: '🎬 FunMovie API is running!' });
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+// Error handler
+const errorHandler = require('./middlewares/errorHandler');
+// app.use(errorHandler);
 
 module.exports = app;
-
-//tesst 1
-//hoai test
-//hieu test
-// an test
-//123

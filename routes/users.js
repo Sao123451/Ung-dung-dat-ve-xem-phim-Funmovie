@@ -1,9 +1,11 @@
-var express = require('express');
-var router = express.Router();
+// routes/users.js
+const express = require('express');
+const router = express.Router();
+const userCtrl = require('../controller/userController');
+const { verifyToken, isAdmin } = require('../middlewares/auth');
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
-});
+router.get('/me', verifyToken, userCtrl.getProfile);
+router.get('/', verifyToken, isAdmin, userCtrl.listUsers);
+router.put('/:id', verifyToken, isAdmin, userCtrl.updateUser);
 
 module.exports = router;
