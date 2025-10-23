@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DATN_MD13">
         <activity
+            android:name=".Voucher"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Nền trắng -->
+    <solid android:color="#FFFFFF" />
+
+    <!-- Bo góc trên để tạo hiệu ứng cong mềm mại -->
+    <corners android:topLeftRadius="24dp"
+        android:topRightRadius="24dp" />
+
+    <!-- Đổ bóng nhẹ để tạo cảm giác nổi -->
+    <padding
+        android:left="8dp"
+        android:top="8dp"
+        android:right="8dp"
+        android:bottom="8dp" />
+
+    <!-- Hiệu ứng bóng nổi -->
+    <size android:height="72dp" />
+    <stroke android:width="0dp" android:color="#00000000" />
+
+    <!-- Tạo bóng mờ (chỉ hoạt động Android 9+ hoặc dùng CardView wrapper) -->
+    <shadowColor android:color="#33000000" />
+</shape>
