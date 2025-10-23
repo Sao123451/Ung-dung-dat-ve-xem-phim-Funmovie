@@ -98,6 +98,7 @@
         android:gravity="center">
 
         <LinearLayout
+            android:id="@+id/nav_home"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
@@ -108,17 +109,18 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_home"
-                app:tint="#FF6600" />
+                app:tint="@color/bottom_nav_item_color" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Home"
-                android:textColor="#FF6600"
+                android:textColor="@color/bottom_nav_item_color"
                 android:textSize="12sp" />
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/nav_voucher"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
@@ -129,17 +131,18 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_voucher"
-                app:tint="#CCCCCC" />
+                app:tint="@color/bottom_nav_item_color" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Voucher"
-                android:textColor="#CCCCCC"
+                android:textColor="@color/bottom_nav_item_color"
                 android:textSize="12sp" />
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/nav_user"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
@@ -150,13 +153,13 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_user"
-                app:tint="#CCCCCC" />
+                app:tint="@color/bottom_nav_item_color" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tài khoản"
-                android:textColor="#CCCCCC"
+                android:textColor="@color/bottom_nav_item_color"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>

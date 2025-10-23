@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#E1E7EB"
+    android:padding="16dp"
+    tools:context=".Voucher_successful">
+
+    <ImageView
+        android:id="@+id/iv_success_icon"
+        android:layout_width="332dp"
+        android:layout_height="263dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="64dp"
+        android:src="@drawable/ic_booking_successful" />
+
+    <TextView
+        android:id="@+id/tv_booking_successful_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/iv_success_icon"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:text="Đặt vé thành công"
+        android:textColor="#FF6600"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/ll_ticket_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_booking_successful_title"
+        android:layout_marginTop="32dp"
+        android:background="@drawable/bg_rounded_white"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2">
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:text="Phim:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:text="Từ chiến trên không"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="Suất chiếu:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="20:00 - 22:00 , 10/10/2025"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="Ghế:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="A3, A4"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="Mã Vé"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="FM12345"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+        </GridLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_view_ticket"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="#FD6500"
+            android:text="Xem vé"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/btn_back_to_home"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="#FD6500"
+            android:text="Quay lại trang chủ"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+</RelativeLayout>

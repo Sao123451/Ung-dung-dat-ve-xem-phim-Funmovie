@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5"
+    tools:context=".payment">
+
+    <TextView
+        android:id="@+id/tv_payment_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="Thanh toán"
+        android:textColor="#FF6600"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/iv_movie_poster"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_below="@id/tv_payment_title"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_launcher_background" />
+
+    <LinearLayout
+        android:id="@+id/ll_booking_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/iv_movie_poster"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_rounded_white"
+        android:orientation="vertical"
+        android:padding="16dp">
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2">
+            <TextView
+                android:layout_columnWeight="1"
+                android:text="Rạp chiếu:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:text="Beta Mỹ Đình"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="Ngày Chiếu:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="10-12-2025"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="Giờ chiếu:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="20:00"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="Phòng chiếu:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="P5"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="Loại vé:"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+            <TextView
+                android:layout_columnWeight="1"
+                android:layout_marginTop="8dp"
+                android:text="VIP"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+        </GridLayout>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/tv_total_amount_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ll_booking_details"
+        android:layout_marginStart="16dp"
+        android:text="Tổng tiền:"
+        android:textColor="@android:color/black"
+        android:textSize="18sp" />
+    <TextView
+        android:id="@+id/tv_total_amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ll_booking_details"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"
+        android:text="120.000VND"
+        android:textColor="#FF6600"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+    <TextView
+        android:id="@+id/tv_payment_method_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_total_amount_label"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Chọn phương thức thanh toán"
+        android:textColor="@android:color/black"
+        android:textSize="18sp" />
+    <RadioGroup
+        android:id="@+id/rg_payment_methods"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_payment_method_label"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp">
+        <RadioButton
+            android:id="@+id/rb_bank_card"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thẻ ngân hàng"
+            android:buttonTint="@color/payment_radio_button_tint" />
+        <RadioButton
+            android:id="@+id/rb_momo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ví momo"
+            android:checked="true"
+            android:buttonTint="@color/payment_radio_button_tint"/>
+        <RadioButton
+            android:id="@+id/rb_zalopay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ZaloPay"
+            android:buttonTint="@color/payment_radio_button_tint"/>
+    </RadioGroup>
+    <Button
+        android:id="@+id/btn_pay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:backgroundTint="#FD6500"
+        android:text="Thanh toán"
+        android:textColor="@android:color/white" />
+</RelativeLayout>
