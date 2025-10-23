@@ -12,6 +12,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DATN_MD13" >
         <activity
+            android:name=".Profile"
+            android:exported="false" />
+        <activity
+            android:name=".Account"
+            android:exported="false" />
+        <activity
             android:name=".News_details"
             android:exported="false" />
         <activity
