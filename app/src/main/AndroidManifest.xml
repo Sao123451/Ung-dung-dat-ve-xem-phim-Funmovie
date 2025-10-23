@@ -12,6 +12,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DATN_MD13">
         <activity
+            android:name=".News_details"
+            android:exported="false" />
+        <activity
+            android:name=".News"
+            android:exported="false" />
+        <activity
+            android:name=".Promotional_news"
+            android:exported="false" />
+        <activity
+            android:name=".payment"
+            android:exported="false" />
+        <activity
+            android:name=".Voucher_successful"
+            android:exported="false" />
+        <activity
+            android:name=".Booking_failed"
+            android:exported="false" />
+        <activity
+            android:name=".Voucher_details"
+            android:exported="false" />
+        <activity
             android:name=".Voucher"
             android:exported="false" />
         <activity
