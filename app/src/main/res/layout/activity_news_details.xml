@@ -1,10 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".News_details">
+    android:background="#FFFFFF"
+    tools:context=".NewsDetailsActivity">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+  <RelativeLayout
+      android:id="@+id/toolbar"
+      android:layout_width="match_parent"
+      android:layout_height="?attr/actionBarSize">
+
+    <ImageView
+        android:id="@+id/iv_back"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="16dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_back_arrow"
+        app:tint="#FF6600" />
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="Tiêu đề tin tức"
+        android:textColor="#FF6600"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+  </RelativeLayout>
+
+  <ScrollView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:layout_above="@+id/btn_share"
+      android:layout_below="@id/toolbar">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+      <ImageView
+          android:id="@+id/iv_news_image"
+          android:layout_width="200dp"
+          android:layout_height="200dp"
+          android:layout_gravity="center_horizontal"
+          android:src="@drawable/ic_voucher_placeholder"
+          app:srcCompat="@drawable/ic_voucher_placeholder" />
+
+      <TextView
+          android:id="@+id/tv_news_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_horizontal"
+          android:layout_marginTop="16dp"
+          android:gravity="center"
+          android:text="Beta Mỹ Đình giảm giá 20%\n nếu đi 2 người"
+          android:textColor="@android:color/black"
+          android:textSize="20sp"
+          android:textStyle="bold" />
+
+      <TextView
+          android:id="@+id/tv_news_description"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="24dp"
+          android:lineSpacingExtra="4dp"
+          android:text="Vào ngày 20/10/2025, khách hàng Nữ khi tới xem phim tại Beta Cinemas sẽ tặng ngay 01 Lipton 22oz và 1 kẹo mút lời chúc."
+          android:textColor="@android:color/black"
+          android:textSize="16sp" />
+
+      <TextView
+          android:id="@+id/tv_terms_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="16dp"
+          android:text="(*) Điều khoản và điều kiện áp dụng:"
+          android:textColor="@android:color/black"
+          android:textSize="16sp" />
+
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:lineSpacingExtra="4dp"
+          android:text="• Áp dụng trên toàn hệ thống trừ Beta Hồ Tràm."
+          android:textColor="@android:color/black"
+          android:textSize="16sp" />
+
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:lineSpacingExtra="4dp"
+          android:text="• Áp dụng với tất cả các khách hàng Nữ của Beta Cinemas."
+          android:textColor="@android:color/black"
+          android:textSize="16sp" />
+
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:lineSpacingExtra="4dp"
+          android:text="• Áp dụng cả với khách hàng mua vé trực tiếp tại quầy và khách hàng đã mua vé online đến quầy lấy vé."
+          android:textColor="@android:color/black"
+          android:textSize="16sp" />
+
+
+    </LinearLayout>
+  </ScrollView>
+  <Button
+      android:id="@+id/btn_share"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_alignParentBottom="true"
+      android:backgroundTint="#FD6500"
+      android:text="Chia sẻ"
+      android:textSize="20sp"
+      android:textStyle="bold"
+      android:textColor="@color/white" />
+
+
+
+</RelativeLayout>
