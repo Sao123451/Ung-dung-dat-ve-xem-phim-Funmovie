@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_showtime"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F2F2F2"
+    android:padding="16dp"
+    tools:context=".ChooseShowtimeActivity">
+
+    <!-- Tiêu đề -->
+    <TextView
+        android:id="@+id/tv_title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Đặt Vé"
+        android:textAlignment="center"
+        android:textColor="#FF6600"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:padding="12dp"
+         />
+
+    <!-- Nhãn "Chọn ngày" -->
+    <TextView
+        android:id="@+id/tv_pick_date_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Chọn ngày"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Danh sách ngày động (ngang) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_dates"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:overScrollMode="never" />
+
+    <!-- Nhãn "Chọn cơ sở" -->
+    <TextView
+        android:id="@+id/tv_pick_cinema_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Chọn cơ sở"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- ====== 3 CƠ SỞ CỐ ĐỊNH, MỖI CƠ SỞ 3 SUẤT ====== -->
+
+    <!-- Cơ sở 1 -->
+    <LinearLayout
+        android:id="@+id/card_cinema_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:elevation="3dp"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/tv_cinema_1_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cơ sở 1"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:textSize="15sp"
+            android:paddingBottom="10dp"/>
+
+        <LinearLayout
+            android:id="@+id/row_cinema_1_times"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_c1_time_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="19:30"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+
+            <Button
+                android:id="@+id/btn_c1_time_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20:20"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+
+            <Button
+                android:id="@+id/btn_c1_time_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="21:45"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Cơ sở 2 -->
+    <LinearLayout
+        android:id="@+id/card_cinema_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:elevation="3dp"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/tv_cinema_2_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cơ sở 2"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:textSize="15sp"
+            android:paddingBottom="10dp"/>
+
+        <LinearLayout
+            android:id="@+id/row_cinema_2_times"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_c2_time_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="19:30"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+
+            <Button
+                android:id="@+id/btn_c2_time_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20:20"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+
+            <Button
+                android:id="@+id/btn_c2_time_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="21:45"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Cơ sở 3 -->
+    <LinearLayout
+        android:id="@+id/card_cinema_3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:elevation="3dp"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/tv_cinema_3_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cơ sở 3"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:textSize="15sp"
+            android:paddingBottom="10dp"/>
+
+        <LinearLayout
+            android:id="@+id/row_cinema_3_times"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_c3_time_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="19:30"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+
+            <Button
+                android:id="@+id/btn_c3_time_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20:20"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+
+            <Button
+                android:id="@+id/btn_c3_time_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="21:45"
+                android:backgroundTint="#EEEEEE"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:layout_margin="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

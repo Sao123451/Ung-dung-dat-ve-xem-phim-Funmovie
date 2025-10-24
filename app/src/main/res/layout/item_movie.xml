@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/imgMovie"
+        android:layout_width="150dp"
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_launcher_background" />
+
+    <TextView
+        android:id="@+id/tvMovieName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Cướp biển vùng Caribê"
+        android:textSize="13sp"
+        android:textColor="#000000"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:gravity="center"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tvMovieTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="130 phút"
+        android:textSize="12sp"
+        android:textColor="#808080"
+        android:gravity="center" />
+
+</LinearLayout>
