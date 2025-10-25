@@ -6,6 +6,11 @@ const { verifyToken, isAdmin } = require('../middlewares/auth');
 
 // public
 router.get('/', ctrl.getAll);
+
+router.get('/coming', ctrl.getComing);           
+router.get('/now-showing', ctrl.getNowShowing); 
+router.get('/archived', ctrl.getArchived); 
+
 router.get('/:id', ctrl.getById);
 
 // admin

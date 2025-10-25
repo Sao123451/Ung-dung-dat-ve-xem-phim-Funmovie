@@ -36,3 +36,30 @@ exports.delete = async (req, res, next) => {
     res.json({ message: 'Deleted' });
   } catch (err) { next(err); }
 };
+
+exports.getComing = async (req, res, next) => {
+  try {
+    const movies = await Movie.find({ status: 'coming' });
+    res.json(movies);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getNowShowing = async (req, res, next) => {
+  try {
+    const movies = await Movie.find({ status: 'now_showing' });
+    res.json(movies);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getArchived = async (req, res, next) => {
+  try {
+    const movies = await Movie.find({ status: 'archived' });
+    res.json(movies);
+  } catch (err) {
+    next(err);
+  }
+};
