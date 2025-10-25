@@ -18,15 +18,20 @@ exports.publicImagesByBanner = async (req, res, next) => {
     const banner = await Banner.findOne({ _id: bannerId, is_active: true }).lean();
     if (!banner) return res.status(404).json({ message: 'Banner not found or inactive' });
 
-    const imgs = await BannerImage.find({ banner_id: banner._id }).select('image_url updatedAt').lean();
+    const imgs = await BannerImage.find({ banner_id: banner._id })
+      .select('image_url movie_id updatedAt')
+      .lean();
 
-    // nhẹ nhàng set cache
     res.set('Cache-Control','public, max-age=60');
 
     const base = baseUrl(req);
-    const urls = shuffle(imgs).map(x => toAbs(base, x.image_url));
-    if (!withLink) return res.json(urls);
-    return res.json({ link_url: banner.link_url || '', images: urls });
+    const data = shuffle(imgs).map(x => ({
+      image_url: toAbs(base, x.image_url),
+      movie_id: x.movie_id || null
+    }));
+
+    if (!withLink) return res.json(data);
+    return res.json({ link_url: banner.link_url || '', images: data });
   } catch (e) { next(e); }
 };
 
@@ -123,21 +128,40 @@ exports.remove = async (req, res, next) => {
 
 exports.publicAll = async (req, res, next) => {
   try {
-    const banners = await Banner.find({ is_active: true })
-      .sort({ createdAt: -1 })
-      .lean();
-    const result = [];
+    const banners = await Banner.find({ is_active: true }).sort({ createdAt: -1 }).lean();
+    const base = baseUrl(req);
 
+    const result = [];
     for (const b of banners) {
-      const imgs = await BannerImage.find({ banner_id: b._id }).select('image_url').lean();
+      const imgs = await BannerImage.find({ banner_id: b._id }).select('image_url movie_id').lean();
       result.push({
         _id: b._id,
         title: b.title,
         link_url: b.link_url,
-        images: imgs.map(i => `${req.protocol}://${req.get('host')}${i.image_url}`)
+        images: imgs.map(i => ({
+          image_url: toAbs(base, i.image_url),
+          movie_id: i.movie_id || null
+        }))
       });
     }
-
     res.json(result);
+  } catch (e) { next(e); }
+};
+
+exports.updateImageMeta = async (req, res, next) => {
+  try {
+    const { id, imageId } = req.params;
+    if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(imageId)) {
+      return res.status(400).json({ message: 'Invalid id' });
+    }
+    const img = await BannerImage.findOne({ _id: imageId, banner_id: id });
+    if (!img) return res.status(404).json({ message: 'Image not found' });
+
+    // body: { movie_id: "<ObjectId>|null" }
+    if (typeof req.body.movie_id !== 'undefined') {
+      img.movie_id = req.body.movie_id ? new mongoose.Types.ObjectId(req.body.movie_id) : null;
+    }
+    await img.save();
+    res.json(img);
   } catch (e) { next(e); }
 };
