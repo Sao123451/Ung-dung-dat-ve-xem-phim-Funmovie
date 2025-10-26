@@ -44,13 +44,13 @@ public class EarlyShowFragment extends Fragment {
         adapter = new MovieListAdapter(R.layout.item_movie2, "early");
         rv.setAdapter(adapter);
 
-//        // ⬇️ Click item → mở màn đặt vé theo phim
-//        adapter.setOnItemClickListener(movie -> {
-//            if (getContext() == null || movie == null) return;
-//            Intent i = new Intent(getContext(), BookingByMovieActivity.class);
-//            i.putExtra("movie_id", movie.id); // truyền id phim
-//            startActivity(i);
-//        });
+        // ⬇️ Click item → mở màn đặt vé theo phim
+        adapter.setOnItemClickListener(movie -> {
+            if (getContext() == null || movie == null) return;
+            Intent i = new Intent(getContext(), BookingByMovieActivity.class);
+            i.putExtra("movie_id", movie.id); // truyền id phim
+            startActivity(i);
+        });
 //test
         load();
         return v;
