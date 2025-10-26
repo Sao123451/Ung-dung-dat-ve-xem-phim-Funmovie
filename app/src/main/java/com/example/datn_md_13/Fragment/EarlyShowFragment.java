@@ -51,7 +51,7 @@ public class EarlyShowFragment extends Fragment {
 //            i.putExtra("movie_id", movie.id); // truyền id phim
 //            startActivity(i);
 //        });
-
+//test
         load();
         return v;
     }
