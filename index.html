@@ -1,37 +1,66 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard - Movie Booking</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FunMovie Admin</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container mt-5">
-    <h1>Admin Dashboard</h1>
-    <p>Chào Admin!</p>
+  <div id="root"></div>
 
-    <h2>Danh sách phim</h2>
-    <ul id="movie-list" class="list-group"></ul>
+  <!-- Template: Đăng nhập -->
+  <template id="tpl-login">
+    <div class="login-wrap">
+      <div class="card login-card">
+        <div class="brand"><span class="dot"></span> FunMovie Admin</div>
+        <h2 style="margin:6px 0 4px">Đăng nhập</h2>
+        <p class="muted" style="margin:0 0 14px">Nhập thông tin tài khoản quản trị để tiếp tục.</p>
+        <div class="form">
+          <div>
+            <label for="lg-username">Tên đăng nhập / Email</label>
+            <input id="lg-username" placeholder="admin@example.com" />
+          </div>
+          <div>
+            <label for="lg-password">Mật khẩu</label>
+            <input id="lg-password" type="password" placeholder="••••••••" />
+          </div>
+          <div class="row">
+            <div class="col-6"><button class="btn primary" id="btn-login">Đăng nhập</button></div>
+            <div class="col-6" style="text-align:right"><button class="btn ghost" id="btn-fill-demo">Dùng demo</button></div>
+          </div>
+          <div class="help" id="login-help"></div>
+        </div>
+      </div>
+    </div>
+  </template>
 
-  <script>
-    // Gọi API lấy danh sách phim
-    fetch('http://localhost:3000/api/movies')
-      .then(res => res.json())
-      .then(movies => {
-        const ul = document.getElementById('movie-list');
-        movies.forEach(movie => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.textContent = `${movie.title} (${movie.year})`;
-          ul.appendChild(li);
-        });
-      })
-      .catch(err => console.error('Lỗi khi lấy dữ liệu phim:', err));
-  </script>
+  <!-- Template: Khung ứng dụng -->
+  <template id="tpl-app">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="dot"></span> FunMovie Admin</div>
+        <nav class="nav" id="nav"></nav>
+        <div class="spacer"></div>
+        <button class="logout" id="btn-logout">Đăng xuất</button>
+      </aside>
+      <main class="main">
+        <div class="toolbar">
+          <h2 id="page-title">Dashboard</h2>
+          <div class="spacer"></div>
+          <button class="btn" id="btn-refresh">Tải lại</button>
+          <button class="btn primary" id="btn-create">+ Thêm mới</button>
+        </div>
+        <section id="page"></section>
+      </main>
+    </div>
+  </template>
+
+  <noscript>
+    <div style="padding:16px;color:#fff;background:#b00">Bạn cần bật JavaScript để sử dụng trang quản trị.</div>
+  </noscript>
+
+  <!-- CHÚ Ý: thẻ script phải ĐÓNG ĐÚNG, không thêm ký tự sau </html> -->
+  <script src="app.js"></script>
 </body>
 </html>
-//test 1
-//test 2
-//test hieu
-//annn

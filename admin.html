@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FunMovie Admin • Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand"><span class="dot"></span> FunMovie Admin</div>
+      <nav class="nav">
+        <button class="active">Dashboard</button>
+        <button>Phim</button>
+        <button>Suất chiếu</button>
+        <button>Banner</button>
+        <button>Voucher</button>
+        <button>Người dùng</button>
+        <button>Tin tức</button>
+      </nav>
+      <div class="spacer"></div>
+      <a class="logout" href="index.html">← Về đăng nhập</a>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="toolbar">
+        <h2>Dashboard</h2>
+        <div class="spacer"></div>
+        <button class="btn">Tải lại</button>
+        <button class="btn primary">+ Thêm mới</button>
+      </div>
+
+      <!-- KPI Cards -->
+      <section class="kpi">
+        <div class="card">
+          <div class="muted">Doanh thu hôm nay</div>
+          <div class="value">128.500.000₫</div>
+          <div class="sub">+12% so với hôm qua</div>
+        </div>
+        <div class="card">
+          <div class="muted">Số vé đã bán</div>
+          <div class="value">742</div>
+          <div class="sub">Tỷ lệ hủy 1.2%</div>
+        </div>
+        <div class="card">
+          <div class="muted">Rạp doanh thu cao nhất</div>
+          <div class="value">FunMovie Center Q1</div>
+          <div class="sub">42.300.000₫ hôm nay</div>
+        </div>
+        <div class="card">
+          <div class="muted">Tỷ lệ chuyển đổi</div>
+          <div class="value">4,7%</div>
+          <div class="sub">Web + App</div>
+        </div>
+      </section>
+
+      <!-- Charts placeholder (UI tĩnh) -->
+      <section class="grid">
+        <div class="card" style="min-height:220px">
+          <div class="muted" style="margin-bottom:8px">Biểu đồ doanh thu 7 ngày</div>
+          <div style="height:160px; border:1px dashed var(--line); border-radius:12px; display:grid; place-items:center; color:var(--muted)">Placeholder chart</div>
+        </div>
+        <div class="card" style="min-height:220px">
+          <div class="muted" style="margin-bottom:8px">Phân bố suất chiếu theo rạp</div>
+          <div style="height:160px; border:1px dashed var(--line); border-radius:12px; display:grid; place-items:center; color:var(--muted)">Placeholder chart</div>
+        </div>
+      </section>
+
+      <!-- Tables -->
+      <section class="list" style="margin-top:14px">
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+            <h3 style="margin:0">Top phim theo vé bán</h3>
+            <span class="pill">Hôm nay</span>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Phim</th>
+                <th>Vé</th>
+                <th>Doanh thu</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Dune: Part Two</td>
+                <td>214</td>
+                <td>58.200.000₫</td>
+              </tr>
+              <tr>
+                <td>Spirited Away</td>
+                <td>154</td>
+                <td>32.600.000₫</td>
+              </tr>
+              <tr>
+                <td>Parasite</td>
+                <td>98</td>
+                <td>21.900.000₫</td>
+              </tr>
+              <tr>
+                <td>The Batman</td>
+                <td>84</td>
+                <td>16.300.000₫</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+            <h3 style="margin:0">Vé mới nhất</h3>
+            <span class="pill">Realtime</span>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Mã vé</th>
+                <th>Người mua</th>
+                <th>Phim</th>
+                <th>Thời gian</th>
+                <th>Số tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>FM-202510-0001</td>
+                <td>ngoc.tran</td>
+                <td>Dune: Part Two</td>
+                <td>26/10/2025 14:05</td>
+                <td>240.000₫</td>
+              </tr>
+              <tr>
+                <td>FM-202510-0002</td>
+                <td>minh.ng</td>
+                <td>Spirited Away</td>
+                <td>26/10/2025 13:40</td>
+                <td>180.000₫</td>
+              </tr>
+              <tr>
+                <td>FM-202510-0003</td>
+                <td>linh.ha</td>
+                <td>Parasite</td>
+                <td>26/10/2025 13:10</td>
+                <td>150.000₫</td>
+              </tr>
+              <tr>
+                <td>FM-202510-0004</td>
+                <td>lam.vo</td>
+                <td>The Batman</td>
+                <td>26/10/2025 12:42</td>
+                <td>210.000₫</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Banners preview -->
+      <section class="grid" style="margin-top:14px">
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+            <h3 style="margin:0">Banner nổi bật</h3>
+            <span class="pill">Trang chủ app</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px">
+            <img src="https://picsum.photos/seed/1/600/300" style="width:100%; border-radius:12px; object-fit:cover" alt="banner1"/>
+            <img src="https://picsum.photos/seed/2/600/300" style="width:100%; border-radius:12px; object-fit:cover" alt="banner2"/>
+            <img src="https://picsum.photos/seed/3/600/300" style="width:100%; border-radius:12px; object-fit:cover" alt="banner3"/>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>
