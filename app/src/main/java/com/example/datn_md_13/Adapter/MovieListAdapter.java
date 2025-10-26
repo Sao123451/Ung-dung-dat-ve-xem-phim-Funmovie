@@ -5,24 +5,35 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
-import com.example.datn_md_13.R;
 import com.example.datn_md_13.Model.Movie;
+import com.example.datn_md_13.R;
+
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class MovieListAdapter extends RecyclerView.Adapter<MovieListAdapter.VH> {
     private final List<Movie> data = new ArrayList<>();
-    private final @LayoutRes int layoutRes; // <-- ép layout
-    private final String typeKey;            // "coming" | "now" | "early"
+    private final @LayoutRes int layoutRes; // ép layout
+    private final String typeKey;           // "coming" | "now" | "early"
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+    // ====== Click listener ======
+    public interface OnItemClickListener { void onClick(Movie movie); }
+    private OnItemClickListener listener;
+    public void setOnItemClickListener(OnItemClickListener l) { this.listener = l; }
 
     public MovieListAdapter(@LayoutRes int layoutRes, String typeKey) {
         this.layoutRes = layoutRes;
         this.typeKey = typeKey;
+        setHasStableIds(false);
     }
 
     public void submit(List<Movie> list) {
@@ -41,7 +52,7 @@ public class MovieListAdapter extends RecyclerView.Adapter<MovieListAdapter.VH> 
     public void onBindViewHolder(@NonNull VH h, int i) {
         Movie m = data.get(i);
 
-        // Dùng null-check để dùng được cho cả 2 layout
+        // Text
         if (h.tvTitle != null)  h.tvTitle.setText(m.title != null ? m.title : "");
         if (h.tvTitle2 != null) h.tvTitle2.setText(m.title != null ? m.title : "");
 
@@ -57,15 +68,29 @@ public class MovieListAdapter extends RecyclerView.Adapter<MovieListAdapter.VH> 
             }
         }
 
+        // Image
         String poster = m.poster;
         if (h.ivPoster != null) {
             Glide.with(h.itemView.getContext())
-                    .load(poster).placeholder(R.drawable.ic_launcher_background).into(h.ivPoster);
+                    .load(poster)
+
+                    .into(h.ivPoster);
         }
         if (h.ivPoster2 != null) {
             Glide.with(h.itemView.getContext())
-                    .load(poster).placeholder(R.drawable.ic_launcher_background).into(h.ivPoster2);
+                    .load(poster)
+
+                    .into(h.ivPoster2);
         }
+
+        // Click item
+        h.itemView.setOnClickListener(v -> {
+            if (listener == null) return;
+            int pos = h.getAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return;
+            listener.onClick(data.get(pos));
+        });
+
     }
 
     @Override public int getItemCount() { return data.size(); }
@@ -78,7 +103,6 @@ public class MovieListAdapter extends RecyclerView.Adapter<MovieListAdapter.VH> 
 
         VH(@NonNull View v) {
             super(v);
-            // lấy theo id; nếu layout không có id đó -> null (ok)
             ivPoster   = v.findViewById(R.id.ivPoster);
             tvTitle    = v.findViewById(R.id.tvTitle);
             tvDate     = v.findViewById(R.id.tvDate);

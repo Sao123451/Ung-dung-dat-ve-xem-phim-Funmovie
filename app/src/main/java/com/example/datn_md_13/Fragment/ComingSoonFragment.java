@@ -1,5 +1,6 @@
 package com.example.datn_md_13.Fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +12,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.datn_md_13.BookingByMovieActivity;
 import com.example.datn_md_13.R;
 import com.example.datn_md_13.Adapter.MovieListAdapter;
 import com.example.datn_md_13.Model.Movie;
@@ -40,6 +43,13 @@ public class ComingSoonFragment extends Fragment {
         adapter = new MovieListAdapter(R.layout.item_movie, "coming");
         rv.setAdapter(adapter);
 
+        // ⬇️ Click item → mở màn đặt vé theo phim
+        adapter.setOnItemClickListener(movie -> {
+            if (getContext() == null || movie == null) return;
+            Intent i = new Intent(getContext(), BookingByMovieActivity.class);
+            i.putExtra("movie_id", movie.id); // truyền id phim
+            startActivity(i);
+        });
         load();
         return v;
     }
