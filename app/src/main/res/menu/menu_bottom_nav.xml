@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_home"
+        android:title="Home" />
+
+    <item
+        android:id="@+id/nav_booking"
+        android:icon="@drawable/outline_calendar_month_24"
+        android:title="Lịch chiếu" />
+
+    <item
+        android:id="@+id/nav_voucher"
+        android:icon="@drawable/ic_voucher"
+        android:title="Voucher" />
+
+    <item
+        android:id="@+id/nav_news"
+        android:icon="@drawable/outline_add_business_24"
+        android:title="Tin tức" />
+
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/outline_background_dot_small_24"
+        android:title="Khác" />
+
+</menu>

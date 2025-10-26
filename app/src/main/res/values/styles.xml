@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <style name="OutlinedField" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxBackgroundMode">outline</item>
         <item name="boxCornerRadiusTopStart">12dp</item>
@@ -11,5 +12,10 @@
         <item name="boxBackgroundColor">@android:color/white</item>
         <item name="endIconTint">#9E9E9E</item>
         <item name="android:padding">0dp</item>
+    </style>
+
+    <style name="Widget.Theme.DATN_MD13.ButtonBar.Fullscreen" parent="">
+        <item name="android:background">@color/black_overlay</item>
+        <item name="android:buttonBarStyle">?android:attr/buttonBarStyle</item>
     </style>
 </resources>
