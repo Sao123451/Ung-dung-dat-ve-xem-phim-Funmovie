@@ -16,13 +16,20 @@
         android:theme="@style/Theme.DATN_MD13"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".Activity.Register"
+            android:exported="false"
+            android:theme="@style/Theme.DATN_MD13" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
             android:name=".BookingByMovieActivity"
             android:exported="false" />
         <activity
             android:name=".activity_movie_detail"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".Activity.Login"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
