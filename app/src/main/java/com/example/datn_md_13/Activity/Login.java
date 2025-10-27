@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -17,6 +16,7 @@ import com.example.datn_md_13.ApiService.ApiService;
 import com.example.datn_md_13.MainActivity;
 import com.example.datn_md_13.Model.User;
 import com.example.datn_md_13.R;
+import com.example.datn_md_13.auth.AuthManager;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -39,6 +39,13 @@ public class Login extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // Nếu đã đăng nhập thì bỏ qua màn Login
+        if (AuthManager.isLoggedIn(this)) {
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+            return;
+        }
+
         tilEmail = findViewById(R.id.tilEmail);
         edtEmail = findViewById(R.id.edtEmail);
         tilPassword = findViewById(R.id.tilPassword);
@@ -49,14 +56,13 @@ public class Login extends AppCompatActivity {
         apiService = ApiClient.get().create(ApiService.class);
 
         btnLogin.setText("Đăng nhập");
-
         btnLogin.setOnClickListener(v -> handleLogin());
         tvRegister.setOnClickListener(v -> startActivity(new Intent(Login.this, Register.class)));
     }
 
     private void handleLogin() {
-        String emailOrUsername = edtEmail.getText().toString().trim();
-        String password = edtPassword.getText().toString().trim();
+        String emailOrUsername = edtEmail.getText() != null ? edtEmail.getText().toString().trim() : "";
+        String password = edtPassword.getText() != null ? edtPassword.getText().toString().trim() : "";
 
         tilEmail.setError(null);
         tilPassword.setError(null);
@@ -65,39 +71,51 @@ public class Login extends AppCompatActivity {
             tilEmail.setError("Vui lòng nhập email hoặc username");
             return;
         }
-
         if (TextUtils.isEmpty(password)) {
             tilPassword.setError("Vui lòng nhập mật khẩu");
             return;
         }
 
-        // Sửa ở đây: Tạo User request một cách tường minh
+        // Tạo payload login
         User loginUser = new User();
         loginUser.setUsernameOrEmail(emailOrUsername);
         loginUser.setPassword(password);
 
+        // API hiện tại trả về User
         Call<User> call = apiService.login(loginUser);
-
         call.enqueue(new Callback<User>() {
             @Override
             public void onResponse(@NonNull Call<User> call, @NonNull Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    User user = response.body();
+
+                    // ---- Fallback tên hiển thị (rất quan trọng cho header) ----
+                    boolean hasUsername = user.getUsername() != null && !user.getUsername().trim().isEmpty();
+                    boolean hasFullName = user.getFull_name() != null && !user.getFull_name().trim().isEmpty();
+
+                    if (!hasUsername && !hasFullName) {
+                        // nếu input là email -> lấy phần trước @; nếu là username thì dùng trực tiếp
+                        String fallback = emailOrUsername;
+                        int at = fallback.indexOf('@');
+                        if (at > 0) fallback = fallback.substring(0, at);
+                        user.setUsername(fallback);
+                    }
+
+                    // Bật cờ + lưu user (token tạm null nếu backend chưa trả)
+                    AuthManager.setLoggedIn(Login.this, null, user);
+
                     Toast.makeText(Login.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-
-                    // TODO: Lưu thông tin người dùng vào SharedPreferences
-
                     startActivity(new Intent(Login.this, MainActivity.class));
                     finish();
                 } else {
-                    // Sửa ở đây: Đọc lỗi chi tiết từ server
                     String errorMessage = "Sai thông tin đăng nhập.";
                     try {
                         if (response.errorBody() != null) {
                             JSONObject errorObj = new JSONObject(response.errorBody().string());
-                            errorMessage = errorObj.getString("message");
+                            errorMessage = errorObj.optString("message", errorMessage);
                         }
                     } catch (Exception e) {
-                        Log.e("LoginError", "Lỗi phân tích phản hồi lỗi: " + e.getMessage());
+                        Log.e("LoginError", "Parse error: " + e.getMessage());
                     }
                     Toast.makeText(Login.this, errorMessage, Toast.LENGTH_LONG).show();
                 }

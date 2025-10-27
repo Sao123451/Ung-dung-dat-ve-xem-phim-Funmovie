@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools" >
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -14,14 +14,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DATN_MD13"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true" >
+        <activity
+            android:name=".Activity.Activity_member"
+            android:exported="false" />
         <activity
             android:name=".Activity.Register"
             android:exported="false"
             android:theme="@style/Theme.DATN_MD13" />
         <activity
-            android:name=".MainActivity"
-            android:exported="false" />
+            android:name=".Activity.Login"
+            android:exported="true" />
         <activity
             android:name=".BookingByMovieActivity"
             android:exported="false" />
@@ -29,8 +32,8 @@
             android:name=".activity_movie_detail"
             android:exported="false" />
         <activity
-            android:name=".Activity.Login"
-            android:exported="true">
+            android:name=".MainActivity"
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
