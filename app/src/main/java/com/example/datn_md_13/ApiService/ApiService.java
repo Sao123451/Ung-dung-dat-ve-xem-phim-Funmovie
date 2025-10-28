@@ -2,6 +2,7 @@ package com.example.datn_md_13.ApiService;
 
 import com.example.datn_md_13.Model.BannerDto;
 import com.example.datn_md_13.Model.Movie;
+import com.example.datn_md_13.Model.PublicCinemaResponse;
 import com.example.datn_md_13.Model.User;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public interface ApiService {
     @POST("auth/register")     Call<User> register(@Body User user);
     @POST("auth/login")        Call<User> login(@Body User loginRequest);
 
-    // Banners
+
     @GET("banners/public/all")
     Call<List<BannerDto>> getAllBanners();
 
@@ -33,4 +34,12 @@ public interface ApiService {
         public String link_url;
         public List<String> images;
     }
+    @GET("cinemas/public")
+    Call<PublicCinemaResponse> getCinemasPublic(
+            @Query("page") Integer page,
+            @Query("limit") Integer limit,
+            @Query("q") String q,
+            @Query("city") String city
+    );
+
 }

@@ -9,7 +9,7 @@
     <item
         android:id="@+id/nav_booking"
         android:icon="@drawable/outline_calendar_month_24"
-        android:title="Lịch chiếu" />
+        android:title="Rạp chiếu" />
 
     <item
         android:id="@+id/nav_voucher"

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Màu khi được chọn -->
+    <item android:state_checked="true" android:color="@color/fm_orange" />
+    <!-- Màu mặc định -->
+    <item android:color="@color/fm_gray" />
+</selector>
