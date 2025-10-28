@@ -26,7 +26,7 @@ app.use('/api/movies', require('./routes/movies'));
 app.use('/api/showtimes', require('./routes/showtimes'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/payments', require('./routes/payments'));
-// app.use('/api/cinemas', require('./routes/cinemas'));
+app.use('/api/cinemas', require('./routes/cinemas'));
 // app.use('/api/rooms', require('./routes/rooms'));
 // app.use('/api/seats', require('./routes/seats'));
 app.use('/api/vouchers', require('./routes/vouchers'));
