@@ -109,3 +109,11 @@ textarea{min-height:90px; resize:vertical}
 .modal .modal-head h3{ margin:0 }
 .modal .modal-foot{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px }
 
+.banner-grid {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:10px;
+}
+.banner-thumb {
+  width:100%; aspect-ratio: 16/9; object-fit:cover; border-radius:10px; border:1px solid var(--line);
+}
+.row-actions { display:flex; gap:6px; flex-wrap:wrap }
+.kv { display:flex; gap:8px; align-items:center; }

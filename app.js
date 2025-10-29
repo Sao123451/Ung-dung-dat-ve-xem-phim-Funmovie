@@ -172,16 +172,22 @@ function renderAppShell() {
 
   // Cập nhật toolbar theo trang hiện tại
   function updateToolbarFor(label) {
-    // Refresh: dùng chung cho mọi trang (gọi refreshPage())
-    btnRefresh.disabled = false;
+  const me = getUser();
+  const btnRefresh = $('#btn-refresh');
+  const btnCreate  = $('#btn-create');
 
-    // Create: chỉ hiện với trang "Phim" và role admin
-    const showCreate = (label === 'Phim' && me.role === 'admin');
-    btnCreate.style.display = showCreate ? '' : 'none';
+  btnRefresh.disabled = false;
 
-    // (tuỳ chọn) Đổi nhãn cho rõ ngữ cảnh
-    btnCreate.textContent = '+ Thêm phim';
-  }
+  let showCreate = false;
+  let createText = '+ Thêm mới';
+
+  if (label === 'Phim'   && me.role === 'admin')                 { showCreate = true; createText = '+ Thêm phim'; }
+  if (label === 'Banner' && ['admin','manager'].includes(me.role)){ showCreate = true; createText = '+ Thêm banner'; }
+
+  btnCreate.style.display = showCreate ? '' : 'none';
+  btnCreate.textContent = createText;
+}
+
 
   navItems.forEach((label, i) => {
     const btn = document.createElement('button');
@@ -239,6 +245,8 @@ function selectPage(label, btn) {
     renderMoviesPage(page);
   } else if (label === 'Người dùng') {
     renderUserList(page);
+  } else if (label === 'Banner') {
+  renderBannersPage(page);
   } else {
     page.innerHTML = `<div class="card">Trang <b>${label}</b> đang phát triển.</div>`;
   }
@@ -331,24 +339,28 @@ function getCurrentPageLabel(){
 }
 
 function refreshPage(){
-  const label = getCurrentPageLabel();
-  console.log('[toolbar] refresh clicked — current page =', label, window.fm_movies);
-  if (label === 'Phim' && window.fm_movies?.reload) {
-    window.fm_movies.reload();
+  const label = $('#page-title')?.textContent?.trim();
+  if (label === 'Phim'   && window.fm_movies?.reload)  window.fm_movies.reload();
+  if (label === 'Banner' && window.fm_banners?.reload) window.fm_banners.reload();
+}
+
+
+function createEntityForCurrentPage(){
+  const label = $('#page-title')?.textContent?.trim();
+  const me = getUser();
+
+  if (label === 'Phim') {
+    if (!isAdmin()) return alert('Chỉ Admin mới được thêm phim.');
+    return window.fm_movies?.create && window.fm_movies.create();
+  }
+
+  if (label === 'Banner') {
+    if (!me || !['admin','manager'].includes(me.role))
+      return alert('Chỉ Admin/Manager mới được thêm banner.');
+    return window.fm_banners?.create && window.fm_banners.create();
   }
 }
 
-function createEntityForCurrentPage(){
-  const label = getCurrentPageLabel();
-  console.log('[toolbar] create clicked — current page =', label, 'isAdmin=', isAdmin());
-  if (label !== 'Phim') return;
-  if (!isAdmin()) { alert('Chỉ Admin mới được thêm phim.'); return; }
-  if (window.fm_movies?.create) {
-    window.fm_movies.create();
-  } else {
-    console.warn('window.fm_movies.create chưa sẵn sàng');
-  }
-}
 
 
 function statusBadge(status) {
