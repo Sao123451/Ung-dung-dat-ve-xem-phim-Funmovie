@@ -686,3 +686,323 @@ function renderMoviesPage(container) {
   load();
 }
 
+function renderBannersPage(container){
+  // stub để toolbar có thể gọi sớm
+  window.fm_banners = { reload: ()=>{}, create: ()=>{} };
+
+  container.innerHTML = html`
+    <div class="card">
+      <h3 style="margin:0 0 10px">Danh sách banner</h3>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="all">Tất cả</button>
+        <button class="tab" data-tab="active">Đang bật</button>
+        <button class="tab" data-tab="inactive">Đang tắt</button>
+      </div>
+
+      <div id="bn-table" class="table-wrap">
+        <div class="muted">Đang tải...</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h3 style="margin:0 0 8px">Ảnh trong banner (chọn 1 banner)</h3>
+      <div class="form">
+        <div class="row">
+          <div class="col-12"><div id="bn-selected" class="muted">Chưa chọn banner.</div></div>
+          <div class="col-12"><div id="bn-images" class="banner-grid"></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const me = getUser();
+  const canManage = !!(me && ['admin','manager'].includes(me.role));
+
+  let raw = [];
+  let tab = 'all';
+  let selectedBanner = null;
+
+  const els = {
+    table: $('#bn-table'),
+    images: $('#bn-images'),
+    selected: $('#bn-selected'),
+  };
+
+  async function fetchBanners(){
+    const res = await authFetch(`${API_BASE}/banners`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('load banners failed');
+    return res.json();
+  }
+
+  async function loadList(){
+    els.table.innerHTML = `<div class="muted">Đang tải...</div>`;
+    try {
+      raw = await fetchBanners();
+      renderList();
+    } catch {
+      els.table.innerHTML = `<div class="muted">Không tải được dữ liệu.</div>`;
+    }
+  }
+
+  function filtered(){
+    if (tab === 'all') return raw;
+    if (tab === 'active') return raw.filter(b => b.is_active);
+    return raw.filter(b => !b.is_active);
+  }
+
+  function renderList(){
+    const rows = filtered();
+    if (!rows.length){
+      els.table.innerHTML = `<div class="muted">Không có banner.</div>`;
+      return;
+    }
+    els.table.innerHTML = html`
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tiêu đề</th>
+            <th>Link</th>
+            <th>Trạng thái</th>
+            <th>Ảnh</th>
+            <th style="width:280px">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(b => html`
+            <tr data-id="${b._id}">
+              <td>${b.title}</td>
+              <td>${b.link_url || ''}</td>
+              <td>${b.is_active ? '<span class="badge ok">Bật</span>' : '<span class="badge muted">Tắt</span>'}</td>
+              <td>${b.image_count ?? 0}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn" data-act="select" data-id="${b._id}">Chọn</button>
+                  ${canManage ? `
+                    <button class="btn" data-act="toggle" data-id="${b._id}">${b.is_active ? 'Tắt' : 'Bật'}</button>
+                    <button class="btn" data-act="edit" data-id="${b._id}">Sửa</button>
+                    <button class="btn warn" data-act="upload" data-id="${b._id}">Upload ảnh</button>
+                    <button class="btn danger" data-act="del" data-id="${b._id}">Xoá</button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    els.table.querySelectorAll('[data-act]').forEach(b => b.onclick = onRowAction);
+  }
+
+  function openBannerForm(mode, data={}){
+    const isEdit = mode === 'edit';
+    const htmlForm = html`
+      <div class="modal-head"><h3>${isEdit?'Sửa banner':'Tạo banner'}</h3><div class="spacer"></div></div>
+      <div class="form">
+        <div class="row">
+          <div class="col-12"><label>Tiêu đề *</label><input id="f-title" value="${data.title||''}"></div>
+          <div class="col-12"><label>Link (optional)</label><input id="f-link" value="${data.link_url||''}"></div>
+          <div class="col-12">
+            <label>Trạng thái</label>
+            <select id="f-active">
+              <option value="true" ${data.is_active!==false?'selected':''}>Bật</option>
+              <option value="false" ${data.is_active===false?'selected':''}>Tắt</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="f-cancel">Hủy</button>
+        <button class="btn primary" id="f-submit">${isEdit?'Lưu':'Tạo'}</button>
+      </div>
+    `;
+    const modal = openModal(htmlForm, ({ el, close }) => {
+      el.querySelector('#f-cancel').onclick = close;
+      el.querySelector('#f-submit').onclick = async () => {
+        const title = el.querySelector('#f-title').value.trim();
+        if (!title) return alert('Nhập tiêu đề.');
+        const body = {
+          title,
+          link_url: el.querySelector('#f-link').value.trim(),
+          is_active: el.querySelector('#f-active').value === 'true'
+        };
+        try{
+          let res, dataRes;
+          if (isEdit) res = await authFetch(`${API_BASE}/banners/${data._id}`, { method:'PUT', body: JSON.stringify(body) });
+          else res = await authFetch(`${API_BASE}/banners`, { method:'POST', body: JSON.stringify(body) });
+          dataRes = await res.json().catch(()=> ({}));
+          if (!res.ok) return alert(dataRes?.message || 'Thao tác thất bại.');
+          close(); await loadList();
+        }catch{ alert('Lỗi kết nối.'); }
+      };
+    });
+  }
+
+  function openUploadDialog(bannerId){
+    const htmlForm = html`
+      <div class="modal-head"><h3>Upload ảnh</h3><div class="spacer"></div></div>
+      <div class="form">
+        <div class="row">
+          <div class="col-12">
+            <input id="f-files" type="file" accept="image/*" multiple />
+            <div class="help">Chọn tối đa 12 ảnh/lần.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="f-cancel">Hủy</button>
+        <button class="btn primary" id="f-submit">Tải lên</button>
+      </div>
+    `;
+    openModal(htmlForm, ({ el, close }) => {
+      el.querySelector('#f-cancel').onclick = close;
+      el.querySelector('#f-submit').onclick = async () => {
+        const files = el.querySelector('#f-files').files;
+        if (!files || !files.length) return alert('Chọn ít nhất 1 ảnh.');
+        try{
+          const fd = new FormData();
+          [...files].forEach(f => fd.append('images', f));
+          const token = getToken();
+          const res = await fetch(`${API_BASE}/banners/${bannerId}/images`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            body: fd
+          });
+          const data = await res.json().catch(()=> ({}));
+          if (!res.ok) return alert(data?.message || 'Upload thất bại.');
+          close();
+          await loadList();
+          if (selectedBanner && selectedBanner._id === bannerId) await loadImagesOf(bannerId);
+        }catch{ alert('Lỗi kết nối.'); }
+      };
+    });
+  }
+
+  async function loadImagesOf(bannerId){
+    els.selected.textContent = `Đang nạp ảnh cho banner ${bannerId}...`;
+    els.images.innerHTML = '';
+    try{
+      const res = await fetch(`${API_BASE}/banners/public/all`, { cache: 'no-store' });
+      const arr = await res.json();
+      const item = arr.find(x => x._id === bannerId);
+      selectedBanner = filtered().find(x => x._id === bannerId) || null;
+
+      els.selected.innerHTML = selectedBanner
+        ? `<div class="kv"><b>${selectedBanner.title}</b> <span class="pill">${selectedBanner._id}</span></div>`
+        : 'Không tìm thấy banner.';
+
+      if (!item || !item.images?.length){
+        els.images.innerHTML = `<div class="muted">Chưa có ảnh.</div>`;
+        return;
+      }
+
+      els.images.innerHTML = item.images.map(img => html`
+        <div class="card">
+          <img class="banner-thumb" src="${img.image_url}" alt="">
+          <div class="form" style="margin-top:8px">
+            <label>Gán movie_id (tuỳ chọn)</label>
+            <div class="row">
+              <div class="col-8"><input data-role="movieId" data-image-id="${img._id||''}" placeholder="ObjectId hoặc để trống" value="${img.movie_id || ''}"></div>
+              <div class="col-4" style="text-align:right">
+                ${canManage ? `
+                  <button class="btn" data-act="save-img" data-image-id="${img._id||''}">Lưu</button>
+                  <button class="btn danger" data-act="del-img" data-image-id="${img._id||''}">Xoá</button>
+                `:``}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      els.images.querySelectorAll('[data-act="save-img"]').forEach(b => b.onclick = async (e)=>{
+        const imageId = e.currentTarget.getAttribute('data-image-id');
+        const input = els.images.querySelector(`input[data-role="movieId"][data-image-id="${imageId}"]`);
+        try{
+          const res = await authFetch(`${API_BASE}/banners/${bannerId}/images/${imageId}`, {
+            method:'PATCH',
+            body: JSON.stringify({ movie_id: input.value.trim() || null })
+          });
+          const data = await res.json().catch(()=> ({}));
+          if (!res.ok) return alert(data?.message || 'Lưu thất bại.');
+          alert('Đã lưu.');
+        }catch{ alert('Lỗi kết nối.'); }
+      });
+
+      els.images.querySelectorAll('[data-act="del-img"]').forEach(b => b.onclick = async (e)=>{
+        const imageId = e.currentTarget.getAttribute('data-image-id');
+        if (!confirm('Xoá ảnh này?')) return;
+        try{
+          const res = await authFetch(`${API_BASE}/banners/${bannerId}/images/${imageId}`, { method:'DELETE' });
+          const data = await res.json().catch(()=> ({}));
+          if (!res.ok) return alert(data?.message || 'Xoá thất bại.');
+          await loadImagesOf(bannerId);
+          await loadList();
+        }catch{ alert('Lỗi kết nối.'); }
+      });
+
+    }catch{
+      els.images.innerHTML = `<div class="muted">Không tải được ảnh.</div>`;
+    }
+  }
+
+  async function onRowAction(e){
+    const id = e.currentTarget.getAttribute('data-id');
+    const act = e.currentTarget.getAttribute('data-act');
+
+    if (act === 'select'){
+      await loadImagesOf(id);
+      return;
+    }
+    if (act === 'toggle' && canManage){
+      try{
+        const res = await authFetch(`${API_BASE}/banners/${id}/toggle`, { method:'PATCH' });
+        const data = await res.json().catch(()=> ({}));
+        if (!res.ok) return alert(data?.message || 'Thất bại.');
+        await loadList();
+      }catch{ alert('Lỗi kết nối.'); }
+      return;
+    }
+    if (act === 'edit' && canManage){
+      const b = raw.find(x => x._id === id);
+      if (!b) return;
+      openBannerForm('edit', b);
+      return;
+    }
+    if (act === 'upload' && canManage){
+      openUploadDialog(id);
+      return;
+    }
+    if (act === 'del' && canManage){
+      if (!confirm('Xoá banner và toàn bộ ảnh của nó?')) return;
+      try{
+        const res = await authFetch(`${API_BASE}/banners/${id}`, { method:'DELETE' });
+        const data = await res.json().catch(()=> ({}));
+        if (!res.ok) return alert(data?.message || 'Xoá thất bại.');
+        if (selectedBanner && selectedBanner._id === id){
+          selectedBanner = null; els.selected.textContent = 'Chưa chọn banner.'; els.images.innerHTML = '';
+        }
+        await loadList();
+      }catch{ alert('Lỗi kết nối.'); }
+      return;
+    }
+  }
+
+  container.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => {
+      container.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      tab = t.getAttribute('data-tab');
+      renderList();
+    };
+  });
+
+  window.fm_banners = {
+    reload: () => loadList(),
+    create: () => {
+      if (!canManage) return alert('Chỉ Admin/Manager.');
+      openBannerForm('create');
+    }
+  };
+
+  loadList();
+}
