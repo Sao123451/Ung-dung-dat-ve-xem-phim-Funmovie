@@ -39,7 +39,6 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/public', express.static(path.join(__dirname, 'public'))); // để serve ảnh upload
 app.use('/api/banners', require('./routes/banners'));
 app.use('/api/ticket-seats', require('./routes/ticketSeats'));
-
 // app.use('/api/notifications', require('./routes/notifications'));
 // app.use('/api/news', require('./routes/news'));
 // app.use('/api/memberships', require('./routes/memberships'));
