@@ -50,3 +50,62 @@ textarea{min-height:90px; resize:vertical}
 .nav{flex-direction:row; overflow:auto}
 .logout{margin-left:auto}
 }
+
+/* ==== Login error styles ==== */
+.help.error { color: var(--danger); }
+.input-error { border-color: var(--danger) !important; }
+
+.shake {
+  animation: shake 0.28s linear 1;
+}
+@keyframes shake {
+  0% { transform: translateX(0) }
+  25% { transform: translateX(-4px) }
+  50% { transform: translateX(4px) }
+  75% { transform: translateX(-3px) }
+  100% { transform: translateX(0) }
+}
+
+.btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+.movie-thumb {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.badge {
+  display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px;
+  background:#0e1430; border:1px solid var(--line); color:#cbd5ff
+}
+.badge.ok { background: rgba(55,201,151,.12); color:#37c997; border-color: transparent; }
+.badge.warn { background: rgba(255,181,94,.12); color:#ffb55e; border-color: transparent; }
+.badge.muted { background: rgba(94,107,155,.12); color:#9aa5df; border-color: transparent; }
+
+.toolbar .search {
+  min-width:240px;
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#0f1530; color:#fff;
+}
+.tabs { display:flex; gap:8px; margin-bottom:10px }
+.tabs .tab { all:unset; padding:8px 12px; border-radius:999px; cursor:pointer; border:1px solid var(--line); }
+.tabs .tab.active { background:#17204b; color:#fff; border-color: transparent; }
+.pager { display:flex; gap:8px; align-items:center; }
+
+/* ===== Modal ===== */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.5);
+  display:grid; place-items:center; z-index:40;
+}
+.modal{
+  width:min(720px, 94vw); background:var(--panel);
+  border:1px solid var(--line); border-radius:16px; padding:16px;
+}
+.modal .modal-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px }
+.modal .modal-head h3{ margin:0 }
+.modal .modal-foot{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px }
+
