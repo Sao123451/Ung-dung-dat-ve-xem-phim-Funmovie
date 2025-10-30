@@ -1,38 +1,389 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard - Movie Booking</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-  <div class="container mt-5">
-    <h1>Admin Dashboard</h1>
-    <p>Chào Admin!</p>
 
-    <h2>Danh sách phim</h2>
-    <ul id="movie-list" class="list-group"></ul>
+<head>
+  <meta charset="UTF-8" />
+  <title>FunMovie • Trang chủ Staff</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #131a2a;
+      --panel-2: #171f34;
+      --text: #e6e7eb;
+      --muted: #9aa4bc;
+      --brand: #5b6cff;
+      --brand-2: #3847d6;
+      --border: #202a45;
+      --ok: #2ecc71;
+      --warn: #f1c40f;
+      --danger: #ff6b6b
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      height: 100%
+    }
+
+    .sidebar {
+      background: #0f1730;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 18px;
+      padding: 18px 16px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: .3px
+    }
+
+    .nav-linkx {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 12px;
+      margin: 6px 10px
+    }
+
+    .nav-linkx:hover {
+      background: var(--panel-2);
+      color: var(--text)
+    }
+
+    .nav-linkx.active {
+      background: var(--brand-2);
+      color: #fff
+    }
+
+    .logout-wrap {
+      margin: 12px;
+      margin-top: auto
+    }
+
+    .btn-logout {
+      width: 100%;
+      border-radius: 12px;
+      background: #0c1326;
+      color: #8ea2ff;
+      border: 1px solid var(--border)
+    }
+
+    .btn-logout:hover {
+      background: #0e1630
+    }
+
+    .main {
+      padding: 18px 22px;
+      overflow: auto
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px
+    }
+
+    .cardx {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px
+    }
+
+    .btn-brand {
+      background: var(--brand);
+      border: 0;
+      color: #fff;
+      border-radius: 12px;
+      padding: 6px 14px
+    }
+
+    .btn-brand:hover {
+      background: #4a5bff
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .tile {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      transition: .15s all
+    }
+
+    .tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .25)
+    }
+
+    .tile .title {
+      font-weight: 600
+    }
+
+    .badge-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%
+    }
+
+    .dot-ok {
+      background: var(--ok)
+    }
+
+    .dot-warn {
+      background: var(--warn)
+    }
+
+    .chip {
+      background: #0f1730;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px
+    }
+
+    .seat {
+      padding: .4rem .2rem;
+      border-radius: 8px;
+      text-align: center;
+      background: #0f1730;
+      border: 1px solid var(--border);
+      cursor: pointer
+    }
+
+    .seat.sel {
+      background: #4a5bff
+    }
+
+    .seat.dis {
+      opacity: .4;
+      pointer-events: none
+    }
+
+    .qrbox {
+      background: #0f1730;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center
+    }
+
+    .divider {
+      border-top: 1px solid var(--border);
+      margin: 12px 0
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">HD Movie Staff</div>
+      <nav class="pt-2">
+        <a class="nav-linkx active" data-view="sell">Bán vé tại quầy</a>
+        <a class="nav-linkx" data-view="online">Quét mã vé online</a>
+        <a class="nav-linkx" data-view="loyalty">Tích điểm thành viên</a>
+        <a class="nav-linkx" data-view="offline">Xác nhận vé offline</a>
+        <a class="nav-linkx" data-view="print">In vé / QR</a>
+      </nav>
+      <div class="logout-wrap">
+        <button class="btn btn-logout btn-sm" id="btnLogout">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="page-title" id="pageTitle">Bán vé tại quầy</div>
+        <div class="d-flex align-items-center gap-2">
+          <span id="helloName" class="chip">Xin chào Staff</span>
+          <button class="btn btn-brand btn-sm" id="btnReload">Tải lại</button>
+        </div>
+      </div>
+
+      <!-- RQ41: SELL -->
+      <section id="view-sell" class="cardx">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Chọn phim</label>
+            <select class="form-select" id="movieSel">
+              <option value="MV001">MV001 • Siêu Thú</option>
+              <option value="MV002">MV002 • Vệ Binh</option>
+            </select>
+            <label class="form-label mt-3">Suất chiếu</label>
+            <select class="form-select" id="showSel">
+              <option value="2025-10-29T19:00">Hôm nay • 19:00 • Phòng 1</option>
+              <option value="2025-10-29T21:00">Hôm nay • 21:00 • Phòng 2</option>
+            </select>
+            <label class="form-label mt-3">Voucher (tuỳ chọn)</label>
+            <input class="form-control" id="voucher" placeholder="NHAPVOUCHER">
+            <button class="btn btn-brand btn-sm mt-2" id="btnApplyVoucher">Áp dụng</button>
+            <div class="muted small mt-2" id="voucherMsg"></div>
+            <div class="divider"></div>
+            <button class="btn btn-success btn-sm" id="btnConfirmSell">Xác nhận thanh toán</button>
+            <span class="ms-2" id="sellMsg"></span>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Chọn ghế</label>
+            <div class="grid" id="seatGrid"></div>
+            <div class="muted small mt-2">Chọn lại để bỏ ghế. Ghế xám là đã bán.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RQ42: ONLINE CHECK -->
+      <section id="view-online" class="cardx d-none">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Nhập/Quét mã vé</label>
+            <input class="form-control" id="ticketCode" placeholder="VD: FM-ABC123">
+            <button class="btn btn-brand btn-sm mt-2" id="btnVerifyOnline">Xác thực</button>
+            <div id="onlineMsg" class="mt-2"></div>
+          </div>
+          <div class="col-md-6">
+            <div class="qrbox">Khu vực xem trước mã QR (demo)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RQ43: LOYALTY -->
+      <section id="view-loyalty" class="cardx d-none">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Tìm thành viên</label>
+            <input class="form-control" id="memberQuery" placeholder="Email / SĐT / Mã thẻ">
+            <button class="btn btn-brand btn-sm mt-2" id="btnFindMember">Tìm</button>
+            <div id="memberInfo" class="mt-2"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Cộng/Trừ điểm</label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="points" placeholder="VD: 50 hoặc -20">
+              <button class="btn btn-brand" id="btnApplyPoint">Thực hiện</button>
+            </div>
+            <div id="pointMsg" class="mt-2"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RQ44: OFFLINE CHECK -->
+      <section id="view-offline" class="cardx d-none">
+        <p class="muted">Lưu mã vé khi mất mạng. Khi có mạng hãy đồng bộ để xác nhận hàng loạt.</p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Nhập mã vé</label>
+            <input class="form-control" id="offlineCode" placeholder="FM-XYZ123">
+            <button class="btn btn-brand btn-sm mt-2" id="btnSaveOffline">Lưu tạm</button>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Danh sách chờ đồng bộ</label>
+            <ul class="list-group" id="offlineList"></ul>
+            <button class="btn btn-success btn-sm mt-2" id="btnSync">Đồng bộ</button>
+            <span id="syncMsg" class="ms-2"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RQ45: PRINT -->
+      <section id="view-print" class="cardx d-none">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Mã vé</label>
+            <input class="form-control" id="printCode" placeholder="FM-ABC123">
+            <button class="btn btn-brand btn-sm mt-2" id="btnPreviewTicket">Xem vé</button>
+          </div>
+          <div class="col-md-6">
+            <div class="cardx" id="ticketPreview">
+              <div class="fw-semibold mb-1">Vé xem phim</div>
+              <div class="small muted">Mã: —</div>
+              <div class="small muted">Phim/Suất/Ghế: —</div>
+              <div class="qrbox mt-2" id="qrBox">QR CODE</div>
+              <button class="btn btn-brand btn-sm mt-3" onclick="window.print()">In vé</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
   </div>
 
   <script>
-    // Gọi API lấy danh sách phim
-    fetch('http://localhost:3000/api/movies')
-      .then(res => res.json())
-      .then(movies => {
-        const ul = document.getElementById('movie-list');
-        movies.forEach(movie => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.textContent = `${movie.title} (${movie.year})`;
-          ul.appendChild(li);
-        });
-      })
-      .catch(err => console.error('Lỗi khi lấy dữ liệu phim:', err));
+    const LOGIN_PAGE = 'login.html';
+    function logout() { localStorage.clear(); location.href = LOGIN_PAGE }
+    function isTokenExpired(t) { try { const p = JSON.parse(atob(t.split('.')[1])); return p.exp ? (p.exp * 1000) < Date.now() : false } catch { return true } }
+
+    // Guard
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token'); const user = JSON.parse(localStorage.getItem('user') || 'null'); const expiredAt = Number(localStorage.getItem('sessionExpiredAt') || 0);
+      if (!token || !user || (user.role || '').toLowerCase() !== 'staff' || isTokenExpired(token) || (expiredAt && Date.now() > expiredAt)) { alert('Bạn phải đăng nhập STAFF!'); return logout() }
+      document.getElementById('helloName').textContent = user.username || user.email || 'Staff';
+      document.getElementById('btnLogout').addEventListener('click', logout);
+      document.getElementById('btnReload').addEventListener('click', () => location.reload());
+    });
+
+    // Nav/View
+    const mapTitle = { sell: 'Bán vé tại quầy', online: 'Quét mã vé online', loyalty: 'Tích điểm thành viên', offline: 'Xác nhận vé offline', print: 'In vé / QR' }
+    document.querySelectorAll('.nav-linkx').forEach(a => a.addEventListener('click', () => {
+      const v = a.dataset.view; document.getElementById('pageTitle').textContent = mapTitle[v];
+      document.querySelectorAll('.nav-linkx').forEach(x => x.classList.toggle('active', x === a));
+      ['sell', 'online', 'loyalty', 'offline', 'print'].forEach(id => document.getElementById('view-' + id).classList.toggle('d-none', id !== v));
+    }));
+
+    // SELL demo
+    const seatGrid = document.getElementById('seatGrid'); const sold = new Set(['A3', 'A4', 'C6']); const selected = new Set();
+    'ABCDEFGH'.split('').forEach(r => { for (let c = 1; c <= 8; c++) { const id = r + c; const d = document.createElement('div'); d.className = 'seat' + (sold.has(id) ? ' dis' : ''); d.textContent = id; d.onclick = () => { if (sold.has(id)) return; if (selected.has(id)) { selected.delete(id); d.classList.remove('sel') } else { selected.add(id); d.classList.add('sel') } }; seatGrid.appendChild(d) } })
+    document.getElementById('btnApplyVoucher').onclick = () => { const v = document.getElementById('voucher').value.trim(); document.getElementById('voucherMsg').textContent = v ? `Đã áp dụng voucher ${v}` : 'Không có voucher' }
+    document.getElementById('btnConfirmSell').onclick = () => { const seats = [...selected]; const msg = document.getElementById('sellMsg'); if (!seats.length) { msg.textContent = 'Vui lòng chọn ghế'; msg.style.color = '#ff6b6b'; return } msg.textContent = 'Đã tạo đơn (demo)'; msg.style.color = '#2ecc71' }
+
+    // ONLINE demo
+    document.getElementById('btnVerifyOnline').onclick = () => { const code = document.getElementById('ticketCode').value.trim(); document.getElementById('onlineMsg').innerHTML = code ? `<span class="text-success">Vé ${code} hợp lệ (demo)</span>` : '<span class="text-warning">Nhập mã vé</span>' }
+
+    // LOYALTY demo
+    document.getElementById('btnFindMember').onclick = () => { const q = document.getElementById('memberQuery').value.trim(); document.getElementById('memberInfo').innerHTML = q ? `<div class="chip">Khách hàng: ${q}</div>` : '<span class="text-warning">Nhập thông tin tìm kiếm</span>' }
+    document.getElementById('btnApplyPoint').onclick = () => { const v = Number(document.getElementById('points').value || 0); document.getElementById('pointMsg').innerHTML = v ? `<span class="text-success">Đã cập nhật ${v} điểm (demo)</span>` : '<span class="text-warning">Nhập điểm</span>' }
+
+    // OFFLINE queue
+    const offlineKey = 'fm_offline_codes';
+    function loadQ() { try { return JSON.parse(localStorage.getItem(offlineKey) || '[]') } catch { return [] } }
+    function saveQ(a) { localStorage.setItem(offlineKey, JSON.stringify(a)) }
+    function renderQ() { const ul = document.getElementById('offlineList'); ul.innerHTML = ''; loadQ().forEach((c, i) => { const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center'; li.textContent = c; const b = document.createElement('button'); b.className = 'btn btn-sm btn-outline-light'; b.textContent = 'X'; b.onclick = () => { const a = loadQ(); a.splice(i, 1); saveQ(a); renderQ() }; li.appendChild(b); ul.appendChild(li) }) }
+    renderQ();
+    document.getElementById('btnSaveOffline').onclick = () => { const c = document.getElementById('offlineCode').value.trim(); if (!c) return; const a = loadQ(); a.push(c); saveQ(a); document.getElementById('offlineCode').value = ''; renderQ() }
+    document.getElementById('btnSync').onclick = () => { const codes = loadQ(); const m = document.getElementById('syncMsg'); if (!codes.length) { m.textContent = 'Không có dữ liệu'; m.style.color = '#f1c40f'; return } saveQ([]); renderQ(); m.textContent = 'Đã đồng bộ (demo)'; m.style.color = '#2ecc71' }
+
+    // PRINT demo
+    document.getElementById('btnPreviewTicket').onclick = () => { const code = document.getElementById('printCode').value.trim(); if (!code) return; document.querySelector('#ticketPreview .muted').textContent = 'Mã: ' + code; document.getElementById('qrBox').textContent = 'QR • ' + code; }
   </script>
 </body>
+
 </html>
-//tesst 1
-//test 2
-//hieu test
-//Ann test
