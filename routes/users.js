@@ -4,15 +4,17 @@ const router = express.Router();
 const userCtrl = require('../controller/userController');
 const { verifyToken, isAdmin } = require('../middlewares/auth');
 
+// Hồ sơ của chính mình
 router.get('/me', verifyToken, userCtrl.getProfile);
-
-// NEW: user tự cập nhật chính mình (KHÔNG cần admin)
 router.put('/me', verifyToken, userCtrl.updateMe);
 
 // Admin xem danh sách
 router.get('/', verifyToken, isAdmin, userCtrl.listUsers);
 
-// Admin cập nhật bất kỳ ai
-router.put('/:id', verifyToken, isAdmin, userCtrl.adminUpdateUser);
+// Cập nhật theo ID: cho phép nếu là chủ sở hữu hoặc admin
+router.put('/:id', verifyToken, userCtrl.updateUser);
+
+// Admin/manager tạo tài khoản nhân sự
+router.post('/admin-create', verifyToken, isAdmin, userCtrl.adminCreateUser);
 
 module.exports = router;

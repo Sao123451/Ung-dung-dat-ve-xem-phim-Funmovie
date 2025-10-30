@@ -10,6 +10,7 @@ const UserSchema = new Schema({
   email: { type: String, required: true, unique: true },
   role: { type: String, enum: ['customer','staff','admin','manager'], default: 'customer' },
   avatar: String,
+  birth_date: { type: Date }, // ✅ Thêm ngày sinh
   status: { type: String, enum: ['active','disabled'], default: 'active' },
   created_at: { type: Date, default: Date.now }
 });
