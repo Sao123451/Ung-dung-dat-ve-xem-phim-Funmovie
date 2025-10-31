@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="16dp"
+    app:cardUseCompatPadding="true">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="14dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Header rạp -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvCinemaName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Tên rạp"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#1B1D29"/>
+
+            <ImageView
+                android:id="@+id/ivToggle"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_expand_more_24"
+                android:tint="#7A8093"/>
+        </LinearLayout>
+
+        <!-- Chip lọc loại phòng (ẩn khi đóng) -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipTypeInCard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:checkedChip="@id/chip2D_in_card">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip2D_in_card"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2D"
+                app:checkedIconVisible="true"
+                app:chipStrokeWidth="1dp"
+                app:chipStrokeColor="#E2E6F3"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip3D_in_card"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3D"
+                app:checkedIconVisible="true"
+                app:chipStrokeWidth="1dp"
+                app:chipStrokeColor="#E2E6F3"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipIMAX_in_card"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IMAX"
+                app:checkedIconVisible="true"
+                app:chipStrokeWidth="1dp"
+                app:chipStrokeColor="#E2E6F3"/>
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- Dải giờ chiếu (ẩn khi đóng) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvTimes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_marginTop="10dp"/>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

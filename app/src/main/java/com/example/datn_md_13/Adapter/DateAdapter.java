@@ -15,6 +15,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -22,14 +23,12 @@ public class DateAdapter extends RecyclerView.Adapter<DateAdapter.VH> {
 
     public interface OnSelect { void onSelect(String yyyyMMdd); }
 
-    private final List<String> days = new ArrayList<>(); // mỗi phần tử dạng "yyyy-MM-dd"
+    private final List<String> days = new ArrayList<>(); // "yyyy-MM-dd"
     private int selected = 0;
     private final OnSelect cb;
 
-    // formatter dùng để parse/hiển thị
-    private final SimpleDateFormat isoFmt  = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-    private final SimpleDateFormat dowFmt  = new SimpleDateFormat("EEE", Locale.getDefault()); // THU, FRI...
-    private final Calendar calendar        = Calendar.getInstance();
+    private final SimpleDateFormat isoFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+    private final Calendar cal = Calendar.getInstance();
 
     public DateAdapter(OnSelect cb) { this.cb = cb; }
 
@@ -38,12 +37,12 @@ public class DateAdapter extends RecyclerView.Adapter<DateAdapter.VH> {
         if (list != null) days.addAll(list);
         selected = 0;
         notifyDataSetChanged();
-
     }
 
     @NonNull @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_date_chip, parent, false);
+        View v = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_date_chip, parent, false);
         return new VH(v);
     }
 
@@ -51,11 +50,19 @@ public class DateAdapter extends RecyclerView.Adapter<DateAdapter.VH> {
     public void onBindViewHolder(@NonNull VH h, int pos) {
         String d = days.get(pos); // yyyy-MM-dd
 
-        // Parse ngày để hiển thị số ngày & thứ
         try {
-            calendar.setTime(isoFmt.parse(d));
-            h.tvDayNum.setText(String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
-            h.tvDaySub.setText(pos == 0 ? "Hôm nay" : dowFmt.format(calendar.getTime()).toUpperCase(Locale.getDefault()));
+            Date date = isoFmt.parse(d);
+            cal.setTime(date);
+
+            // số ngày
+            h.tvDayNum.setText(String.format(Locale.getDefault(), "%02d",
+                    cal.get(Calendar.DAY_OF_MONTH)));
+
+            // chữ dưới: Hôm nay / CN / T2..T7
+            String todayStr = isoFmt.format(new Date());
+            boolean isToday = d.equals(todayStr);
+            h.tvDaySub.setText(isToday ? "Hôm nay" : mapDowVi(cal.get(Calendar.DAY_OF_WEEK)));
+
         } catch (ParseException e) {
             h.tvDayNum.setText("--");
             h.tvDaySub.setText("");
@@ -71,12 +78,25 @@ public class DateAdapter extends RecyclerView.Adapter<DateAdapter.VH> {
                 notifyItemChanged(old);
                 notifyItemChanged(selected);
             }
-            if (cb != null) cb.onSelect(days.get(selected)); // ✅ chỉ gọi khi user bấm
+            if (cb != null) cb.onSelect(days.get(selected));
         });
     }
 
     @Override
     public int getItemCount() { return days.size(); }
+
+    private static String mapDowVi(int dow) {
+        switch (dow) {
+            case Calendar.MONDAY:    return "Thứ 2";
+            case Calendar.TUESDAY:   return "Thứ 3";
+            case Calendar.WEDNESDAY: return "Thứ 4";
+            case Calendar.THURSDAY:  return "Thứ 5";
+            case Calendar.FRIDAY:    return "Thứ 6";
+            case Calendar.SATURDAY:  return "Thứ 7";
+            case Calendar.SUNDAY:    return "Chủ nhật ";
+            default:                  return "";
+        }
+    }
 
     static class VH extends RecyclerView.ViewHolder {
         TextView tvDayNum, tvDaySub;

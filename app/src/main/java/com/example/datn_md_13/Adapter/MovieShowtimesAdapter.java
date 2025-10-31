@@ -11,12 +11,20 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.datn_md_13.ApiService.ApiClient;
+import com.example.datn_md_13.ApiService.ApiService;
 import com.example.datn_md_13.Model.MovieGroup;
+import com.example.datn_md_13.Model.Seat;
+import com.example.datn_md_13.Model.ShowtimeSeatResponse;
 import com.example.datn_md_13.Model.ShowtimeSlot;
 import com.example.datn_md_13.R;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAdapter.VH> {
 
@@ -58,17 +66,48 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
         String meta = genres.isEmpty() ? duration : (duration.isEmpty() ? genres : (genres + " • " + duration));
         h.tvMeta.setText(meta);
 
-        // Room type hiển thị theo slot đầu (đủ dùng nếu cùng loại)
+        // Loại phòng hiển thị theo slot đầu (nếu có)
         String type = (g.showtimes != null && !g.showtimes.isEmpty() && g.showtimes.get(0).room_type != null)
                 ? g.showtimes.get(0).room_type : "2D";
-        h.tvRoomType.setText(type + " Phụ đề"); // tuỳ bạn đổi "Phụ đề"
+        h.tvRoomType.setText(type + " Phụ đề");
 
-        // Times horizontal list
+        // Times list
         TimesAdapter tAdapter = new TimesAdapter(cb::onPick);
         h.rvTimes.setLayoutManager(new LinearLayoutManager(h.rvTimes.getContext(),
                 RecyclerView.HORIZONTAL, false));
         h.rvTimes.setAdapter(tAdapter);
-        tAdapter.submit(g.showtimes);
+
+        // Nạp slots
+        List<ShowtimeSlot> slots = (g.showtimes != null) ? g.showtimes : new ArrayList<>();
+        tAdapter.submit(slots);
+
+        // 🔥 Hot-fix: cập nhật số ghế còn trống thực tế cho từng suất
+        ApiService api = ApiClient.get().create(ApiService.class);
+        for (int i = 0; i < slots.size(); i++) {
+            final int idx = i;
+            final ShowtimeSlot s = slots.get(i);
+
+            api.getSeatsByShowtime(s.id).enqueue(new Callback<ShowtimeSeatResponse>() {
+                @Override
+                public void onResponse(@NonNull Call<ShowtimeSeatResponse> call,
+                                       @NonNull Response<ShowtimeSeatResponse> res) {
+                    if (!res.isSuccessful() || res.body() == null || res.body().seats == null) return;
+
+                    int available = 0;
+                    for (Seat seat : res.body().seats) {
+                        // Dùng helper bạn đã có trong Seat.java để suy ra trạng thái
+                        String st = seat.resolvedStatus();
+                        if (!"sold".equalsIgnoreCase(st) && !"broken".equalsIgnoreCase(st)) {
+                            available++;
+                        }
+                    }
+                    // Cập nhật lại chip giờ chiếu thứ idx
+                    tAdapter.updateAvailableAt(idx, available);
+                }
+
+                @Override public void onFailure(@NonNull Call<ShowtimeSeatResponse> call, @NonNull Throwable t) { }
+            });
+        }
     }
 
     @Override
@@ -81,11 +120,11 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
 
         VH(@NonNull View v) {
             super(v);
-            ivPoster = v.findViewById(R.id.ivPoster);
-            tvTitle  = v.findViewById(R.id.tvTitle);
-            tvMeta   = v.findViewById(R.id.tvMeta);
+            ivPoster   = v.findViewById(R.id.ivPoster);
+            tvTitle    = v.findViewById(R.id.tvTitle);
+            tvMeta     = v.findViewById(R.id.tvMeta);
             tvRoomType = v.findViewById(R.id.tvRoomType);
-            rvTimes  = v.findViewById(R.id.rvTimes);
+            rvTimes    = v.findViewById(R.id.rvTimes);
         }
     }
 }

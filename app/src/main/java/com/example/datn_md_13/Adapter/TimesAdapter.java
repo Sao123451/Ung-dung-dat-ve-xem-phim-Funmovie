@@ -32,6 +32,14 @@ public class TimesAdapter extends RecyclerView.Adapter<TimesAdapter.VH> {
         notifyDataSetChanged();
     }
 
+    // 🔧 Cho phép cập nhật số ghế của 1 item (hot-fix)
+    public void updateAvailableAt(int index, int available) {
+        if (index < 0 || index >= data.size()) return;
+        ShowtimeSlot s = data.get(index);
+        s.available_seats = available;
+        notifyItemChanged(index);
+    }
+
     @NonNull @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
@@ -43,21 +51,22 @@ public class TimesAdapter extends RecyclerView.Adapter<TimesAdapter.VH> {
     public void onBindViewHolder(@NonNull VH h, int pos) {
         ShowtimeSlot s = data.get(pos);
         h.tvTime.setText(s.start_time != null ? timeFmt.format(s.start_time) : "--:--");
+
         int seats = (s.available_seats == null) ? 0 : s.available_seats;
         h.tvSeats.setText(seats + " trống");
+
         h.itemView.setOnClickListener(v -> {
             if (cb != null) cb.onClick(s);
         });
     }
 
-    @Override
-    public int getItemCount() { return data.size(); }
+    @Override public int getItemCount() { return data.size(); }
 
     static class VH extends RecyclerView.ViewHolder {
         TextView tvTime, tvSeats;
         VH(@NonNull View v) {
             super(v);
-            tvTime = v.findViewById(R.id.tvTime);
+            tvTime  = v.findViewById(R.id.tvTime);
             tvSeats = v.findViewById(R.id.tvSeats);
         }
     }
