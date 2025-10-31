@@ -12,4 +12,10 @@ router.post('/', verifyToken, isStaff, ctrl.create);
 router.put('/:id', verifyToken, isStaff, ctrl.update);
 router.delete('/:id', verifyToken, isAdmin, ctrl.delete);
 
+// routes/showtimes.js
+router.get('/public/by-cinema', ctrl.publicByCinema);
+router.get('/:id/seats', ctrl.publicSeatsByShowtime); // trước
+router.get('/:id', ctrl.getById);                     // sau
+
+
 module.exports = router;
