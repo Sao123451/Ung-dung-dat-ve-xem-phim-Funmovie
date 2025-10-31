@@ -42,6 +42,8 @@ app.use('/api/ticket-seats', require('./routes/ticketSeats'));
 // app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/news', require('./routes/news'));
 // app.use('/api/memberships', require('./routes/memberships'));
+app.use('/api/wishlist', require('./routes/wishlist'));
+
 
 // Health check
 app.get('/', (req, res) => {
