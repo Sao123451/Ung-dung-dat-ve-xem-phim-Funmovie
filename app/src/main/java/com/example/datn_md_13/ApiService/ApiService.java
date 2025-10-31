@@ -3,6 +3,10 @@ package com.example.datn_md_13.ApiService;
 import com.example.datn_md_13.Model.BannerDto;
 import com.example.datn_md_13.Model.Movie;
 import com.example.datn_md_13.Model.PublicCinemaResponse;
+import com.example.datn_md_13.Model.SeatRowGroup;
+import com.example.datn_md_13.Model.ShowtimeDetail;
+import com.example.datn_md_13.Model.ShowtimeSeatResponse;
+import com.example.datn_md_13.Model.ShowtimesByCinemaResponse;
 import com.example.datn_md_13.Model.User;
 
 import java.util.List;
@@ -41,5 +45,35 @@ public interface ApiService {
             @Query("q") String q,
             @Query("city") String city
     );
+    @GET("/api/showtimes/public/by-cinema")
+    Call<ShowtimesByCinemaResponse> getShowtimesByCinema(
+            @Query("cinema") String cinemaId,
+            @Query("date")   String yyyyMMdd,
+            @Query("type")   String type
+    );
+
+
+    @GET("showtimes/{id}")
+    Call<ShowtimeDetail> getShowtimeById(@Path("id") String showtimeId);
+
+    @GET("seats/public")
+    Call<List<SeatRowGroup>> getSeatsByRoom(
+            @Query("room") String roomId,
+            @Query("mode") String mode // "grid"
+    );
+
+
+
+    @GET("showtimes/{id}/seats")
+    Call<ShowtimeSeatResponse> getSeatsByShowtime(@Path("id") String showtimeId);
+
+
+
+
+
+
+
+
+
 
 }

@@ -16,6 +16,12 @@
         android:theme="@style/Theme.DATN_MD13"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".Activity.Activity_seat_selection"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.ShowtimesByCinemaActivity"
+            android:exported="false" />
+        <activity
             android:name=".Activity.Activity_member"
             android:exported="false" />
         <activity

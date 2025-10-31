@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardSeat"
+    android:layout_width="28dp"
+    android:layout_height="28dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardUseCompatPadding="false"
+    app:strokeColor="@android:color/darker_gray"
+    app:strokeWidth="1dp"
+    app:cardCornerRadius="10dp">
+
+    <TextView
+        android:id="@+id/tvLabel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:text="A1"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"/>
+</com.google.android.material.card.MaterialCardView>

@@ -1,5 +1,6 @@
 package com.example.datn_md_13.Adapter;
 
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.datn_md_13.Activity.ShowtimesByCinemaActivity;
 import com.example.datn_md_13.Model.Cinema;
 import com.example.datn_md_13.R;
 
@@ -34,7 +36,7 @@ public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private final List<Row> rows = new ArrayList<>();
 
     public CityCinemaAdapter(OnCinemaClick cb) {
-        this.onCinemaClick = cb;
+        this.onCinemaClick = cb; //
     }
 
     public void submit(Map<String, List<Cinema>> grouped) {
@@ -102,8 +104,16 @@ public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             vh.tvName.setText(r.cinema.getName());
             String addr = r.cinema.getAddress();
             vh.tvAddress.setText((addr == null || addr.isEmpty()) ? "—" : addr);
+
             vh.itemView.setOnClickListener(v -> {
+                // Nếu muốn callback ra ngoài Fragment vẫn hoạt động
                 if (onCinemaClick != null) onCinemaClick.onClick(r.cinema);
+
+                // Mở màn suất chiếu theo rạp
+                Intent i = new Intent(v.getContext(), ShowtimesByCinemaActivity.class);
+                i.putExtra("cinema_id", r.cinema.getId());
+                i.putExtra("cinema_name", r.cinema.getName());
+                v.getContext().startActivity(i);
             });
         }
     }
