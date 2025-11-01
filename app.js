@@ -1,35 +1,74 @@
 const API_BASE = window.FM_CONFIG.API_BASE;
 
 // Helpers
-const $ = (s, r=document) => r.querySelector(s);
+const $ = (s, r = document) => r.querySelector(s);
 const saveToken = (t) => localStorage.setItem('fm_token', t);
-const getToken  = () => localStorage.getItem('fm_token');
-const saveUser  = (u) => localStorage.setItem('fm_user', JSON.stringify(u));
-const getUser   = () => { try { return JSON.parse(localStorage.getItem('fm_user')||'null'); } catch { return null; } };
+const getToken = () => localStorage.getItem('fm_token');
+const saveUser = (u) => localStorage.setItem('fm_user', JSON.stringify(u));
+const getUser = () => { try { return JSON.parse(localStorage.getItem('fm_user') || 'null'); } catch { return null; } };
+
+// ===== Validate helpers (FE-only) =====
+function setInputError(inputEl, msg) {
+  if (!inputEl) return;
+  inputEl.classList.add('input-error');
+  let err = inputEl.parentElement.querySelector('.error-text');
+  if (!err) {
+    err = document.createElement('div');
+    err.className = 'error-text';
+    inputEl.parentElement.appendChild(err);
+  }
+  err.textContent = msg || '';
+}
+
+function clearInputError(inputEl) {
+  if (!inputEl) return;
+  inputEl.classList.remove('input-error');
+  const err = inputEl.parentElement.querySelector('.error-text');
+  if (err) err.textContent = '';
+}
+
+function requireNotEmpty(inputEl, label) {
+  const v = (inputEl.value || '').trim();
+  if (!v) {
+    setInputError(inputEl, `${label} không được để trống.`);
+    return false;
+  }
+  clearInputError(inputEl);
+  return true;
+}
+
+// clear lỗi khi gõ lại
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+    clearInputError(el);
+  }
+});
+
 
 // Quyền
 const isAdmin = () => getUser()?.role === 'admin';
 
 // Modal helpers
-function openModal(innerHtml, onMount){
+function openModal(innerHtml, onMount) {
   const wrap = document.createElement('div');
   wrap.className = 'modal-backdrop';
   wrap.innerHTML = `<div class="modal">${innerHtml}</div>`;
   document.body.append(wrap);
   const api = { close: () => wrap.remove(), el: wrap.querySelector('.modal') };
   if (typeof onMount === 'function') onMount(api);
-  wrap.addEventListener('click', (e)=> { if (e.target === wrap) api.close(); });
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) api.close(); });
   return api;
 }
 
 
-const authFetch = (url, options={}) => {
+const authFetch = (url, options = {}) => {
   const token = getToken();
   return fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(options.headers||{}),
+      ...(options.headers || {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     }
   });
@@ -39,10 +78,10 @@ const fmtDate = (d) => {
   if (!d) return '';
   const dt = new Date(d);
   if (isNaN(dt)) return '';
-  return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+  return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
 };
 const fmtDuration = (m) => m ? `${m} phút` : '';
-const html = (strings, ...vals) => strings.map((s,i)=> s + (vals[i] ?? '')).join('');
+const html = (strings, ...vals) => strings.map((s, i) => s + (vals[i] ?? '')).join('');
 
 
 // Khởi động: render form login
@@ -69,7 +108,7 @@ function showHelp(msg, isError = false) {
   if (isError) {
     const card = help.closest('.login-card');
     card?.classList.add('shake');
-    setTimeout(()=> card?.classList.remove('shake'), 300);
+    setTimeout(() => card?.classList.remove('shake'), 300);
   }
 }
 
@@ -102,7 +141,7 @@ async function onLoginSubmit() {
   try {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usernameOrEmail, password })
     });
 
@@ -124,7 +163,7 @@ async function onLoginSubmit() {
     }
 
     const { token, user } = data;
-    if (!user || !['admin','manager'].includes(user.role)) {
+    if (!user || !['admin', 'manager'].includes(user.role)) {
       setFieldError(uEl, true);
       showHelp('Tài khoản không có quyền truy cập Admin.', true);
       btn.disabled = false;
@@ -166,49 +205,40 @@ function renderAppShell() {
   const btnRefresh = $('#btn-refresh');
   const btnCreate  = $('#btn-create');
 
-  // chặn user không hợp lệ
   const me = getUser();
   if (!me || !['admin','manager'].includes(me.role)) return logout();
 
-  // Cập nhật toolbar theo trang hiện tại
   function updateToolbarFor(label) {
-  const me = getUser();
-  const btnRefresh = $('#btn-refresh');
-  const btnCreate  = $('#btn-create');
+    const me = getUser();
+    btnRefresh.disabled = false;
 
-  btnRefresh.disabled = false;
+    let showCreate = false;
+    let createText = '+ Thêm mới';
 
-  let showCreate = false;
-  let createText = '+ Thêm mới';
+    if (label === 'Phim'    && me.role === 'admin')                   { showCreate = true; createText = '+ Thêm phim'; }
+    if (label === 'Banner'  && ['admin','manager'].includes(me.role)) { showCreate = true; createText = '+ Thêm banner'; }
+    if (label === 'Tin tức' && ['admin','manager'].includes(me.role)) { showCreate = true; createText = '+ Thêm tin'; }
 
-  if (label === 'Phim'   && me.role === 'admin')                 { showCreate = true; createText = '+ Thêm phim'; }
-  if (label === 'Banner' && ['admin','manager'].includes(me.role)){ showCreate = true; createText = '+ Thêm banner'; }
-
-  btnCreate.style.display = showCreate ? '' : 'none';
-  btnCreate.textContent = createText;
-}
-
+    btnCreate.style.display = showCreate ? '' : 'none';
+    btnCreate.textContent = createText;
+  }
 
   navItems.forEach((label, i) => {
     const btn = document.createElement('button');
     btn.textContent = label;
     if (i === 0) btn.classList.add('active');
-    btn.onclick = () => { 
-      selectPage(label, btn); 
-      updateToolbarFor(label);  // <-- cập nhật toolbar khi chuyển trang
-    };
+    btn.onclick = () => { selectPage(label, btn); updateToolbarFor(label); };
     nav.append(btn);
   });
 
-  // Gắn hành vi 2 nút toolbar dùng các hàm đã triển khai ở mục #3
   btnRefresh.onclick = () => refreshPage();
   btnCreate.onclick  = () => createEntityForCurrentPage();
   $('#btn-logout').onclick = logout;
 
-  // Khởi tạo trang đầu và toolbar
   selectPage('Dashboard', nav.firstChild);
   updateToolbarFor('Dashboard');
 }
+
 
 
 
@@ -241,16 +271,20 @@ function selectPage(label, btn) {
       </section>
     `;
   } else if (label === 'Phim') {
-    // ➜ trang danh sách phim
+    // ➜ Trang danh sách phim
     renderMoviesPage(page);
   } else if (label === 'Người dùng') {
     renderUserList(page);
   } else if (label === 'Banner') {
-  renderBannersPage(page);
+    renderBannersPage(page);
+  } else if (label === 'Tin tức') {
+    // ➜ Trang tin tức (list + CRUD + publish)
+    renderNewsPage(page);
   } else {
     page.innerHTML = `<div class="card">Trang <b>${label}</b> đang phát triển.</div>`;
   }
 }
+
 
 
 async function renderUserList(container) {
@@ -268,11 +302,11 @@ async function renderUserList(container) {
         <table class="table">
           <thead><tr><th>Username</th><th>Email</th><th>Họ tên</th><th>Role</th><th>Trạng thái</th></tr></thead>
           <tbody>
-            ${list.map(u=>`
+            ${list.map(u => `
               <tr>
-                <td>${u.username||''}</td>
-                <td>${u.email||''}</td>
-                <td>${u.full_name||''}</td>
+                <td>${u.username || ''}</td>
+                <td>${u.email || ''}</td>
+                <td>${u.full_name || ''}</td>
                 <td>${u.role}</td>
                 <td>${u.status}</td>
               </tr>`).join('')}
@@ -323,7 +357,7 @@ async function onCreateUserSubmit() {
   const help = $('#cu-help'); help.textContent = 'Đang tạo...';
 
   try {
-    const res = await authFetch(`${API_BASE}/users`, { method:'POST', body: JSON.stringify(body) });
+    const res = await authFetch(`${API_BASE}/users`, { method: 'POST', body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) { help.textContent = data?.message || 'Tạo thất bại'; return; }
     help.textContent = 'Tạo thành công!';
@@ -334,16 +368,16 @@ async function onCreateUserSubmit() {
   }
 }
 
-function getCurrentPageLabel(){
+function getCurrentPageLabel() {
   return $('#page-title')?.textContent?.trim();
 }
 
 function refreshPage(){
   const label = $('#page-title')?.textContent?.trim();
-  if (label === 'Phim'   && window.fm_movies?.reload)  window.fm_movies.reload();
-  if (label === 'Banner' && window.fm_banners?.reload) window.fm_banners.reload();
+  if (label === 'Phim'    && window.fm_movies?.reload)  window.fm_movies.reload();
+  if (label === 'Banner'  && window.fm_banners?.reload) window.fm_banners.reload();
+  if (label === 'Tin tức' && window.fm_news?.reload)    window.fm_news.reload();
 }
-
 
 function createEntityForCurrentPage(){
   const label = $('#page-title')?.textContent?.trim();
@@ -353,13 +387,16 @@ function createEntityForCurrentPage(){
     if (!isAdmin()) return alert('Chỉ Admin mới được thêm phim.');
     return window.fm_movies?.create && window.fm_movies.create();
   }
-
   if (label === 'Banner') {
-    if (!me || !['admin','manager'].includes(me.role))
-      return alert('Chỉ Admin/Manager mới được thêm banner.');
+    if (!me || !['admin','manager'].includes(me.role)) return alert('Chỉ Admin/Manager.');
     return window.fm_banners?.create && window.fm_banners.create();
   }
+  if (label === 'Tin tức') {
+    if (!me || !['admin','manager'].includes(me.role)) return alert('Chỉ Admin/Manager.');
+    return window.fm_news?.create && window.fm_news.create();
+  }
 }
+
 
 
 
@@ -367,6 +404,19 @@ function statusBadge(status) {
   if (status === 'now_showing') return '<span class="badge ok">Đang chiếu</span>';
   if (status === 'coming') return '<span class="badge warn">Sắp chiếu</span>';
   return '<span class="badge muted">Đã lưu trữ</span>';
+}
+
+function requireNotEmpty(input, field) {
+  if (!input) return true;
+  const val = input.value?.trim();
+  if (!val) {
+    alert(`${field} không được để trống!`);
+    input.classList.add('input-error');
+    input.focus();
+    return false;
+  }
+  input.classList.remove('input-error');
+  return true;
 }
 
 
@@ -408,33 +458,33 @@ function renderMoviesPage(container) {
 
   const els = {
     search: $('#mv-search'),
-    table:  $('#mv-table'),
-    info:   $('#mv-info'),
-    prev:   $('#mv-prev'),
-    next:   $('#mv-next'),
-    page:   $('#mv-page')
+    table: $('#mv-table'),
+    info: $('#mv-info'),
+    prev: $('#mv-prev'),
+    next: $('#mv-next'),
+    page: $('#mv-page')
   };
 
   const fetchMoviesByTab = async (tabKey) => {
-  const map = {
-    all: `${API_BASE}/movies`,
-    now: `${API_BASE}/movies/now-showing`,
-    coming: `${API_BASE}/movies/coming`,
-    archived: `${API_BASE}/movies/archived`
+    const map = {
+      all: `${API_BASE}/movies`,
+      now: `${API_BASE}/movies/now-showing`,
+      coming: `${API_BASE}/movies/coming`,
+      archived: `${API_BASE}/movies/archived`
+    };
+    const url = map[tabKey] || map.all;
+
+    // chống cache: thêm cache-buster và tắt cache
+    const bust = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+
+    let res = await fetch(bust, { cache: 'no-store' });
+    if (res.status === 304) {
+      // một số proxy/browser vẫn trả 304 → bắt buộc reload từ server
+      res = await fetch(bust, { cache: 'reload' });
+    }
+    if (!res.ok) throw new Error('Fetch movies failed');
+    return res.json();
   };
-  const url = map[tabKey] || map.all;
-
-  // chống cache: thêm cache-buster và tắt cache
-  const bust = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
-
-  let res = await fetch(bust, { cache: 'no-store' });
-  if (res.status === 304) {
-    // một số proxy/browser vẫn trả 304 → bắt buộc reload từ server
-    res = await fetch(bust, { cache: 'reload' });
-  }
-  if (!res.ok) throw new Error('Fetch movies failed');
-  return res.json();
-};
 
 
   const load = async () => {
@@ -449,12 +499,12 @@ function renderMoviesPage(container) {
 
   const applyFilterAndRender = () => {
     const q = els.search.value.trim().toLowerCase();
-    view = !q ? raw : raw.filter(m => (m.title||'').toLowerCase().includes(q));
+    view = !q ? raw : raw.filter(m => (m.title || '').toLowerCase().includes(q));
     page = 1;
     renderTable();
   };
 
-  function actionButtons(m){
+  function actionButtons(m) {
     if (!isAdmin()) return ''; // Manager/khác: không có nút
     return `
       <button class="btn" data-act="edit" data-id="${m._id}">Sửa</button>
@@ -464,8 +514,8 @@ function renderMoviesPage(container) {
 
   const renderTable = () => {
     const total = view.length;
-    const start = (page-1)*pageSize;
-    const rows = view.slice(start, start+pageSize);
+    const start = (page - 1) * pageSize;
+    const rows = view.slice(start, start + pageSize);
 
     if (!rows.length) {
       els.table.innerHTML = `<div class="muted">Không có phim nào.</div>`;
@@ -501,7 +551,7 @@ function renderMoviesPage(container) {
     }
 
     els.info.textContent = total
-      ? `Hiển thị ${Math.min(start+1, total)}–${Math.min(start+rows.length, total)} / ${total}`
+      ? `Hiển thị ${Math.min(start + 1, total)}–${Math.min(start + rows.length, total)} / ${total}`
       : '';
     els.page.textContent = String(page);
 
@@ -510,86 +560,100 @@ function renderMoviesPage(container) {
     });
   };
 
-  const toArray = (s) => s.split(',').map(x=>x.trim()).filter(Boolean);
+  const toArray = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
 
-  function showMovieForm(mode, data = {}){
+  function showMovieForm(mode, data = {}) {
     const isEdit = mode === 'edit';
     const titleTxt = isEdit ? 'Sửa phim' : 'Thêm phim';
 
     const htmlForm = html`
-      <div class="modal-head">
-        <h3>${titleTxt}</h3>
-        <div class="spacer"></div>
-      </div>
-      <div class="form">
-        <div class="row">
-          <div class="col-12">
-            <label>Tiêu đề <span class="muted">*</span></label>
-            <input id="f-title" value="${data.title||''}">
-          </div>
-          <div class="col-12">
-            <label>Mô tả</label>
-            <textarea id="f-desc">${data.description||''}</textarea>
-          </div>
-          <div class="col-6">
-            <label>Thời lượng (phút)</label>
-            <input id="f-duration" type="number" value="${data.duration||''}">
-          </div>
-          <div class="col-6">
-            <label>Ngày phát hành</label>
-            <input id="f-release" type="date" value="${data.release_date ? new Date(data.release_date).toISOString().slice(0,10) : ''}">
-          </div>
-          <div class="col-6">
-            <label>Ngôn ngữ</label>
-            <input id="f-lang" value="${data.language||''}">
-          </div>
-          <div class="col-6">
-            <label>Điểm (0–10)</label>
-            <input id="f-rating" type="number" step="0.1" min="0" max="10" value="${data.rating??''}">
-          </div>
-          <div class="col-6">
-            <label>Đạo diễn</label>
-            <input id="f-director" value="${data.director||''}">
-          </div>
-          <div class="col-6">
-            <label>Poster (URL)</label>
-            <input id="f-poster" value="${data.poster||''}">
-          </div>
-          <div class="col-6">
-            <label>Diễn viên (phân tách dấu phẩy)</label>
-            <input id="f-cast" value="${(data.cast||[]).join(', ')}">
-          </div>
-          <div class="col-6">
-            <label>Thể loại (phân tách dấu phẩy)</label>
-            <input id="f-genre" value="${(data.genre||[]).join(', ')}">
-          </div>
-          <div class="col-6">
-            <label>Trạng thái</label>
-            <select id="f-status">
-              <option value="coming" ${data.status==='coming'?'selected':''}>Sắp chiếu</option>
-              <option value="now_showing" ${data.status==='now_showing'?'selected':''}>Đang chiếu</option>
-              <option value="archived" ${data.status==='archived'?'selected':''}>Đã lưu trữ</option>
-            </select>
-          </div>
+    <div class="modal-head">
+      <h3>${titleTxt}</h3>
+      <div class="spacer"></div>
+    </div>
+    <div class="form">
+      <div class="row">
+        <div class="col-12 field">
+          <label>Tiêu đề <span class="muted">*</span></label>
+          <input id="f-title" value="${data.title || ''}">
+        </div>
+        <div class="col-12 field">
+          <label>Mô tả</label>
+          <textarea id="f-desc">${data.description || ''}</textarea>
+        </div>
+        <div class="col-6 field">
+          <label>Thời lượng (phút)</label>
+          <input id="f-duration" type="number" value="${data.duration || ''}">
+        </div>
+        <div class="col-6 field">
+          <label>Ngày phát hành</label>
+          <input id="f-release" type="date" value="${data.release_date ? new Date(data.release_date).toISOString().slice(0, 10) : ''}">
+        </div>
+        <div class="col-6 field">
+          <label>Ngôn ngữ</label>
+          <input id="f-lang" value="${data.language || ''}">
+        </div>
+        <div class="col-6 field">
+          <label>Điểm (0–10)</label>
+          <input id="f-rating" type="number" step="0.1" min="0" max="10" value="${data.rating ?? ''}">
+        </div>
+        <div class="col-6 field">
+          <label>Đạo diễn</label>
+          <input id="f-director" value="${data.director || ''}">
+        </div>
+        <div class="col-6 field">
+          <label>Poster (URL)</label>
+          <input id="f-poster" value="${data.poster || ''}">
+        </div>
+        <div class="col-6 field">
+          <label>Diễn viên (phân tách dấu phẩy)</label>
+          <input id="f-cast" value="${(data.cast || []).join(', ')}">
+        </div>
+        <div class="col-6 field">
+          <label>Thể loại (phân tách dấu phẩy)</label>
+          <input id="f-genre" value="${(data.genre || []).join(', ')}">
+        </div>
+        <div class="col-6 field">
+          <label>Trạng thái</label>
+          <select id="f-status">
+            <option value="coming" ${data.status === 'coming' ? 'selected' : ''}>Sắp chiếu</option>
+            <option value="now_showing" ${data.status === 'now_showing' ? 'selected' : ''}>Đang chiếu</option>
+            <option value="archived" ${data.status === 'archived' ? 'selected' : ''}>Đã lưu trữ</option>
+          </select>
         </div>
       </div>
-      <div class="modal-foot">
-        <button class="btn" id="f-cancel">Hủy</button>
-        <button class="btn primary" id="f-submit">${isEdit?'Lưu thay đổi':'Tạo phim'}</button>
-      </div>
-    `;
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="f-cancel">Hủy</button>
+      <button class="btn primary" id="f-submit">${isEdit ? 'Lưu thay đổi' : 'Tạo phim'}</button>
+    </div>
+  `;
 
     const modal = openModal(htmlForm, ({ el, close }) => {
       el.querySelector('#f-cancel').onclick = close;
       el.querySelector('#f-submit').onclick = async () => {
-        if (!isAdmin()) { alert('Chỉ Admin mới được thao tác.'); return; }
+        // ✅ Validate: Tiêu đề bắt buộc
+        const iTitle = el.querySelector('#f-title');
+        // ✅ Validate tất cả trường
+        let ok = true;
+        ok = requireNotEmpty(iTitle, 'Tiêu đề') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-desc'), 'Mô tả') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-duration'), 'Thời lượng') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-release'), 'Ngày phát hành') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-lang'), 'Ngôn ngữ') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-rating'), 'Điểm') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-director'), 'Đạo diễn') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-poster'), 'Poster URL') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-cast'), 'Diễn viên') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-genre'), 'Thể loại') && ok;
+        ok = requireNotEmpty(el.querySelector('#f-status'), 'Trạng thái') && ok;
+        if (!ok) return;
 
-        // Validate đơn giản
-        const title = el.querySelector('#f-title').value.trim();
-        if (!title) { alert('Vui lòng nhập tiêu đề.'); return; }
+
+        const toArray = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
 
         const body = {
-          title,
+          title: iTitle.value.trim(),
           description: el.querySelector('#f-desc').value.trim(),
           duration: Number(el.querySelector('#f-duration').value) || undefined,
           release_date: el.querySelector('#f-release').value || undefined,
@@ -604,14 +668,11 @@ function renderMoviesPage(container) {
 
         try {
           let res, dataRes;
-          if (isEdit) {
-            res = await authFetch(`${API_BASE}/movies/${data._id}`, { method:'PUT', body: JSON.stringify(body) });
-          } else {
-            res = await authFetch(`${API_BASE}/movies`, { method:'POST', body: JSON.stringify(body) });
-          }
-          dataRes = await res.json().catch(()=> ({}));
+          if (isEdit) res = await authFetch(`${API_BASE}/movies/${data._id}`, { method: 'PUT', body: JSON.stringify(body) });
+          else res = await authFetch(`${API_BASE}/movies`, { method: 'POST', body: JSON.stringify(body) });
+          dataRes = await res.json().catch(() => ({}));
           if (!res.ok) {
-            alert(dataRes?.message || (isEdit?'Cập nhật thất bại.':'Tạo thất bại.'));
+            alert(dataRes?.message || (isEdit ? 'Cập nhật thất bại.' : 'Tạo thất bại.'));
             return;
           }
           close();
@@ -624,6 +685,7 @@ function renderMoviesPage(container) {
     });
     return modal;
   }
+
 
   const onRowAction = async (e) => {
     const id = e.currentTarget.getAttribute('data-id');
@@ -640,7 +702,7 @@ function renderMoviesPage(container) {
       if (!confirm('Bạn có chắc muốn xóa phim này?')) return;
       try {
         const res = await authFetch(`${API_BASE}/movies/${id}`, { method: 'DELETE' });
-        const data = await res.json().catch(()=> ({}));
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           alert(data?.message || 'Xóa không thành công.');
           return;
@@ -667,7 +729,7 @@ function renderMoviesPage(container) {
 
   // Search & pagination
   els.search.addEventListener('input', () => applyFilterAndRender());
-  els.prev.addEventListener('click', () => { if (page > 1) { page--; renderTable(); }});
+  els.prev.addEventListener('click', () => { if (page > 1) { page--; renderTable(); } });
   els.next.addEventListener('click', () => {
     const maxPage = Math.ceil(view.length / pageSize) || 1;
     if (page < maxPage) { page++; renderTable(); }
@@ -686,9 +748,9 @@ function renderMoviesPage(container) {
   load();
 }
 
-function renderBannersPage(container){
+function renderBannersPage(container) {
   // stub để toolbar có thể gọi sớm
-  window.fm_banners = { reload: ()=>{}, create: ()=>{} };
+  window.fm_banners = { reload: () => { }, create: () => { } };
 
   container.innerHTML = html`
     <div class="card">
@@ -717,7 +779,7 @@ function renderBannersPage(container){
   `;
 
   const me = getUser();
-  const canManage = !!(me && ['admin','manager'].includes(me.role));
+  const canManage = !!(me && ['admin', 'manager'].includes(me.role));
 
   let raw = [];
   let tab = 'all';
@@ -729,13 +791,13 @@ function renderBannersPage(container){
     selected: $('#bn-selected'),
   };
 
-  async function fetchBanners(){
+  async function fetchBanners() {
     const res = await authFetch(`${API_BASE}/banners`, { cache: 'no-store' });
     if (!res.ok) throw new Error('load banners failed');
     return res.json();
   }
 
-  async function loadList(){
+  async function loadList() {
     els.table.innerHTML = `<div class="muted">Đang tải...</div>`;
     try {
       raw = await fetchBanners();
@@ -745,15 +807,15 @@ function renderBannersPage(container){
     }
   }
 
-  function filtered(){
+  function filtered() {
     if (tab === 'all') return raw;
     if (tab === 'active') return raw.filter(b => b.is_active);
     return raw.filter(b => !b.is_active);
   }
 
-  function renderList(){
+  function renderList() {
     const rows = filtered();
-    if (!rows.length){
+    if (!rows.length) {
       els.table.innerHTML = `<div class="muted">Không có banner.</div>`;
       return;
     }
@@ -794,51 +856,67 @@ function renderBannersPage(container){
     els.table.querySelectorAll('[data-act]').forEach(b => b.onclick = onRowAction);
   }
 
-  function openBannerForm(mode, data={}){
+  function openBannerForm(mode, data = {}) {
     const isEdit = mode === 'edit';
     const htmlForm = html`
-      <div class="modal-head"><h3>${isEdit?'Sửa banner':'Tạo banner'}</h3><div class="spacer"></div></div>
-      <div class="form">
-        <div class="row">
-          <div class="col-12"><label>Tiêu đề *</label><input id="f-title" value="${data.title||''}"></div>
-          <div class="col-12"><label>Link (optional)</label><input id="f-link" value="${data.link_url||''}"></div>
-          <div class="col-12">
-            <label>Trạng thái</label>
-            <select id="f-active">
-              <option value="true" ${data.is_active!==false?'selected':''}>Bật</option>
-              <option value="false" ${data.is_active===false?'selected':''}>Tắt</option>
-            </select>
-          </div>
-        </div>
+    <div class="modal-head"><h3>${isEdit ? 'Sửa banner' : 'Tạo banner'}</h3><div class="spacer"></div></div>
+    <div class="form">
+      <div class="row">
+        <div class="col-12 field"><label>Tiêu đề *</label><input id="f-title" value="${data.title || ''}"></div>
+        <div class="col-12 field"><label>Link (optional)</label><input id="f-link" value="${data.link_url || ''}"></div>
+
+        ${isEdit ? `
+        <div class="col-12 field">
+          <label>Trạng thái</label>
+          <select id="f-active">
+            <option value="true" ${data.is_active !== false ? 'selected' : ''}>Bật</option>
+            <option value="false" ${data.is_active === false ? 'selected' : ''}>Tắt</option>
+          </select>
+        </div>` : ``}
       </div>
-      <div class="modal-foot">
-        <button class="btn" id="f-cancel">Hủy</button>
-        <button class="btn primary" id="f-submit">${isEdit?'Lưu':'Tạo'}</button>
-      </div>
-    `;
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="f-cancel">Hủy</button>
+      <button class="btn primary" id="f-submit">${isEdit ? 'Lưu' : 'Tạo'}</button>
+    </div>
+  `;
+
     const modal = openModal(htmlForm, ({ el, close }) => {
+      const iTitle = el.querySelector('#f-title');
+      const iLink = el.querySelector('#f-link');
+
       el.querySelector('#f-cancel').onclick = close;
       el.querySelector('#f-submit').onclick = async () => {
-        const title = el.querySelector('#f-title').value.trim();
-        if (!title) return alert('Nhập tiêu đề.');
+        // ✅ Validate tất cả
+        let ok = true;
+        ok = requireNotEmpty(iTitle, 'Tiêu đề') && ok;
+        ok = requireNotEmpty(iLink, 'Link') && ok;
+        if (!ok) return;
+
+
         const body = {
-          title,
-          link_url: el.querySelector('#f-link').value.trim(),
-          is_active: el.querySelector('#f-active').value === 'true'
+          title: iTitle.value.trim(),
+          link_url: iLink.value.trim()
         };
-        try{
+        if (isEdit) {
+          body.is_active = el.querySelector('#f-active').value === 'true';
+        }
+
+        try {
           let res, dataRes;
-          if (isEdit) res = await authFetch(`${API_BASE}/banners/${data._id}`, { method:'PUT', body: JSON.stringify(body) });
-          else res = await authFetch(`${API_BASE}/banners`, { method:'POST', body: JSON.stringify(body) });
-          dataRes = await res.json().catch(()=> ({}));
+          if (isEdit) res = await authFetch(`${API_BASE}/banners/${data._id}`, { method: 'PUT', body: JSON.stringify(body) });
+          else res = await authFetch(`${API_BASE}/banners`, { method: 'POST', body: JSON.stringify(body) });
+          dataRes = await res.json().catch(() => ({}));
           if (!res.ok) return alert(dataRes?.message || 'Thao tác thất bại.');
           close(); await loadList();
-        }catch{ alert('Lỗi kết nối.'); }
+        } catch { alert('Lỗi kết nối.'); }
       };
     });
   }
 
-  function openUploadDialog(bannerId){
+
+
+  function openUploadDialog(bannerId) {
     const htmlForm = html`
       <div class="modal-head"><h3>Upload ảnh</h3><div class="spacer"></div></div>
       <div class="form">
@@ -859,7 +937,7 @@ function renderBannersPage(container){
       el.querySelector('#f-submit').onclick = async () => {
         const files = el.querySelector('#f-files').files;
         if (!files || !files.length) return alert('Chọn ít nhất 1 ảnh.');
-        try{
+        try {
           const fd = new FormData();
           [...files].forEach(f => fd.append('images', f));
           const token = getToken();
@@ -868,20 +946,20 @@ function renderBannersPage(container){
             headers: token ? { Authorization: `Bearer ${token}` } : undefined,
             body: fd
           });
-          const data = await res.json().catch(()=> ({}));
+          const data = await res.json().catch(() => ({}));
           if (!res.ok) return alert(data?.message || 'Upload thất bại.');
           close();
           await loadList();
           if (selectedBanner && selectedBanner._id === bannerId) await loadImagesOf(bannerId);
-        }catch{ alert('Lỗi kết nối.'); }
+        } catch { alert('Lỗi kết nối.'); }
       };
     });
   }
 
-  async function loadImagesOf(bannerId){
+  async function loadImagesOf(bannerId) {
     els.selected.textContent = `Đang nạp ảnh cho banner ${bannerId}...`;
     els.images.innerHTML = '';
-    try{
+    try {
       const res = await fetch(`${API_BASE}/banners/public/all`, { cache: 'no-store' });
       const arr = await res.json();
       const item = arr.find(x => x._id === bannerId);
@@ -891,7 +969,7 @@ function renderBannersPage(container){
         ? `<div class="kv"><b>${selectedBanner.title}</b> <span class="pill">${selectedBanner._id}</span></div>`
         : 'Không tìm thấy banner.';
 
-      if (!item || !item.images?.length){
+      if (!item || !item.images?.length) {
         els.images.innerHTML = `<div class="muted">Chưa có ảnh.</div>`;
         return;
       }
@@ -902,87 +980,87 @@ function renderBannersPage(container){
           <div class="form" style="margin-top:8px">
             <label>Gán movie_id (tuỳ chọn)</label>
             <div class="row">
-              <div class="col-8"><input data-role="movieId" data-image-id="${img._id||''}" placeholder="ObjectId hoặc để trống" value="${img.movie_id || ''}"></div>
+              <div class="col-8"><input data-role="movieId" data-image-id="${img._id || ''}" placeholder="ObjectId hoặc để trống" value="${img.movie_id || ''}"></div>
               <div class="col-4" style="text-align:right">
                 ${canManage ? `
-                  <button class="btn" data-act="save-img" data-image-id="${img._id||''}">Lưu</button>
-                  <button class="btn danger" data-act="del-img" data-image-id="${img._id||''}">Xoá</button>
-                `:``}
+                  <button class="btn" data-act="save-img" data-image-id="${img._id || ''}">Lưu</button>
+                  <button class="btn danger" data-act="del-img" data-image-id="${img._id || ''}">Xoá</button>
+                `: ``}
               </div>
             </div>
           </div>
         </div>
       `).join('');
 
-      els.images.querySelectorAll('[data-act="save-img"]').forEach(b => b.onclick = async (e)=>{
+      els.images.querySelectorAll('[data-act="save-img"]').forEach(b => b.onclick = async (e) => {
         const imageId = e.currentTarget.getAttribute('data-image-id');
         const input = els.images.querySelector(`input[data-role="movieId"][data-image-id="${imageId}"]`);
-        try{
+        try {
           const res = await authFetch(`${API_BASE}/banners/${bannerId}/images/${imageId}`, {
-            method:'PATCH',
+            method: 'PATCH',
             body: JSON.stringify({ movie_id: input.value.trim() || null })
           });
-          const data = await res.json().catch(()=> ({}));
+          const data = await res.json().catch(() => ({}));
           if (!res.ok) return alert(data?.message || 'Lưu thất bại.');
           alert('Đã lưu.');
-        }catch{ alert('Lỗi kết nối.'); }
+        } catch { alert('Lỗi kết nối.'); }
       });
 
-      els.images.querySelectorAll('[data-act="del-img"]').forEach(b => b.onclick = async (e)=>{
+      els.images.querySelectorAll('[data-act="del-img"]').forEach(b => b.onclick = async (e) => {
         const imageId = e.currentTarget.getAttribute('data-image-id');
         if (!confirm('Xoá ảnh này?')) return;
-        try{
-          const res = await authFetch(`${API_BASE}/banners/${bannerId}/images/${imageId}`, { method:'DELETE' });
-          const data = await res.json().catch(()=> ({}));
+        try {
+          const res = await authFetch(`${API_BASE}/banners/${bannerId}/images/${imageId}`, { method: 'DELETE' });
+          const data = await res.json().catch(() => ({}));
           if (!res.ok) return alert(data?.message || 'Xoá thất bại.');
           await loadImagesOf(bannerId);
           await loadList();
-        }catch{ alert('Lỗi kết nối.'); }
+        } catch { alert('Lỗi kết nối.'); }
       });
 
-    }catch{
+    } catch {
       els.images.innerHTML = `<div class="muted">Không tải được ảnh.</div>`;
     }
   }
 
-  async function onRowAction(e){
+  async function onRowAction(e) {
     const id = e.currentTarget.getAttribute('data-id');
     const act = e.currentTarget.getAttribute('data-act');
 
-    if (act === 'select'){
+    if (act === 'select') {
       await loadImagesOf(id);
       return;
     }
-    if (act === 'toggle' && canManage){
-      try{
-        const res = await authFetch(`${API_BASE}/banners/${id}/toggle`, { method:'PATCH' });
-        const data = await res.json().catch(()=> ({}));
+    if (act === 'toggle' && canManage) {
+      try {
+        const res = await authFetch(`${API_BASE}/banners/${id}/toggle`, { method: 'PATCH' });
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) return alert(data?.message || 'Thất bại.');
         await loadList();
-      }catch{ alert('Lỗi kết nối.'); }
+      } catch { alert('Lỗi kết nối.'); }
       return;
     }
-    if (act === 'edit' && canManage){
+    if (act === 'edit' && canManage) {
       const b = raw.find(x => x._id === id);
       if (!b) return;
       openBannerForm('edit', b);
       return;
     }
-    if (act === 'upload' && canManage){
+    if (act === 'upload' && canManage) {
       openUploadDialog(id);
       return;
     }
-    if (act === 'del' && canManage){
+    if (act === 'del' && canManage) {
       if (!confirm('Xoá banner và toàn bộ ảnh của nó?')) return;
-      try{
-        const res = await authFetch(`${API_BASE}/banners/${id}`, { method:'DELETE' });
-        const data = await res.json().catch(()=> ({}));
+      try {
+        const res = await authFetch(`${API_BASE}/banners/${id}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) return alert(data?.message || 'Xoá thất bại.');
-        if (selectedBanner && selectedBanner._id === id){
+        if (selectedBanner && selectedBanner._id === id) {
           selectedBanner = null; els.selected.textContent = 'Chưa chọn banner.'; els.images.innerHTML = '';
         }
         await loadList();
-      }catch{ alert('Lỗi kết nối.'); }
+      } catch { alert('Lỗi kết nối.'); }
       return;
     }
   }
@@ -1006,3 +1084,425 @@ function renderBannersPage(container){
 
   loadList();
 }
+
+function renderNewsPage(container){
+  // stub để toolbar gọi từ ngoài
+  window.fm_news = { reload: ()=>{}, create: ()=>{} };
+
+  container.innerHTML = html`
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+        <h3 style="margin:0">Danh sách tin tức</h3>
+        <div>
+          <input id="news-q" class="search" placeholder="Tìm theo tiêu đề/nội dung..." style="width:280px">
+          <select id="news-filter" style="margin-left:8px; padding:8px 12px; border-radius:10px; border:1px solid var(--line); background:#0f1530; color:#fff">
+            <option value="all">Tất cả</option>
+            <option value="published">Đã publish</option>
+            <option value="draft">Nháp</option>
+          </select>
+        </div>
+      </div>
+      <div id="news-table" class="table-wrap"><div class="muted">Đang tải...</div></div>
+      <div style="display:flex; justify-content:space-between; margin-top:10px">
+        <div class="muted" id="news-info"></div>
+        <div class="pager">
+          <button class="btn" id="news-prev">←</button>
+          <span id="news-page" class="muted">1</span>
+          <button class="btn" id="news-next">→</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const me = getUser();
+  const canManage = !!(me && ['admin','manager'].includes(me.role));
+
+  // state
+  let raw = [];      // toàn bộ từ API admin list
+  let view = [];     // sau khi filter tìm kiếm / trạng thái
+  let page = 1;
+  const pageSize = 10;
+
+  const els = {
+    q: $('#news-q'),
+    filter: $('#news-filter'),
+    table: $('#news-table'),
+    info: $('#news-info'),
+    prev: $('#news-prev'),
+    next: $('#news-next'),
+    pg:   $('#news-page')
+  };
+
+  async function fetchNewsAdmin(params={}){
+    // /api/news?is_published=&q=&tag=
+    const url = new URL(`${API_BASE}/news`);
+    if (params.q) url.searchParams.set('q', params.q);
+    if (typeof params.is_published === 'boolean') url.searchParams.set('is_published', String(params.is_published));
+
+    const res = await authFetch(url.toString(), { cache:'no-store' });
+    if (!res.ok) throw new Error('load news failed');
+    const js = await res.json();
+    // API trả { items, total, page, limit } theo code của bạn
+    return Array.isArray(js.items) ? js.items : js;
+  }
+
+  async function loadList(){
+    els.table.innerHTML = `<div class="muted">Đang tải...</div>`;
+    try{
+      const f = els.filter.value;
+      const q = els.q.value.trim();
+      const params = {};
+      if (f === 'published') params.is_published = true;
+      if (f === 'draft')     params.is_published = false;
+      if (q) params.q = q;
+
+      raw = await fetchNewsAdmin(params);
+      applyFilterAndRender();
+    }catch(e){
+      els.table.innerHTML = `<div class="muted">Không tải được dữ liệu.</div>`;
+    }
+  }
+
+  function applyFilterAndRender(){
+    view = raw.slice();
+    // client-side bổ sung (đã filter server, nhưng giữ đề phòng)
+    const q = els.q.value.trim().toLowerCase();
+    const f = els.filter.value;
+    if (q) view = view.filter(n =>
+      (n.title||'').toLowerCase().includes(q) ||
+      (n.content||'').toLowerCase().includes(q)
+    );
+    if (f === 'published') view = view.filter(n => n.is_published);
+    if (f === 'draft')     view = view.filter(n => !n.is_published);
+
+    page = 1;
+    renderTable();
+  }
+
+  function statusBadge(n){
+    return n.is_published
+      ? '<span class="badge ok">Đã publish</span>'
+      : '<span class="badge muted">Nháp</span>';
+  }
+
+  function fmtDateTime(d){
+    if (!d) return '';
+    const dt = new Date(d);
+    if (isNaN(dt)) return '';
+    const dd = String(dt.getDate()).padStart(2,'0');
+    const mm = String(dt.getMonth()+1).padStart(2,'0');
+    const yyyy = dt.getFullYear();
+    const hh = String(dt.getHours()).padStart(2,'0');
+    const mi = String(dt.getMinutes()).padStart(2,'0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+  }
+
+  function renderTable(){
+    const total = view.length;
+    const start = (page-1)*pageSize;
+    const rows  = view.slice(start, start+pageSize);
+
+    if (!rows.length){
+      els.table.innerHTML = `<div class="muted">Không có bài viết.</div>`;
+    } else {
+      els.table.innerHTML = html`
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tiêu đề</th>
+              <th>Slug</th>
+              <th>Tags</th>
+              <th>Trạng thái</th>
+              <th>Publish at</th>
+              <th>Views</th>
+              <th style="width:280px">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(n => html`
+              <tr data-id="${n._id}">
+                <td>${n.title || ''}</td>
+                <td>${n.slug || ''}</td>
+                <td>${Array.isArray(n.tags) ? n.tags.join(', ') : ''}</td>
+                <td>${statusBadge(n)}</td>
+                <td>${fmtDateTime(n.published_at)}</td>
+                <td>${n.view_count ?? 0}</td>
+                <td>
+                  <div class="row-actions">
+                    ${canManage ? `
+                      <button class="btn" data-act="toggle" data-id="${n._id}">${n.is_published ? 'Unpublish' : 'Publish'}</button>
+                      <button class="btn" data-act="edit" data-id="${n._id}">Sửa</button>
+                      <button class="btn warn" data-act="cover" data-id="${n._id}">Đổi ảnh bìa</button>
+                      <button class="btn danger" data-act="del" data-id="${n._id}">Xoá</button>
+                    ` : ''}
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      els.table.querySelectorAll('[data-act]').forEach(b => b.onclick = onRowAction);
+    }
+
+    els.info.textContent = total ? `Hiển thị ${Math.min(start+1,total)}–${Math.min(start+rows.length,total)} / ${total}` : '';
+    els.pg.textContent = String(page);
+  }
+
+  // ====== Form thêm/sửa (validate không để trống) ======
+  function toSlug(s){
+    return String(s||'')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  }
+
+  function openNewsForm(mode, data={}){
+    const isEdit = mode==='edit';
+    const htmlForm = html`
+      <div class="modal-head"><h3>${isEdit?'Sửa tin tức':'Thêm tin tức'}</h3><div class="spacer"></div></div>
+      <div class="form">
+        <div class="row">
+          <div class="col-12 field"><label>Tiêu đề *</label><input id="f-title" value="${data.title||''}"></div>
+          <div class="col-12 field"><label>Slug *</label><input id="f-slug" placeholder="auto từ tiêu đề nếu để trống" value="${data.slug||''}"></div>
+          <div class="col-12 field"><label>Tóm tắt *</label><textarea id="f-excerpt">${data.excerpt||''}</textarea></div>
+          <div class="col-12 field"><label>Nội dung *</label><textarea id="f-content" style="min-height:160px">${data.content||''}</textarea></div>
+          <div class="col-12 field"><label>Tags (phân tách dấu phẩy) *</label><input id="f-tags" value="${Array.isArray(data.tags)?data.tags.join(', '):(data.tags||'')}"></div>
+
+          <div class="col-12">
+            <div class="pill" style="display:inline-block;margin:6px 0">Ảnh bìa (chọn 1 trong 2 cách)</div>
+          </div>
+          <div class="col-6 field"><label>Chọn file ảnh *</label><input id="f-cover-file" type="file" accept="image/*"></div>
+          <div class="col-6 field"><label>Hoặc nhập URL ảnh *</label><input id="f-cover-url" value="${data.cover_image||''}" placeholder="https://..."></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="f-cancel">Hủy</button>
+        <button class="btn primary" id="f-submit">${isEdit?'Lưu':'Tạo'}</button>
+      </div>
+    `;
+
+    openModal(htmlForm, ({ el, close }) => {
+      const iTitle = el.querySelector('#f-title');
+      const iSlug  = el.querySelector('#f-slug');
+      const iEx    = el.querySelector('#f-excerpt');
+      const iCt    = el.querySelector('#f-content');
+      const iTags  = el.querySelector('#f-tags');
+      const iFile  = el.querySelector('#f-cover-file');
+      const iUrl   = el.querySelector('#f-cover-url');
+
+      // auto slug theo tiêu đề nếu người dùng rời trường slug mà để trống
+      iTitle.addEventListener('blur', ()=>{
+        if (!iSlug.value.trim()) iSlug.value = toSlug(iTitle.value);
+      });
+
+      el.querySelector('#f-cancel').onclick = close;
+      el.querySelector('#f-submit').onclick = async () => {
+        // ===== VALIDATE: tất cả không được để trống =====
+        let ok = true;
+        ok = requireNotEmpty(iTitle, 'Tiêu đề') && ok;
+        // nếu slug trống → tự gen, sau đó vẫn check not empty
+        if (!iSlug.value.trim()) iSlug.value = toSlug(iTitle.value);
+        ok = requireNotEmpty(iSlug, 'Slug') && ok;
+        ok = requireNotEmpty(iEx, 'Tóm tắt') && ok;
+        ok = requireNotEmpty(iCt, 'Nội dung') && ok;
+        ok = requireNotEmpty(iTags, 'Tags') && ok;
+
+        // Ảnh bìa: phải có ÍT NHẤT 1 — file hoặc URL
+        const hasFile = iFile.files && iFile.files.length > 0;
+        const hasUrl  = !!iUrl.value.trim();
+        if (!hasFile && !hasUrl){
+          // ưu tiên cảnh báo ở URL
+          setInputError(iUrl, 'Ảnh bìa (file hoặc URL) không được để trống.');
+          iUrl.focus();
+          ok = false;
+        } else {
+          clearInputError(iUrl);
+        }
+        if (!ok) return;
+
+        try{
+          let res, dataRes;
+
+          if (isEdit){
+            // cho phép: nếu có file thì multipart (PATCH/PUT với upload.single('cover'))
+            if (hasFile){
+              const fd = new FormData();
+              fd.append('cover', iFile.files[0]);
+              fd.append('title',   iTitle.value.trim());
+              fd.append('slug',    iSlug.value.trim());
+              fd.append('excerpt', iEx.value.trim());
+              fd.append('content', iCt.value.trim());
+              fd.append('tags',    iTags.value.trim());
+              const token = getToken();
+              res = await fetch(`${API_BASE}/news/${data._id}`, {
+                method: 'PUT',
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                body: fd
+              });
+            } else {
+              // không có file → gửi JSON (dùng cover_image URL)
+              const body = {
+                title:   iTitle.value.trim(),
+                slug:    iSlug.value.trim(),
+                excerpt: iEx.value.trim(),
+                content: iCt.value.trim(),
+                tags:    iTags.value.trim(),
+                cover_image: iUrl.value.trim()
+              };
+              res = await authFetch(`${API_BASE}/news/${data._id}`, {
+                method:'PUT',
+                body: JSON.stringify(body)
+              });
+            }
+          } else {
+            // CREATE
+            if (hasFile){
+              const fd = new FormData();
+              fd.append('cover', iFile.files[0]);
+              fd.append('title',   iTitle.value.trim());
+              fd.append('slug',    iSlug.value.trim());
+              fd.append('excerpt', iEx.value.trim());
+              fd.append('content', iCt.value.trim());
+              fd.append('tags',    iTags.value.trim());
+              const token = getToken();
+              res = await fetch(`${API_BASE}/news`, {
+                method: 'POST',
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                body: fd
+              });
+            } else {
+              const body = {
+                title:   iTitle.value.trim(),
+                slug:    iSlug.value.trim(),
+                excerpt: iEx.value.trim(),
+                content: iCt.value.trim(),
+                tags:    iTags.value.trim(),
+                cover_image: iUrl.value.trim()
+              };
+              res = await authFetch(`${API_BASE}/news`, {
+                method:'POST',
+                body: JSON.stringify(body)
+              });
+            }
+          }
+
+          dataRes = await res.json().catch(()=> ({}));
+          if (!res.ok) return alert(dataRes?.message || 'Thao tác thất bại.');
+          close();
+          await loadList();
+          alert(isEdit ? 'Đã lưu.' : 'Đã tạo tin.');
+        }catch{
+          alert('Lỗi kết nối.');
+        }
+      };
+    });
+  }
+
+  function openCoverDialog(newsId){
+    const htmlForm = html`
+      <div class="modal-head"><h3>Đổi ảnh bìa</h3><div class="spacer"></div></div>
+      <div class="form">
+        <div class="row">
+          <div class="col-6 field"><label>Chọn file ảnh *</label><input id="f-file" type="file" accept="image/*"></div>
+          <div class="col-6 field"><label>Hoặc URL ảnh *</label><input id="f-url" placeholder="https://..."></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="f-cancel">Hủy</button>
+        <button class="btn primary" id="f-submit">Lưu</button>
+      </div>
+    `;
+    openModal(htmlForm, ({ el, close }) => {
+      const iFile = el.querySelector('#f-file');
+      const iUrl  = el.querySelector('#f-url');
+
+      el.querySelector('#f-cancel').onclick = close;
+      el.querySelector('#f-submit').onclick = async ()=>{
+        // phải có ít nhất 1
+        const hasFile = iFile.files && iFile.files.length>0;
+        const hasUrl  = !!iUrl.value.trim();
+        if (!hasFile && !hasUrl){
+          setInputError(iUrl, 'Ảnh bìa (file hoặc URL) không được để trống.');
+          iUrl.focus();
+          return;
+        }
+        try{
+          let res, dataRes;
+          if (hasFile){
+            const fd = new FormData();
+            fd.append('cover', iFile.files[0]);
+            const token = getToken();
+            res = await fetch(`${API_BASE}/news/${newsId}`, {
+              method:'PUT',
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              body: fd
+            });
+          } else {
+            res = await authFetch(`${API_BASE}/news/${newsId}`, {
+              method:'PUT',
+              body: JSON.stringify({ cover_image: iUrl.value.trim() })
+            });
+          }
+          dataRes = await res.json().catch(()=> ({}));
+          if (!res.ok) return alert(dataRes?.message || 'Cập nhật thất bại.');
+          close(); await loadList();
+        }catch{ alert('Lỗi kết nối.'); }
+      };
+    });
+  }
+
+  async function onRowAction(e){
+    const id  = e.currentTarget.getAttribute('data-id');
+    const act = e.currentTarget.getAttribute('data-act');
+
+    if (act === 'toggle' && canManage){
+      try{
+        const res = await authFetch(`${API_BASE}/news/${id}/publish`, { method:'PATCH' });
+        const d = await res.json().catch(()=> ({}));
+        if (!res.ok) return alert(d?.message || 'Thất bại.');
+        await loadList();
+      }catch{ alert('Lỗi kết nối.'); }
+      return;
+    }
+    if (act === 'edit' && canManage){
+      try{
+        const res = await authFetch(`${API_BASE}/news/${id}`);
+        const n = await res.json();
+        openNewsForm('edit', n);
+      }catch{ alert('Không lấy được chi tiết.'); }
+      return;
+    }
+    if (act === 'cover' && canManage){
+      openCoverDialog(id);
+      return;
+    }
+    if (act === 'del' && canManage){
+      if (!confirm('Xoá bài viết này?')) return;
+      try{
+        const res = await authFetch(`${API_BASE}/news/${id}`, { method:'DELETE' });
+        const d = await res.json().catch(()=> ({}));
+        if (!res.ok) return alert(d?.message || 'Xoá thất bại.');
+        await loadList();
+      }catch{ alert('Lỗi kết nối.'); }
+      return;
+    }
+  }
+
+  // events
+  els.q.addEventListener('keydown', (e)=>{ if (e.key==='Enter') loadList(); });
+  els.filter.addEventListener('change', loadList);
+  els.prev.onclick = ()=> { if (page>1){ page--; renderTable(); } };
+  els.next.onclick = ()=> {
+    const max = Math.ceil(view.length / pageSize) || 1;
+    if (page < max){ page++; renderTable(); }
+  };
+
+  window.fm_news = {
+    reload: ()=> loadList(),
+    create: ()=> openNewsForm('create')
+  };
+
+  loadList();
+}
+

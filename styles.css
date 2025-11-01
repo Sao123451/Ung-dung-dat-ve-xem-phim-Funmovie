@@ -117,3 +117,9 @@ textarea{min-height:90px; resize:vertical}
 }
 .row-actions { display:flex; gap:6px; flex-wrap:wrap }
 .kv { display:flex; gap:8px; align-items:center; }
+
+/* ----- Validate ----- */
+.input-error { border-color: #ff6b6b !important; outline: none; }
+.error-text { color:#ff8a8a; font-size:12px; margin-top:6px }
+.form .field { margin-bottom:10px } /* tiện bọc input + error */
+
