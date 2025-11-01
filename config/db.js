@@ -2,20 +2,27 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/movie_booking';
+    let mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/movie_booking';
 
-    // Tùy chọn cấu hình
-    const options = {
+    // ✅ Tắt retryWrites để driver KHÔNG tự sinh transaction number
+    if (mongoURI.includes('?')) {
+      mongoURI += '&retryWrites=false';
+    } else {
+      mongoURI += '?retryWrites=false';
+    }
+
+    await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-    };
+      // Tuy chọn thêm nếu cần:
+      // useCreateIndex: true,
+      // useFindAndModify: false,
+    });
 
-    await mongoose.connect(mongoURI, options);
-
-    console.log('✅ MongoDB connected successfully');
+    console.log('✅ MongoDB connected successfully:', mongoURI);
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
-    process.exit(1); // Dừng server nếu kết nối lỗi
+    process.exit(1);
   }
 };
 

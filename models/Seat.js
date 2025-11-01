@@ -11,7 +11,7 @@ const SeatSchema = new Schema({
 
   seat_status: {
     type: String,
-    enum: ['available', ' ', 'broken'],
+    enum: ['available', ' sold', 'broken'],
     default: 'available'
   }
 

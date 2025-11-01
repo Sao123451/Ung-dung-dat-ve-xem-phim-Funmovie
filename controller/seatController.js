@@ -5,15 +5,7 @@ const Room = require('../models/Room');
 
 const isId = (v) => /^[0-9a-fA-F]{24}$/.test(String(v || '').trim());
 
-// ---- helper: sync flags from seat_status ----
-function deriveFlags(status) {
-  // status: available | sold | broken
-  if (status === 'sold')    return { is_booked: true,  active: true };
-  if (status === 'broken')  return { is_booked: false, active: false };
-  return { is_booked: false, active: true }; // available
-}
-
-// ===== PUBLIC (Android) =====
+// ===== PUBLIC =====
 // GET /api/seats/public?room=<roomId>&mode=grid|list
 exports.publicByRoom = async (req, res, next) => {
   try {
@@ -21,7 +13,7 @@ exports.publicByRoom = async (req, res, next) => {
     if (!isId(room)) return res.status(400).json({ message: 'Invalid room id' });
 
     const seats = await Seat.find({ room })
-      .select('_id row number seat_type extra_price is_booked active seat_status')
+      .select('_id row number seat_type extra_price seat_status')
       .sort({ row: 1, number: 1 })
       .lean();
 
@@ -34,8 +26,6 @@ exports.publicByRoom = async (req, res, next) => {
           number: s.number,
           seat_type: s.seat_type,
           extra_price: s.extra_price,
-          is_booked: s.is_booked,
-          active: s.active,
           seat_status: s.seat_status || 'available',
         });
       }
@@ -59,10 +49,10 @@ exports.publicDetail = async (req, res, next) => {
 };
 
 // ===== ADMIN / MANAGER =====
-// GET /api/seats?room=<roomId>&row=A&type=vip&booked=true&active=true&status=sold&page=1&limit=100
+// GET /api/seats?room=<roomId>&row=A&type=vip&status=sold&page=1&limit=100
 exports.list = async (req, res, next) => {
   try {
-    const { room, row, type, booked, active, status, page = 1, limit = 100 } = req.query;
+    const { room, row, type, status, page = 1, limit = 100 } = req.query;
     const filter = {};
     if (room) {
       if (!isId(room)) return res.status(400).json({ message: 'Invalid room id' });
@@ -70,14 +60,12 @@ exports.list = async (req, res, next) => {
     }
     if (row) filter.row = row;
     if (type) filter.seat_type = type;
-    if (typeof booked !== 'undefined') filter.is_booked = booked === 'true';
-    if (typeof active !== 'undefined') filter.active = active === 'true';
     if (status && ['available','sold','broken'].includes(status)) filter.seat_status = status;
 
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const [items, total] = await Promise.all([
       Seat.find(filter)
-        .select('_id room row number seat_type extra_price is_booked active seat_status createdAt updatedAt')
+        .select('_id room row number seat_type extra_price seat_status createdAt updatedAt')
         .sort({ row: 1, number: 1 })
         .skip(skip).limit(parseInt(limit, 10)),
       Seat.countDocuments(filter),
@@ -86,24 +74,22 @@ exports.list = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/seats
-// body: { room, row, number, seat_type?, extra_price?, seat_status?, is_booked?, active? }
+// POST /api/seats  (bị chặn nếu enforce_layout=true)
 exports.create = async (req, res, next) => {
   try {
-    const { room, row, number, seat_type, extra_price, seat_status, is_booked, active } = req.body;
+    const { room, row, number, seat_type, extra_price, seat_status } = req.body;
     if (!room || !isId(room)) return res.status(400).json({ message: 'room is required & must be ObjectId' });
     if (!row) return res.status(400).json({ message: 'row is required' });
     if (typeof number === 'undefined') return res.status(400).json({ message: 'number is required' });
 
     const roomDoc = await Room.findById(room).lean();
     if (!roomDoc) return res.status(404).json({ message: 'Room not found' });
+    if (roomDoc.enforce_layout) {
+      return res.status(400).json({ message: 'Room seats are locked by preset (enforce_layout=true). Use /rooms/:id/regenerate-seats instead.' });
+    }
 
-    let flags = {};
-    if (seat_status && ['available','sold','broken'].includes(seat_status)) {
-      flags = deriveFlags(seat_status);
-    } else {
-      if (typeof is_booked !== 'undefined') flags.is_booked = !!is_booked;
-      if (typeof active !== 'undefined')    flags.active    = !!active;
+    if (typeof seat_status !== 'undefined' && !['available','sold','broken'].includes(seat_status)) {
+      return res.status(400).json({ message: 'seat_status must be available|sold|broken' });
     }
 
     const doc = await Seat.create({
@@ -113,8 +99,6 @@ exports.create = async (req, res, next) => {
       seat_type: seat_type || 'normal',
       extra_price: Number.isFinite(+extra_price) ? +extra_price : 0,
       seat_status: seat_status || 'available',
-      is_booked: typeof flags.is_booked === 'boolean' ? flags.is_booked : false,
-      active:    typeof flags.active    === 'boolean' ? flags.active    : true,
     });
 
     res.status(201).json(doc);
@@ -124,8 +108,7 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// POST /api/seats/bulk
-// body: { room, rows: [ { row:"A", from:1, to:10, seat_type?, extra_price?, seat_status? }, ... ] }
+// POST /api/seats/bulk  (bị chặn nếu enforce_layout=true)
 exports.bulkCreate = async (req, res, next) => {
   try {
     const { room, rows } = req.body;
@@ -134,6 +117,9 @@ exports.bulkCreate = async (req, res, next) => {
 
     const roomDoc = await Room.findById(room).lean();
     if (!roomDoc) return res.status(404).json({ message: 'Room not found' });
+    if (roomDoc.enforce_layout) {
+      return res.status(400).json({ message: 'Room seats are locked by preset (enforce_layout=true). Use /rooms/:id/regenerate-seats instead.' });
+    }
 
     const docs = [];
     for (const r of rows) {
@@ -145,7 +131,6 @@ exports.bulkCreate = async (req, res, next) => {
       for (let n = from; n <= to; n++) {
         const status = r.seat_status && ['available','sold','broken'].includes(r.seat_status)
           ? r.seat_status : 'available';
-        const flags = deriveFlags(status);
 
         docs.push({
           room,
@@ -154,13 +139,11 @@ exports.bulkCreate = async (req, res, next) => {
           seat_type: r.seat_type || 'normal',
           extra_price: Number.isFinite(+r.extra_price) ? +r.extra_price : 0,
           seat_status: status,
-          is_booked: flags.is_booked,
-          active: flags.active,
         });
       }
     }
 
-    const created = await Seat.insertMany(docs, { ordered: false }); // skip duplicates
+    const created = await Seat.insertMany(docs, { ordered: false });
     res.status(201).json({ inserted: created.length });
   } catch (err) {
     if (err?.name === 'BulkWriteError') {
@@ -171,7 +154,7 @@ exports.bulkCreate = async (req, res, next) => {
   }
 };
 
-// PUT /api/seats/:id  (cập nhật fields cơ bản + sync status/flags)
+// PUT /api/seats/:id
 exports.update = async (req, res, next) => {
   try {
     const id = String(req.params.id || '').trim();
@@ -180,12 +163,15 @@ exports.update = async (req, res, next) => {
     const seat = await Seat.findById(id);
     if (!seat) return res.status(404).json({ message: 'Not found' });
 
-    const { room, row, number, seat_type, extra_price, seat_status, is_booked, active } = req.body;
+    const { room, row, number, seat_type, extra_price, seat_status } = req.body;
 
     if (typeof room !== 'undefined') {
       if (!isId(room)) return res.status(400).json({ message: 'Invalid room id' });
       const r = await Room.findById(room).lean();
       if (!r) return res.status(404).json({ message: 'Room not found' });
+      if (r.enforce_layout) {
+        return res.status(400).json({ message: 'Room seats are locked by preset (enforce_layout=true). Use /rooms/:id/regenerate-seats instead.' });
+      }
       seat.room = room;
     }
     if (typeof row !== 'undefined')        seat.row = String(row).trim();
@@ -198,13 +184,6 @@ exports.update = async (req, res, next) => {
         return res.status(400).json({ message: 'seat_status must be available|sold|broken' });
       }
       seat.seat_status = seat_status;
-      const flags = deriveFlags(seat_status);
-      seat.is_booked = flags.is_booked;
-      seat.active    = flags.active;
-    } else {
-      // cho phép update trực tiếp flags nếu không gửi seat_status
-      if (typeof is_booked !== 'undefined') seat.is_booked = !!is_booked;
-      if (typeof active    !== 'undefined') seat.active    = !!active;
     }
 
     await seat.save();
@@ -215,29 +194,22 @@ exports.update = async (req, res, next) => {
   }
 };
 
-// PATCH /api/seats/:id/status
-// body: { seat_status?: 'available'|'sold'|'broken', is_booked?: boolean, active?: boolean }
+// PATCH /api/seats/:id/status  { seat_status: 'available'|'sold'|'broken' }
 exports.updateStatus = async (req, res, next) => {
   try {
     const id = String(req.params.id || '').trim();
     if (!isId(id)) return res.status(400).json({ message: 'Invalid id' });
 
-    const payload = {};
-    if (typeof req.body.seat_status !== 'undefined') {
-      const status = String(req.body.seat_status);
-      if (!['available','sold','broken'].includes(status)) {
-        return res.status(400).json({ message: 'seat_status must be available|sold|broken' });
-      }
-      const flags = deriveFlags(status);
-      payload.seat_status = status;
-      payload.is_booked = flags.is_booked;
-      payload.active = flags.active;
-    } else {
-      if (typeof req.body.is_booked !== 'undefined') payload.is_booked = !!req.body.is_booked;
-      if (typeof req.body.active    !== 'undefined') payload.active    = !!req.body.active;
+    const status = String(req.body.seat_status || '').trim();
+    if (!['available','sold','broken'].includes(status)) {
+      return res.status(400).json({ message: 'seat_status must be available|sold|broken' });
     }
 
-    const seat = await Seat.findByIdAndUpdate(id, { $set: payload }, { new: true, runValidators: true });
+    const seat = await Seat.findByIdAndUpdate(
+      id,
+      { $set: { seat_status: status } },
+      { new: true, runValidators: true }
+    );
     if (!seat) return res.status(404).json({ message: 'Not found' });
     res.json(seat);
   } catch (err) { next(err); }
@@ -254,11 +226,16 @@ exports.remove = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// DELETE /api/seats/clear?room=<roomId>
+// DELETE /api/seats/clear?room=<roomId>  (bị chặn nếu enforce_layout=true)
 exports.clearByRoom = async (req, res, next) => {
   try {
     const { room } = req.query;
     if (!isId(room)) return res.status(400).json({ message: 'Invalid room id' });
+    const roomDoc = await Room.findById(room).lean();
+    if (!roomDoc) return res.status(404).json({ message: 'Room not found' });
+    if (roomDoc.enforce_layout) {
+      return res.status(400).json({ message: 'Room seats are locked by preset (enforce_layout=true). Use /rooms/:id/regenerate-seats instead.' });
+    }
     const result = await Seat.deleteMany({ room });
     res.json({ ok: true, deleted: result.deletedCount });
   } catch (err) { next(err); }

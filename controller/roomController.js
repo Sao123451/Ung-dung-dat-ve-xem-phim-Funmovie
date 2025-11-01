@@ -2,21 +2,19 @@
 const mongoose = require('mongoose');
 const Room = require('../models/Room');
 const Cinema = require('../models/Cinema');
+const { PRESETS } = require('../config/seatLayouts');
+const { regenerateSeatsForRoom } = require('../services/seatGenerator');
 
-// ===== PUBLIC (Android) =====
-
-// GET /api/rooms/public?cinema=<cinemaId>&type=2D
+// ===== PUBLIC =====
 exports.publicList = async (req, res, next) => {
   try {
     const { cinema, type } = req.query;
     const filter = {};
-
     if (cinema) {
       const id = String(cinema).trim();
       if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid cinema id' });
       filter.cinema = id;
     }
-
     if (type) filter.type = type;
 
     const rooms = await Room.find(filter)
@@ -28,7 +26,6 @@ exports.publicList = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /api/rooms/:id/public
 exports.publicDetail = async (req, res, next) => {
   try {
     const rawId = String(req.params.id || '').trim();
@@ -44,13 +41,10 @@ exports.publicDetail = async (req, res, next) => {
 };
 
 // ===== ADMIN / MANAGER =====
-
-// GET /api/rooms?q=&cinema=&type=&page=1&limit=20
 exports.list = async (req, res, next) => {
   try {
     const { q, cinema, type, page = 1, limit = 20 } = req.query;
     const filter = {};
-
     if (q) filter.name = { $regex: q, $options: 'i' };
     if (cinema) {
       const id = String(cinema).trim();
@@ -60,25 +54,19 @@ exports.list = async (req, res, next) => {
     if (type) filter.type = type;
 
     const skip = (parseInt(page,10)-1) * parseInt(limit,10);
-
     const [items, total] = await Promise.all([
-      Room.find(filter)
-        .populate('cinema', 'name city')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit,10)),
+      Room.find(filter).populate('cinema', 'name city')
+        .sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit,10)),
       Room.countDocuments(filter),
     ]);
-
     res.json({ items, total, page: parseInt(page,10), limit: parseInt(limit,10) });
   } catch (err) { next(err); }
 };
 
-// POST /api/rooms
-// body: { cinema, name, type?, capacity? }
+// POST /api/rooms  { cinema, name, type?, layout_key? }
 exports.create = async (req, res, next) => {
   try {
-    const { cinema, name, type, capacity } = req.body;
+    const { cinema, name, type, layout_key } = req.body;
     if (!cinema || !mongoose.isValidObjectId(String(cinema)))
       return res.status(400).json({ message: 'cinema is required & must be valid ObjectId' });
     if (!name) return res.status(400).json({ message: 'name is required' });
@@ -86,22 +74,40 @@ exports.create = async (req, res, next) => {
     const cin = await Cinema.findById(cinema).lean();
     if (!cin) return res.status(404).json({ message: 'Cinema not found' });
 
-    // enforce unique name within a cinema (logic-level)
-    const existed = await Room.findOne({ cinema, name: name.trim() }).lean();
+    const existed = await Room.findOne({ cinema, name: String(name).trim() }).lean();
     if (existed) return res.status(400).json({ message: 'Room name already exists in this cinema' });
 
-    const doc = await Room.create({
+    const presetKey = layout_key || 'STD_10x10_2D';
+    const preset = PRESETS[presetKey];
+    if (!preset) return res.status(400).json({ message: 'Invalid layout_key' });
+
+    // 1) tạo room
+    let room = await Room.create({
       cinema,
-      name: name.trim(),
+      name: String(name).trim(),
       type: type || '2D',
-      capacity: Number.isFinite(+capacity) ? +capacity : 0,
+      layout_key: presetKey,
+      rows: preset.rows,
+      cols: preset.cols,
+      enforce_layout: true,
+      capacity: 0,
     });
 
-    res.status(201).json(doc);
+    // 2) sinh ghế (không transaction)
+    try {
+      const inserted = await regenerateSeatsForRoom(room, presetKey);
+      room.capacity = inserted;
+      room = await room.save();
+      return res.status(201).json({ ...room.toObject(), capacity: inserted });
+    } catch (e) {
+      // rollback thủ công nếu sinh ghế lỗi
+      await Room.findByIdAndDelete(room._id).catch(()=>{});
+      throw e;
+    }
   } catch (err) { next(err); }
 };
 
-// PUT /api/rooms/:id
+// PUT /api/rooms/:id   (không đổi layout ở đây)
 exports.update = async (req, res, next) => {
   try {
     const rawId = String(req.params.id || '').trim();
@@ -110,7 +116,7 @@ exports.update = async (req, res, next) => {
     const room = await Room.findById(rawId);
     if (!room) return res.status(404).json({ message: 'Not found' });
 
-    const { cinema, name, type, capacity } = req.body;
+    const { cinema, name, type } = req.body;
 
     if (typeof cinema !== 'undefined') {
       if (!mongoose.isValidObjectId(String(cinema))) return res.status(400).json({ message: 'Invalid cinema id' });
@@ -120,9 +126,7 @@ exports.update = async (req, res, next) => {
     }
     if (typeof name !== 'undefined') room.name = String(name).trim();
     if (typeof type !== 'undefined') room.type = type;
-    if (typeof capacity !== 'undefined') room.capacity = Number.isFinite(+capacity) ? +capacity : room.capacity;
 
-    // unique check when cinema or name changes
     const dup = await Room.findOne({
       _id: { $ne: room._id },
       cinema: room.cinema,
@@ -135,13 +139,38 @@ exports.update = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// POST /api/rooms/:id/regenerate-seats  { layout_key?: 'STD_10x10_2D' | 'STD_10x8_2D', keep_enforce? }
+exports.regenerateSeats = async (req, res, next) => {
+  try {
+    const rawId = String(req.params.id || '').trim();
+    if (!mongoose.isValidObjectId(rawId)) return res.status(400).json({ message: 'Invalid id' });
+
+    const { layout_key, keep_enforce } = req.body || {};
+    const room = await Room.findById(rawId);
+    if (!room) return res.status(404).json({ message: 'Not found' });
+
+    const key = layout_key || room.layout_key;
+    const preset = PRESETS[key];
+    if (!preset) return res.status(400).json({ message: 'Invalid layout_key' });
+
+    room.layout_key = key;
+    room.rows = preset.rows;
+    room.cols = preset.cols;
+    if (typeof keep_enforce === 'boolean') room.enforce_layout = keep_enforce;
+
+    const inserted = await regenerateSeatsForRoom(room, key); // không session
+    room.capacity = inserted;
+    await room.save();
+
+    res.json({ ok: true, capacity: inserted, layout_key: key, enforce_layout: room.enforce_layout });
+  } catch (err) { next(err); }
+};
+
 // DELETE /api/rooms/:id
 exports.remove = async (req, res, next) => {
   try {
     const rawId = String(req.params.id || '').trim();
     if (!mongoose.isValidObjectId(rawId)) return res.status(400).json({ message: 'Invalid id' });
-
-    // (Tuỳ bạn: chặn xoá nếu còn showtime liên quan)
     await Room.findByIdAndDelete(rawId);
     res.json({ ok: true });
   } catch (err) { next(err); }
