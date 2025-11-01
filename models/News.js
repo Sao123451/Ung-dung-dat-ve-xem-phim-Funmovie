@@ -16,7 +16,10 @@ const NewsSchema = new Schema({
 }, { timestamps: true });
 
 // text search hỗ trợ q=
-NewsSchema.index({ title: 'text', content: 'text', tags: 'text' }, { weights: { title: 5, content: 2 } });
+NewsSchema.index(
+  { title: 'text', content: 'text' },
+  { weights: { title: 5, content: 2 } }
+);
 
 // Tạo slug nếu chưa có
 function toSlug(s) {
@@ -27,7 +30,7 @@ function toSlug(s) {
 }
 NewsSchema.pre('validate', function(next) {
   if (!this.slug && this.title) this.slug = toSlug(this.title);
-  next();
+  next(); 
 });
 
 module.exports = mongoose.model('News', NewsSchema);
