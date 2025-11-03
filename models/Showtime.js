@@ -18,3 +18,4 @@ ShowtimeSchema.index({ cinema: 1, room: 1, start_time: 1 });
 ShowtimeSchema.index({ room: 1, start_time: 1, end_time: 1 });
 
 module.exports = mongoose.model('Showtime', ShowtimeSchema);
+    
