@@ -20,7 +20,9 @@ import com.example.datn_md_13.Model.ShowtimeSlot;
 import com.example.datn_md_13.R;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -32,6 +34,9 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
 
     private final List<MovieGroup> data = new ArrayList<>();
     private final OnPick cb;
+
+    // ✅ Cache số ghế để tránh nhảy 98→100 khi recycle
+    private final Map<String, Integer> availableCache = new HashMap<>();
 
     public MovieShowtimesAdapter(OnPick cb) { this.cb = cb; }
 
@@ -45,7 +50,7 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_movie_showtimes, parent, false);
-        return new VH(v);
+        return new VH(v, cb);
     }
 
     @Override
@@ -72,22 +77,22 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
         h.tvRoomType.setText(type + " Phụ đề");
 
         // Times list
-        TimesAdapter tAdapter = new TimesAdapter(cb::onPick);
-        h.rvTimes.setLayoutManager(new LinearLayoutManager(h.rvTimes.getContext(),
-                RecyclerView.HORIZONTAL, false));
-        h.rvTimes.setAdapter(tAdapter);
-
-        // Nạp slots
         List<ShowtimeSlot> slots = (g.showtimes != null) ? g.showtimes : new ArrayList<>();
-        tAdapter.submit(slots);
+        h.bindTimes(slots);
 
-        // 🔥 Hot-fix: cập nhật số ghế còn trống thực tế cho từng suất
+        // Khởi tạo hiển thị seats từ cache trước (nếu có)
+        for (ShowtimeSlot s : slots) {
+            Integer cached = availableCache.get(s.id);
+            if (cached != null) {
+                h.timesAdapter.updateAvailableById(s.id, cached);
+            }
+        }
+
+        // 🔥 Gọi API để lấy số ghế thực tế cho từng suất (cập nhật theo ID)
         ApiService api = ApiClient.get().create(ApiService.class);
-        for (int i = 0; i < slots.size(); i++) {
-            final int idx = i;
-            final ShowtimeSlot s = slots.get(i);
-
-            api.getSeatsByShowtime(s.id).enqueue(new Callback<ShowtimeSeatResponse>() {
+        for (ShowtimeSlot s : slots) {
+            final String slotId = s.id;
+            api.getSeatsByShowtime(slotId).enqueue(new Callback<ShowtimeSeatResponse>() {
                 @Override
                 public void onResponse(@NonNull Call<ShowtimeSeatResponse> call,
                                        @NonNull Response<ShowtimeSeatResponse> res) {
@@ -95,17 +100,18 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
 
                     int available = 0;
                     for (Seat seat : res.body().seats) {
-                        // Dùng helper bạn đã có trong Seat.java để suy ra trạng thái
-                        String st = seat.resolvedStatus();
+                        String st = seat.resolvedStatus(); // available | sold | broken
                         if (!"sold".equalsIgnoreCase(st) && !"broken".equalsIgnoreCase(st)) {
                             available++;
                         }
                     }
-                    // Cập nhật lại chip giờ chiếu thứ idx
-                    tAdapter.updateAvailableAt(idx, available);
+
+                    // Lưu cache và cập nhật item theo ID để tránh nhảy số khi recycle
+                    availableCache.put(slotId, available);
+                    h.timesAdapter.updateAvailableById(slotId, available);
                 }
 
-                @Override public void onFailure(@NonNull Call<ShowtimeSeatResponse> call, @NonNull Throwable t) { }
+                @Override public void onFailure(@NonNull Call<ShowtimeSeatResponse> call, @NonNull Throwable t) { /* no-op */ }
             });
         }
     }
@@ -118,13 +124,25 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
         TextView tvTitle, tvMeta, tvRoomType;
         RecyclerView rvTimes;
 
-        VH(@NonNull View v) {
+        final TimesAdapter timesAdapter;
+
+        VH(@NonNull View v, OnPick cb) {
             super(v);
             ivPoster   = v.findViewById(R.id.ivPoster);
             tvTitle    = v.findViewById(R.id.tvTitle);
             tvMeta     = v.findViewById(R.id.tvMeta);
             tvRoomType = v.findViewById(R.id.tvRoomType);
             rvTimes    = v.findViewById(R.id.rvTimes);
+
+            rvTimes.setLayoutManager(new LinearLayoutManager(v.getContext(),
+                    RecyclerView.HORIZONTAL, false));
+            timesAdapter = new TimesAdapter(slot -> cb.onPick(slot));
+
+            rvTimes.setAdapter(timesAdapter);
+        }
+
+        void bindTimes(List<ShowtimeSlot> slots) {
+            timesAdapter.submit(slots);
         }
     }
 }

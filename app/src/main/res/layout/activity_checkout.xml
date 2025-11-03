@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:title="Thanh toán"
+        app:navigationIcon="@drawable/ic_arrow_back_24"
+        app:titleTextColor="@android:color/white"
+        android:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ScrollView
+        android:id="@+id/scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/container"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Info ngắn -->
+            <TextView
+                android:id="@+id/tvInfo"
+                android:text="Tóm tắt suất chiếu / ghế đã chọn"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Combos / bắp nước -->
+            <TextView
+                android:text="Combo / Bắp nước:"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvProducts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Voucher -->
+            <LinearLayout
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp">
+
+                <Button
+                    android:id="@+id/btnPickVoucher"
+                    android:text="Chọn voucher"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/tvVouchers"
+                    android:text="(chưa áp dụng)"
+                    android:layout_marginStart="12dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <!-- Tổng tiền -->
+            <TextView
+                android:text="Tổng kết:"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"/>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView android:id="@+id/tvSeatSubtotal"
+                    android:text="Vé: 0 đ"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView android:id="@+id/tvComboSubtotal"
+                    android:text="Combo: 0 đ"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView android:id="@+id/tvDiscount"
+                    android:text="Giảm giá: 0 đ"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#D32F2F"/>
+
+                <TextView android:id="@+id/tvTotal"
+                    android:textStyle="bold"
+                    android:text="Thành tiền: 0 đ"
+                    android:textSize="18sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <!-- Phương thức thanh toán -->
+            <TextView
+                android:text="Phương thức thanh toán:"
+                android:textStyle="bold"
+                android:layout_marginTop="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <RadioGroup
+                android:id="@+id/rgMethod"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+<!--                <RadioButton-->
+<!--                    android:id="@+id/rbCash"-->
+<!--                    android:checked="true"-->
+<!--                    android:text="Tiền mặt tại quầy"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content" />-->
+
+                <RadioButton
+                    android:id="@+id/rbMomo"
+                    android:text="MoMo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <RadioButton
+                    android:id="@+id/rbZalo"
+                    android:text="ZaloPay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <RadioButton
+                    android:id="@+id/rbVnpay"
+                    android:text="VNPay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RadioGroup>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:orientation="horizontal"
+        android:gravity="center_vertical|end"
+        android:padding="12dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tvTotalBottom"
+            android:textStyle="bold"
+            android:text="0 đ"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPay"
+            android:text="THANH TOÁN"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <!-- Loading -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progress"
+        android:visibility="gone"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

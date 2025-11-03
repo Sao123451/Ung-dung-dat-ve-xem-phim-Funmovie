@@ -37,6 +37,9 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
     private MovieShowtimesAdapter movieAdapter;
     private DateAdapter dateAdapter;
 
+    private Call<ShowtimesByCinemaResponse> inFlight;   // ✅ chống gọi đè
+    private boolean initChips;                          // ✅ tránh callback lần đầu
+
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_showtimes_by_cinema);
@@ -76,6 +79,7 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
         if (chipType != null) {
             chipType.setSingleSelection(true);
             chipType.setOnCheckedStateChangeListener((group, ids) -> {
+                if (!initChips) return; // bỏ callback phát sinh bởi setChecked ban đầu
                 if (ids == null || ids.isEmpty()) {
                     selectedType = null;
                 } else {
@@ -102,6 +106,8 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
 
     private void load() {
         if (progress != null) progress.setVisibility(View.VISIBLE);
+
+        if (inFlight != null) inFlight.cancel();
         api.getShowtimesByCinema(cinemaId, selectedDate, selectedType)
                 .enqueue(new Callback<ShowtimesByCinemaResponse>() {
                     @Override public void onResponse(Call<ShowtimesByCinemaResponse> call, Response<ShowtimesByCinemaResponse> res) {

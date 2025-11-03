@@ -14,11 +14,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
 import com.example.datn_md_13.MainActivity;
+import com.example.datn_md_13.Model.LoginRequest;
+import com.example.datn_md_13.Model.LoginResponse;
 import com.example.datn_md_13.Model.User;
 import com.example.datn_md_13.R;
 import com.example.datn_md_13.auth.AuthManager;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -32,14 +35,13 @@ public class Login extends AppCompatActivity {
     private TextInputEditText edtEmail, edtPassword;
     private Button btnLogin;
     private TextView tvRegister;
-    private ApiService apiService;
+    private ApiService api;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Nếu đã đăng nhập thì bỏ qua màn Login
         if (AuthManager.isLoggedIn(this)) {
             startActivity(new Intent(this, MainActivity.class));
             finish();
@@ -50,12 +52,12 @@ public class Login extends AppCompatActivity {
         edtEmail = findViewById(R.id.edtEmail);
         tilPassword = findViewById(R.id.tilPassword);
         edtPassword = findViewById(R.id.edtPassword);
-        btnLogin = findViewById(R.id.btnSignUp);
-        tvRegister = findViewById(R.id.tvLogin);
-
-        apiService = ApiClient.get().create(ApiService.class);
+        btnLogin = findViewById(R.id.btnSignUp);   // dùng lại ID cũ
+        tvRegister = findViewById(R.id.tvLogin);   // dùng lại ID cũ
 
         btnLogin.setText("Đăng nhập");
+        api = ApiClient.get().create(ApiService.class);
+
         btnLogin.setOnClickListener(v -> handleLogin());
         tvRegister.setOnClickListener(v -> startActivity(new Intent(Login.this, Register.class)));
     }
@@ -76,55 +78,81 @@ public class Login extends AppCompatActivity {
             return;
         }
 
-        // Tạo payload login
-        User loginUser = new User();
-        loginUser.setUsernameOrEmail(emailOrUsername);
-        loginUser.setPassword(password);
+        // ✅ Dùng LoginRequest thay cho JsonObject
+        LoginRequest body = new LoginRequest();
+        body.setUsernameOrEmail(emailOrUsername);
+        body.setPassword(password);
 
-        // API hiện tại trả về User
-        Call<User> call = apiService.login(loginUser);
-        call.enqueue(new Callback<User>() {
+        Call<LoginResponse> call = api.login(body);
+        call.enqueue(new Callback<LoginResponse>() {
             @Override
-            public void onResponse(@NonNull Call<User> call, @NonNull Response<User> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    User user = response.body();
+            public void onResponse(@NonNull Call<LoginResponse> call, @NonNull Response<LoginResponse> resp) {
+                try {
+                    if (resp.isSuccessful() && resp.body() != null) {
+                        // Chuẩn: { message, token, user }
+                        LoginResponse lr = resp.body();
+                        String token = lr.getToken();          // có thể null nếu backend chưa cấp
+                        User user = lr.getUser();
 
-                    // ---- Fallback tên hiển thị (rất quan trọng cho header) ----
-                    boolean hasUsername = user.getUsername() != null && !user.getUsername().trim().isEmpty();
-                    boolean hasFullName = user.getFull_name() != null && !user.getFull_name().trim().isEmpty();
+                        ensureDisplayName(user, emailOrUsername);
+                        AuthManager.setLoggedIn(Login.this, token, user);
 
-                    if (!hasUsername && !hasFullName) {
-                        // nếu input là email -> lấy phần trước @; nếu là username thì dùng trực tiếp
-                        String fallback = emailOrUsername;
-                        int at = fallback.indexOf('@');
-                        if (at > 0) fallback = fallback.substring(0, at);
-                        user.setUsername(fallback);
+                        Toast.makeText(Login.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(Login.this, MainActivity.class));
+                        finish();
+                        return;
                     }
 
-                    // Bật cờ + lưu user (token tạm null nếu backend chưa trả)
-                    AuthManager.setLoggedIn(Login.this, null, user);
+                    // ---- Fallback: nếu server trả thẳng User (legacy) qua errorBody ----
+                    String raw = resp.errorBody() != null ? resp.errorBody().string() : null;
+                    if (raw != null && raw.startsWith("{")) {
+                        try {
+                            User maybeUser = new Gson().fromJson(raw, User.class);
+                            if (maybeUser != null && (notEmpty(maybeUser.getUsername()) || notEmpty(maybeUser.getEmail()))) {
+                                ensureDisplayName(maybeUser, emailOrUsername);
+                                AuthManager.setLoggedIn(Login.this, null, maybeUser); // chưa có token
+                                Toast.makeText(Login.this, "Đăng nhập (legacy) thành công!", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(Login.this, MainActivity.class));
+                                finish();
+                                return;
+                            }
+                        } catch (Exception ignore) {}
+                    }
 
-                    Toast.makeText(Login.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                    startActivity(new Intent(Login.this, MainActivity.class));
-                    finish();
-                } else {
-                    String errorMessage = "Sai thông tin đăng nhập.";
+                    // Thông điệp lỗi
+                    String msg = "Sai thông tin đăng nhập.";
                     try {
-                        if (response.errorBody() != null) {
-                            JSONObject errorObj = new JSONObject(response.errorBody().string());
-                            errorMessage = errorObj.optString("message", errorMessage);
+                        if (resp.errorBody() != null) {
+                            JSONObject obj = new JSONObject(resp.errorBody().string());
+                            msg = obj.optString("message", msg);
                         }
-                    } catch (Exception e) {
-                        Log.e("LoginError", "Parse error: " + e.getMessage());
-                    }
-                    Toast.makeText(Login.this, errorMessage, Toast.LENGTH_LONG).show();
+                    } catch (Exception ignored) {}
+                    Toast.makeText(Login.this, msg, Toast.LENGTH_LONG).show();
+
+                } catch (Exception e) {
+                    Log.e("Login", "Parse error: " + e.getMessage());
+                    Toast.makeText(Login.this, "Lỗi xử lý phản hồi", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<User> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<LoginResponse> call, @NonNull Throwable t) {
                 Toast.makeText(Login.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
+
+    private void ensureDisplayName(User user, String input) {
+        if (user == null) return;
+        boolean hasUsername = notEmpty(user.getUsername());
+        boolean hasFullName = notEmpty(user.getFull_name());
+        if (!hasUsername && !hasFullName) {
+            String fallback = input;
+            int at = fallback.indexOf('@');
+            if (at > 0) fallback = fallback.substring(0, at);
+            user.setUsername(fallback);
+        }
+    }
+
+    private boolean notEmpty(String s) { return s != null && !s.trim().isEmpty(); }
 }

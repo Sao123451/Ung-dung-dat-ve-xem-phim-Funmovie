@@ -13,7 +13,7 @@ public class Seat {
 
     @SerializedName("extra_price")    public int extra_price;
 
-    // NEW: trạng thái ghế "available" | "sold" | "broken"
+        // NEW: trạng thái ghế "available" | "sold" | "broken"
     // để tương thích, nếu server dùng "status" thì cũng map vào đây
     @SerializedName(value = "seat_status", alternate = { "status" })
     public String seat_status;

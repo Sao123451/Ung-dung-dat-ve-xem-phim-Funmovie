@@ -36,4 +36,9 @@ public final class AuthManager {
     public static void logout(Context c) {
         sp(c).edit().clear().apply(); // xóa cờ + token + user
     }
+    // auth/AuthManager.java  (thêm hàm dưới cùng)
+    public static String getToken(Context c) {
+        return sp(c).getString(KEY_TOKEN, null);
+    }
+
 }

@@ -32,12 +32,25 @@ public class TimesAdapter extends RecyclerView.Adapter<TimesAdapter.VH> {
         notifyDataSetChanged();
     }
 
-    // 🔧 Cho phép cập nhật số ghế của 1 item (hot-fix)
+    /** Cập nhật theo index (giữ cho tương thích cũ) */
     public void updateAvailableAt(int index, int available) {
         if (index < 0 || index >= data.size()) return;
         ShowtimeSlot s = data.get(index);
         s.available_seats = available;
         notifyItemChanged(index);
+    }
+
+    /** ✅ Cập nhật theo id suất chiếu (an toàn khi RV recycle/di chuyển) */
+    public void updateAvailableById(String slotId, int available) {
+        if (slotId == null) return;
+        for (int i = 0; i < data.size(); i++) {
+            ShowtimeSlot s = data.get(i);
+            if (slotId.equals(s.id)) {
+                s.available_seats = available;
+                notifyItemChanged(i);
+                break;
+            }
+        }
     }
 
     @NonNull @Override

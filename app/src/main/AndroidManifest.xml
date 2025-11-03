@@ -16,6 +16,15 @@
         android:theme="@style/Theme.DATN_MD13"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".Activity.TicketDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.PaymentPendingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.CheckoutActivity"
+            android:exported="false" />
+        <activity
             android:name=".Activity.AreaPickerActivity"
             android:exported="false" />
         <activity
