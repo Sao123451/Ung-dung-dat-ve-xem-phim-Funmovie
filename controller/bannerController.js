@@ -165,3 +165,34 @@ exports.updateImageMeta = async (req, res, next) => {
     res.json(img);
   } catch (e) { next(e); }
 };
+
+
+
+// An sửa
+// ADMIN: lấy ảnh theo banner (bao gồm cả _id)
+exports.adminImagesByBanner = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid banner id' });
+    }
+
+    const banner = await Banner.findById(id).lean();
+    if (!banner) return res.status(404).json({ message: 'Banner not found' });
+
+    const imgs = await BannerImage.find({ banner_id: id })
+      .select('_id image_url movie_id updatedAt')
+      .lean();
+
+    const base = (process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/,'');
+    const data = imgs.map(x => ({
+      _id: x._id,
+      image_url: /^https?:\/\//i.test(x.image_url) ? x.image_url : `${base}${x.image_url.startsWith('/') ? '' : '/'}${x.image_url}`,
+      movie_id: x.movie_id || null,
+      updatedAt: x.updatedAt
+    }));
+
+    res.json({ banner: { _id: banner._id, title: banner.title, is_active: banner.is_active }, images: data });
+  } catch (e) { next(e); }
+};
+

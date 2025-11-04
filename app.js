@@ -9,6 +9,12 @@ const connectDB = require('./config/db');
 
 const app = express();
 connectDB();
+app.use('/public', express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  lastModified: false,
+  cacheControl: true,
+  maxAge: 0
+}));
 
 // Middleware
 app.use(helmet());
@@ -20,7 +26,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
-app.use('/public', express.static(path.join(__dirname, 'public')));
+//app.use('/public', express.static(path.join(__dirname, 'public')));
+
 
 // Routes (API only)
 app.use('/api/auth', require('./routes/auth'));
@@ -36,7 +43,6 @@ app.use('/api/tickets', require('./routes/ticket'));
 app.use('/api/vouchers', require('./routes/vouchers'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/reports', require('./routes/reports'));
-app.use('/public', express.static(path.join(__dirname, 'public'))); // để serve ảnh upload
 app.use('/api/banners', require('./routes/banners'));
 app.use('/api/ticket-seats', require('./routes/ticketSeats'));
 // app.use('/api/notifications', require('./routes/notifications'));
