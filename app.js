@@ -50,6 +50,10 @@ app.use('/api/news', require('./routes/news'));
 // app.use('/api/memberships', require('./routes/memberships'));
 app.use('/api/wishlist', require('./routes/wishlist'));
 
+app.use('/api/products', require('./routes/products'));
+app.use('/api/bookings', require('./routes/bookings'));
+
+
 
 // Health check
 app.get('/', (req, res) => {

@@ -1,10 +1,8 @@
-// routes/payments.js
-const express = require('express');
-const router = express.Router();
-const ctrl = require('../controller/paymentController');
-const { verifyToken, isStaff, isAdmin } = require('../middlewares/auth');
+const r = require('express').Router();
+const c = require('../controller/paymentController');
+const { verifyToken } = require('../middlewares/auth');
 
-router.get('/', verifyToken, isStaff, ctrl.getPayments);
-router.post('/', verifyToken, ctrl.createPayment);
+r.post('/init', verifyToken, c.init);
+r.post('/:id/mark', c.mark);
 
-module.exports = router;
+module.exports = r;
