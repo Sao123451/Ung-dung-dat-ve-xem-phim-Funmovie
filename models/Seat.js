@@ -9,9 +9,10 @@ const SeatSchema = new Schema({
   seat_type:   { type: String, enum: ['normal', 'vip', 'couple'], default: 'normal' },
   extra_price: { type: Number, default: 0 },
 
+  // thêm trạng thái holding + fix lỗi khoảng trắng ở ' sold'
   seat_status: {
     type: String,
-    enum: ['available', ' sold', 'broken'],
+    enum: ['available', 'holding', 'sold', 'broken'],
     default: 'available'
   }
 
