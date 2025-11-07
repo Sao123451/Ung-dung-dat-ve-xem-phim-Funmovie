@@ -1,6 +1,10 @@
 package com.example.datn_md_13;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,6 +15,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -30,6 +35,13 @@ import com.example.datn_md_13.Fragment.ProfileFragment;
 import com.example.datn_md_13.Model.BannerDto;
 import com.example.datn_md_13.Model.User;
 import com.example.datn_md_13.auth.AuthManager;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 
@@ -64,6 +76,16 @@ public class MainActivity extends AppCompatActivity {
     private final List<Item> bannerItems = new ArrayList<>();
     private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
     private int bannerIndex = 0;
+
+    // ====== LOCATION (GPS) ======
+    private static final int REQ_LOCATION   = 1001;
+    private static final int REQ_RESOLUTION = 2001;
+
+    private FusedLocationProviderClient fusedLocationClient;
+    // Lưu vị trí user để chỗ khác dùng (adapter, fragment...)
+    public static Double USER_LAT = null;
+    public static Double USER_LNG = null;
+    // ============================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -165,6 +187,11 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) bottom.setSelectedItemId(R.id.nav_home);
         setHeaderVisible(true);
+
+        // ====== LOCATION init ======
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        checkLocationPermissionAndGet();
+        // ===========================
     }
 
     // helper: reuse fragment theo tag (tránh tạo lại)
@@ -251,8 +278,6 @@ public class MainActivity extends AppCompatActivity {
         if (headerRoot != null) headerRoot.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
-
-
     private void loadBanners() {
         ApiService api = ApiClient.get().create(ApiService.class);
         api.getAllBanners().enqueue(new Callback<List<BannerDto>>() {
@@ -313,6 +338,100 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         autoScrollHandler.removeCallbacksAndMessages(null);
     }
+
+    // ====== LOCATION helpers ======
+    private void checkLocationPermissionAndGet() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{ Manifest.permission.ACCESS_FINE_LOCATION },
+                    REQ_LOCATION
+            );
+        } else {
+            requestHighAccuracyAndGetLocation();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                requestHighAccuracyAndGetLocation();
+            } else {
+                // user từ chối, tuỳ bạn xử lý (có thể show toast)
+            }
+        }
+    }
+
+    private void requestHighAccuracyAndGetLocation() {
+        LocationRequest locationRequest = LocationRequest.create()
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY);
+
+        LocationSettingsRequest.Builder builder =
+                new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
+
+        SettingsClient client = LocationServices.getSettingsClient(this);
+        client.checkLocationSettings(builder.build())
+                .addOnSuccessListener(response -> getCurrentLocation())
+                .addOnFailureListener(e -> {
+                    if (e instanceof ResolvableApiException) {
+                        try {
+                            ((ResolvableApiException) e)
+                                    .startResolutionForResult(MainActivity.this, REQ_RESOLUTION);
+                        } catch (IntentSender.SendIntentException ex) { }
+                    }
+                });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_RESOLUTION && resultCode == RESULT_OK) {
+            // User đã bật location → lấy lại vị trí
+            getCurrentLocation();
+        }
+    }
+
+
+    @SuppressLint("MissingPermission")
+    private void getCurrentLocation() {
+        com.google.android.gms.location.LocationRequest req =
+                com.google.android.gms.location.LocationRequest.create()
+                        .setPriority(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY)
+                        .setInterval(1000)      // 1s
+                        .setNumUpdates(1);      // lấy 1 lần rồi dừng
+
+        fusedLocationClient.requestLocationUpdates(
+                req,
+                new com.google.android.gms.location.LocationCallback() {
+                    @Override
+                    public void onLocationResult(
+                            @NonNull com.google.android.gms.location.LocationResult locationResult) {
+                        android.location.Location loc = locationResult.getLastLocation();
+                        if (loc != null) {
+                            MainActivity.USER_LAT = loc.getLatitude();
+                            MainActivity.USER_LNG = loc.getLongitude();
+                            android.util.Log.d(
+                                    "GPS",
+                                    "userLat=" + USER_LAT + ", userLng=" + USER_LNG
+                            );
+                        } else {
+                            android.util.Log.d("GPS", "Location is null");
+                        }
+
+                        fusedLocationClient.removeLocationUpdates(this);
+                    }
+                },
+                android.os.Looper.getMainLooper()
+        );
+    }
+
+
+    // =============================
 
     // ====== Banner Adapter ======
     private class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.VH> {
