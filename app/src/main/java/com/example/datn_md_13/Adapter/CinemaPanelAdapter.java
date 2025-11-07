@@ -126,8 +126,10 @@ public class CinemaPanelAdapter extends RecyclerView.Adapter<CinemaPanelAdapter.
                                             int available = 0;
                                             for (Seat seat : r2.body().seats) {
                                                 String st = seat.resolvedStatus(); // helper trong Seat.java
-                                                if (!"sold".equalsIgnoreCase(st) && !"broken".equalsIgnoreCase(st)) {
-                                                    available++;
+                                                if (!"sold".equalsIgnoreCase(st)
+                                                        && !"broken".equalsIgnoreCase(st)
+                                                        && !"holding".equalsIgnoreCase(st)) {
+                                                    available++;   // ✅ chỉ đếm available
                                                 }
                                             }
                                             // cập nhật lại số ghế cho item idx

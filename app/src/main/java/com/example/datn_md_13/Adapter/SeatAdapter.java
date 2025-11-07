@@ -40,7 +40,8 @@ public class SeatAdapter extends RecyclerView.Adapter<SeatAdapter.VH> {
 
     public List<SeatVM> getSelected() {
         List<SeatVM> out = new ArrayList<>();
-        for (SeatVM s : data) if (s.selected && s.isAvailable()) out.add(s);
+        for (SeatVM s : data)
+            if (s.selected && s.isAvailable()) out.add(s); // holding sẽ KHÔNG được tính
         return out;
     }
 
@@ -74,11 +75,11 @@ public class SeatAdapter extends RecyclerView.Adapter<SeatAdapter.VH> {
         SeatVM s = data.get(pos);
         h.tv.setText(s.label());
 
-        // màu
-        final int SOLD   = 0xFFEF5350;
-        final int BROKEN = 0xFF212121;
-        final int FREE   = 0xFFE0E0E0;
-        final int SEL    = 0xFFA5D6A7;
+        final int SOLD    = 0xFFEF5350; // đỏ
+        final int HOLDING = 0xFFFFB300; // cam  <-- NEW: màu ghế giữ
+        final int BROKEN  = 0xFF212121;
+        final int FREE    = 0xFFE0E0E0;
+        final int SEL     = 0xFFA5D6A7;
 
         // trạng thái
         if (s.isBroken()) {
@@ -92,6 +93,12 @@ public class SeatAdapter extends RecyclerView.Adapter<SeatAdapter.VH> {
             h.card.setCardBackgroundColor(SOLD);
             h.tv.setTextColor(0xFFFFFFFF);
             h.itemView.setClickable(false);
+            return;
+        }
+        if (s.isHolding()) {                     // <-- NEW: ghế đang giữ
+            h.card.setCardBackgroundColor(HOLDING);
+            h.tv.setTextColor(0xFF000000);
+            h.itemView.setClickable(false);     // không cho click
             return;
         }
 
@@ -124,7 +131,6 @@ public class SeatAdapter extends RecyclerView.Adapter<SeatAdapter.VH> {
         }
     }
 
-    /** Gắn SpanSizeLookup cho GridLayoutManager (gọi từ Activity) */
     public void attachSpanLookup(GridLayoutManager glm) {
         glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override public int getSpanSize(int position) {

@@ -41,14 +41,55 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView android:layout_width="10dp" android:layout_height="10dp" android:background="#EF5350"/>
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Đã bán   " />
-        <TextView android:layout_width="10dp" android:layout_height="10dp" android:background="#E0E0E0"/>
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Trống   " />
-        <TextView android:layout_width="10dp" android:layout_height="10dp" android:background="#A5D6A7"/>
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Đang chọn   " />
-        <TextView android:layout_width="10dp" android:layout_height="10dp" android:background="#212121"/>
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="  Hỏng" />
+        <!-- Đã bán -->
+        <TextView
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="#EF5350"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  Đã bán   " />
+
+        <!-- [NEW] Đang giữ -->
+        <TextView
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="#FFA726"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  Đang giữ   " />
+
+        <!-- Trống -->
+        <TextView
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="#E0E0E0"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  Trống   " />
+
+        <!-- Đang chọn -->
+        <TextView
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="#A5D6A7"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  Đang chọn   " />
+
+        <!-- Hỏng -->
+        <TextView
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="#212121"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  Hỏng" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -96,12 +137,12 @@
             android:layout_height="wrap_content"
             android:text="0 đ"
             android:textStyle="bold"/>
+
         <Button
             android:id="@+id/btnContinue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Tiếp tục"/>
-
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

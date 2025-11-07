@@ -184,11 +184,18 @@ public class Activity_seat_selection extends AppCompatActivity {
                                 vm.priceExtra = s.extra_price + s2.extra_price;
                                 vm.span = 2;
 
+                                // [CHANGE] gộp status: ưu tiên broken > sold > holding > available
                                 String st1 = s.resolvedStatus();
                                 String st2 = s2.resolvedStatus();
-                                if ("broken".equalsIgnoreCase(st1) || "broken".equalsIgnoreCase(st2)) vm.status = "broken";
-                                else if ("sold".equalsIgnoreCase(st1) || "sold".equalsIgnoreCase(st2)) vm.status = "sold";
-                                else vm.status = "available";
+                                if ("broken".equalsIgnoreCase(st1) || "broken".equalsIgnoreCase(st2)) {
+                                    vm.status = "broken";
+                                } else if ("sold".equalsIgnoreCase(st1) || "sold".equalsIgnoreCase(st2)) {
+                                    vm.status = "sold";
+                                } else if ("holding".equalsIgnoreCase(st1) || "holding".equalsIgnoreCase(st2)) {
+                                    vm.status = "holding";
+                                } else {
+                                    vm.status = "available";
+                                }
 
                                 flat.add(vm);
                                 usedIds.add(s._id);
@@ -198,7 +205,7 @@ public class Activity_seat_selection extends AppCompatActivity {
                             }
                         }
 
-                        // GHẾ ĐƠN
+// GHẾ ĐƠN (giữ nguyên, chỉ cần chắc chắn dùng resolvedStatus)
                         if (!merged) {
                             SeatVM vm = new SeatVM();
                             vm._id = s._id;
@@ -206,7 +213,7 @@ public class Activity_seat_selection extends AppCompatActivity {
                             vm.number = s.number;
                             vm.type = s.seat_type;
                             vm.priceExtra = s.extra_price;
-                            vm.status = s.resolvedStatus();   // luôn dùng helper
+                            vm.status = s.resolvedStatus();   // luôn dùng helper, có thể là holding
                             vm.span = 1;
                             flat.add(vm);
                             usedIds.add(s._id);

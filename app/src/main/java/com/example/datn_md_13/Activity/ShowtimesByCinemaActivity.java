@@ -30,34 +30,41 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ShowtimesByCinemaActivity extends AppCompatActivity {
+
     private ApiService api;
     private String cinemaId, cinemaName, selectedDate;
     private String selectedType = null; // "2D" | "3D" | "IMAX" | null
+
     private CircularProgressIndicator progress;
     private MovieShowtimesAdapter movieAdapter;
     private DateAdapter dateAdapter;
 
-    private Call<ShowtimesByCinemaResponse> inFlight;   // ✅ chống gọi đè
-    private boolean initChips;                          // ✅ tránh callback lần đầu
+    // chống gọi API chồng lên nhau + chống callback chip lần đầu
+    private Call<ShowtimesByCinemaResponse> inFlight;
+    private boolean initChips = false;
 
-    @Override protected void onCreate(Bundle b) {
+    @Override
+    protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_showtimes_by_cinema);
 
         cinemaId = getIntent().getStringExtra("cinema_id");
         cinemaName = getIntent().getStringExtra("cinema_name");
 
+        // Toolbar
         MaterialToolbar bar = findViewById(R.id.topAppBar);
         bar.setNavigationOnClickListener(v -> onBackPressed());
-        ((TextView)findViewById(R.id.tvCinemaName)).setText(cinemaName);
+        TextView tvCinemaName = findViewById(R.id.tvCinemaName);
+        if (tvCinemaName != null) tvCinemaName.setText(cinemaName);
 
-        // ✅ init trước khi load
         progress = findViewById(R.id.progress);
         api = ApiClient.get().create(ApiService.class);
 
-        // Dates
+        // ==== DATES ====
         RecyclerView rvDates = findViewById(R.id.rvDates);
-        rvDates.setLayoutManager(new LinearLayoutManager(this, RecyclerView.HORIZONTAL, false));
+        rvDates.setLayoutManager(
+                new LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
+        );
         dateAdapter = new DateAdapter(d -> {
             if (d != null && !d.equals(selectedDate)) {
                 selectedDate = d;
@@ -67,84 +74,114 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
         rvDates.setAdapter(dateAdapter);
         dateAdapter.submit(next7Days());
 
-        // Type filter chips
+        if (selectedDate == null) {
+            selectedDate = today();
+        }
+
+        // ==== TYPE CHIPS ====
         ChipGroup chipType = findViewById(R.id.chipType);
-
-        Chip chip2D   = findViewById(R.id.chip2D);
-        Chip chip3D   = findViewById(R.id.chip3D);
+        Chip chip2D = findViewById(R.id.chip2D);
+        Chip chip3D = findViewById(R.id.chip3D);
         Chip chipIMAX = findViewById(R.id.chipIMAX);
-
-
 
         if (chipType != null) {
             chipType.setSingleSelection(true);
             chipType.setOnCheckedStateChangeListener((group, ids) -> {
-                if (!initChips) return; // bỏ callback phát sinh bởi setChecked ban đầu
+                // Lần đầu setChecked(true) sẽ nhảy vào đây -> bỏ qua
+                if (!initChips) return;
+
                 if (ids == null || ids.isEmpty()) {
                     selectedType = null;
                 } else {
                     int id = ids.get(0);
-                    if (id == R.id.chip2D)   selectedType = "2D";
-                    else if (id == R.id.chip3D) selectedType = "3D";
-                    else if (id == R.id.chipIMAX) selectedType = "IMAX";
-                    else selectedType = null; // chipAll
+                    if (id == R.id.chip2D) {
+                        selectedType = "2D";
+                    } else if (id == R.id.chip3D) {
+                        selectedType = "3D";
+                    } else if (id == R.id.chipIMAX) {
+                        selectedType = "IMAX";
+                    } else {
+                        selectedType = null;
+                    }
                 }
-                load(); // đổi filter -> reload
+                load(); // đổi loại phòng -> reload API
             });
         }
-        ((Chip)findViewById(R.id.chip2D)).setChecked(true);
 
-        // Movies
+        // chọn mặc định 2D
+        if (chip2D != null) {
+            chip2D.setChecked(true);   // listener sẽ bị gọi nhưng initChips = false nên không làm gì
+        }
+        selectedType = "2D";
+        initChips = true;              // từ giờ trở đi bấm chip mới xử lý
+
+        // ==== MOVIE + SHOWTIMES LIST ====
         RecyclerView rvMovies = findViewById(R.id.rvMovies);
         rvMovies.setLayoutManager(new LinearLayoutManager(this));
         movieAdapter = new MovieShowtimesAdapter(this::onPickShowtime);
         rvMovies.setAdapter(movieAdapter);
 
-        if (selectedDate == null) selectedDate = today();
-        load(); // lần đầu
+        // gọi lần đầu
+        load();
     }
 
     private void load() {
         if (progress != null) progress.setVisibility(View.VISIBLE);
 
-        if (inFlight != null) inFlight.cancel();
-        api.getShowtimesByCinema(cinemaId, selectedDate, selectedType)
-                .enqueue(new Callback<ShowtimesByCinemaResponse>() {
-                    @Override public void onResponse(Call<ShowtimesByCinemaResponse> call, Response<ShowtimesByCinemaResponse> res) {
-                        if (progress != null) progress.setVisibility(View.GONE);
-                        if (!res.isSuccessful() || res.body()==null) {
-                            Toast.makeText(ShowtimesByCinemaActivity.this, "Lỗi tải suất chiếu", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        movieAdapter.submit(res.body().movies);
-                    }
-                    @Override public void onFailure(Call<ShowtimesByCinemaResponse> call, Throwable t) {
-                        if (progress != null) progress.setVisibility(View.GONE);
-                        Toast.makeText(ShowtimesByCinemaActivity.this, "Không thể kết nối", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        // huỷ call cũ nếu đang chạy
+        if (inFlight != null && !inFlight.isCanceled()) {
+            inFlight.cancel();
+        }
+
+        inFlight = api.getShowtimesByCinema(cinemaId, selectedDate, selectedType);
+        inFlight.enqueue(new Callback<ShowtimesByCinemaResponse>() {
+            @Override
+            public void onResponse(Call<ShowtimesByCinemaResponse> call,
+                                   Response<ShowtimesByCinemaResponse> res) {
+                if (progress != null) progress.setVisibility(View.GONE);
+
+                if (!res.isSuccessful() || res.body() == null) {
+                    Toast.makeText(ShowtimesByCinemaActivity.this,
+                            "Lỗi tải suất chiếu", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                movieAdapter.submit(res.body().movies);
+            }
+
+            @Override
+            public void onFailure(Call<ShowtimesByCinemaResponse> call, Throwable t) {
+                if (progress != null) progress.setVisibility(View.GONE);
+                if (call.isCanceled()) return; // bị huỷ vì load mới, bỏ qua
+                Toast.makeText(ShowtimesByCinemaActivity.this,
+                        "Không thể kết nối", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void onPickShowtime(ShowtimeSlot s) {
         // Mở màn chọn ghế, truyền id suất chiếu + giá cơ bản
         Intent i = new Intent(this, Activity_seat_selection.class);
-        i.putExtra("showtime_id", s.id);            // bắt buộc
-        i.putExtra("ticket_price", s.ticket_price.intValue());
-// nếu ticket_price là double thì cast
-        // i.putExtra("room_id", s.room_id);        // nếu bạn có trường này thì truyền thêm
+        i.putExtra("showtime_id", s.id);
+        if (s.ticket_price != null) {
+            i.putExtra("ticket_price", s.ticket_price.intValue());
+        }
         startActivity(i);
     }
 
-
     private static String today() {
-        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat(
+                "yyyy-MM-dd", java.util.Locale.getDefault()
+        );
         return f.format(new java.util.Date());
     }
 
     private static List<String> next7Days() {
         List<String> ds = new ArrayList<>();
         java.util.Calendar c = java.util.Calendar.getInstance();
-        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat(
+                "yyyy-MM-dd", java.util.Locale.getDefault()
+        );
         for (int i = 0; i < 7; i++) {
             ds.add(f.format(c.getTime()));
             c.add(java.util.Calendar.DAY_OF_MONTH, 1);
