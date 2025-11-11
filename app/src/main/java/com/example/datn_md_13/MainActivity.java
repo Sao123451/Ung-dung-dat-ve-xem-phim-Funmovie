@@ -34,7 +34,7 @@ import com.example.datn_md_13.Fragment.NewsFragment;
 import com.example.datn_md_13.Fragment.ProfileFragment;
 import com.example.datn_md_13.Model.BannerDto;
 import com.example.datn_md_13.Model.User;
-import com.example.datn_md_13.auth.AuthManager;
+import com.example.datn_md_13.AuthManager;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;

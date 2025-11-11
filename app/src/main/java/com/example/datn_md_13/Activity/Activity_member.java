@@ -67,6 +67,7 @@ public class Activity_member extends AppCompatActivity {
         rowChangePassword = findViewById(R.id.row_change_password);
         ivAvatar         = findViewById(R.id.ivAvatar);
 
+        // Nếu bạn đang dùng interceptor có token:
         apiService = ApiClient.authed(this).create(ApiService.class);
 
         // Logout
@@ -83,7 +84,7 @@ public class Activity_member extends AppCompatActivity {
             startActivity(new Intent(this, User_Information.class));
         });
 
-        // Đi tới màn đổi mật khẩu (nếu bạn đã tạo)
+        // Đi tới màn đổi mật khẩu (nếu bạn đã tạo Activity ChangePassword)
         rowChangePassword.setOnClickListener(v -> {
             startActivity(new Intent(this, ChangePassword.class));
         });
@@ -140,8 +141,8 @@ public class Activity_member extends AppCompatActivity {
                     tvInitial.setVisibility(View.VISIBLE);
                 }
 
-                // Nếu bạn muốn đồng bộ luôn user mới vào AuthManager:
-                AuthManager.saveUser(Activity_member.this, user);
+                // BỎ DÒNG NÀY ĐI VÌ AuthManager KHÔNG CÓ saveUser():
+                // AuthManager.saveUser(Activity_member.this, user);
             }
 
             @Override
