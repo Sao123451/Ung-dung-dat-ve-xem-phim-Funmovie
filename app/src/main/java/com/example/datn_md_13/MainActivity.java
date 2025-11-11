@@ -1,6 +1,10 @@
 package com.example.datn_md_13;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,6 +15,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -22,14 +27,21 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
-import com.example.datn_md_13.Fragment.CinemaByAreaFragment;
 import com.example.datn_md_13.Fragment.HomeFragment;
+import com.example.datn_md_13.Fragment.CinemaByAreaFragment;
+import com.example.datn_md_13.Fragment.VoucherFragment;
 import com.example.datn_md_13.Fragment.NewsFragment;
 import com.example.datn_md_13.Fragment.ProfileFragment;
-import com.example.datn_md_13.Fragment.VoucherFragment;
 import com.example.datn_md_13.Model.BannerDto;
 import com.example.datn_md_13.Model.User;
-import com.example.datn_md_13.AuthManager;
+import com.example.datn_md_13.auth.AuthManager;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 
@@ -46,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private View mainContainer;
     private BottomNavigationView bottom;
 
-    // HEADER refs
+    // ====== HEADER refs ======
     private View headerRoot;
     private View headerGuest;
     private View headerUser;
@@ -55,17 +67,25 @@ public class MainActivity extends AppCompatActivity {
     private View btnGoLogin;
 
     private BannerAdapter bannerAdapter;
-    private ApiService apiAuthed;
 
-    // Banner item struct
+    // Item hiển thị banner
     private static class Item {
         String imageUrl;
         String movieId;
     }
-
     private final List<Item> bannerItems = new ArrayList<>();
     private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
     private int bannerIndex = 0;
+
+    // ====== LOCATION (GPS) ======
+    private static final int REQ_LOCATION   = 1001;
+    private static final int REQ_RESOLUTION = 2001;
+
+    private FusedLocationProviderClient fusedLocationClient;
+    // Lưu vị trí user để chỗ khác dùng (adapter, fragment...)
+    public static Double USER_LAT = null;
+    public static Double USER_LNG = null;
+    // ============================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,15 +93,12 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        // Retrofit có interceptor tự chèn Authorization: Bearer <token>
-        apiAuthed = ApiClient.authed(this).create(ApiService.class);
-
         // ====== Views ======
         rvBanner      = findViewById(R.id.rv_banner);
         mainContainer = findViewById(R.id.main_container);
         bottom        = findViewById(R.id.bottom_nav);
 
-        // ====== Header ======
+        // Header trong activity_main.xml
         headerRoot = findViewById(R.id.headerCard);
         if (headerRoot != null) {
             headerGuest = headerRoot.findViewById(R.id.header_guest);
@@ -90,15 +107,12 @@ public class MainActivity extends AppCompatActivity {
             ivAvatar    = headerRoot.findViewById(R.id.ivAvatar);
             btnGoLogin  = headerRoot.findViewById(R.id.btnGoLogin);
 
-            // Click "Đăng nhập"
             if (btnGoLogin != null) {
                 btnGoLogin.setOnClickListener(v ->
                         startActivity(new Intent(MainActivity.this,
                                 com.example.datn_md_13.Activity.Login.class))
                 );
             }
-
-            // Click header user -> sang màn member
             if (headerUser != null) {
                 headerUser.setOnClickListener(v -> {
                     if (AuthManager.isLoggedIn(MainActivity.this)) {
@@ -129,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
         rvBanner.setAdapter(bannerAdapter);
         loadBanners();
 
-        // ====== Bottom Nav ======
+        // ====== Bottom nav → dùng Fragment cho tất cả tab ======
         bottom.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -171,128 +185,72 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        if (savedInstanceState == null) {
-            bottom.setSelectedItemId(R.id.nav_home);
-        }
-
+        if (savedInstanceState == null) bottom.setSelectedItemId(R.id.nav_home);
         setHeaderVisible(true);
+
+        // ====== LOCATION init ======
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        checkLocationPermissionAndGet();
+        // ===========================
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadCurrentUserAndRenderHeader(); // luôn sync với server & cache
-    }
-
-    // ====== Fragment helpers ======
+    // helper: reuse fragment theo tag (tránh tạo lại)
     private Fragment findOrCreate(String tag, Fragment fallback) {
         Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
         return (f != null) ? f : fallback;
     }
-
     private void replaceFrag(Fragment f, String tag) {
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.main_container, f, tag)
                 .commit();
     }
 
-    // ====== Header sync với /users/me như User_Information ======
-    private void loadCurrentUserAndRenderHeader() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        renderHeader();
+    }
+
+    // ====== HEADER logic ======
+    private void renderHeader() {
         if (headerRoot == null) return;
 
         if (!AuthManager.isLoggedIn(this)) {
             if (headerGuest != null) headerGuest.setVisibility(View.VISIBLE);
-            if (headerUser  != null) headerUser.setVisibility(View.GONE);
-            return;
-        }
-
-        apiAuthed.getUserProfile().enqueue(new Callback<User>() {
-            @Override
-            public void onResponse(@NonNull Call<User> call,
-                                   @NonNull Response<User> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    User user = response.body();
-                    // ✅ Lưu user mới nhất (full_name, avatar, ...) vào cache chung
-                    AuthManager.saveUser(MainActivity.this, user);
-                    renderHeader(user);
-                } else {
-                    // fallback: dùng cache nếu gọi API lỗi
-                    User cached = AuthManager.getUser(MainActivity.this);
-                    renderHeader(cached);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<User> call,
-                                  @NonNull Throwable t) {
-                User cached = AuthManager.getUser(MainActivity.this);
-                renderHeader(cached);
-            }
-        });
-    }
-
-    // Render header theo User (có thể từ API hoặc cache)
-    private void renderHeader(User u) {
-        if (headerRoot == null) return;
-
-        if (u == null) {
-            if (headerGuest != null) headerGuest.setVisibility(View.VISIBLE);
-            if (headerUser  != null) headerUser.setVisibility(View.GONE);
+            if (headerUser != null) headerUser.setVisibility(View.GONE);
             return;
         }
 
         if (headerGuest != null) headerGuest.setVisibility(View.GONE);
         if (headerUser  != null) headerUser.setVisibility(View.VISIBLE);
 
-        // ✅ Hiển thị "Chào <full_name>" đồng bộ với User_Information
+        User u = AuthManager.getUser(this);
         String name = getDisplayName(u);
-        if (tvGreeting != null) {
-            tvGreeting.setText("Chào " + name);
-        }
+        if (tvGreeting != null) tvGreeting.setText("Chào " + name);
 
-        // Avatar
         if (ivAvatar != null) {
-            String avatar = u.getAvatar();
-            if (avatar != null && !avatar.trim().isEmpty()) {
-                String avatarUrl = avatar.trim();
-                if (!avatarUrl.startsWith("http")) {
-                    avatarUrl = ApiClient.absolutePublicUrl(avatarUrl);
-                }
-                Glide.with(this)
-                        .load(avatarUrl)
-                        .placeholder(R.drawable.bg_avatar_placeholder)
-                        .error(R.drawable.bg_avatar_placeholder)
-                        .into(ivAvatar);
+            if (u != null && u.getAvatar() != null && !u.getAvatar().trim().isEmpty()) {
+                Glide.with(this).load(u.getAvatar()).into(ivAvatar);
             } else {
                 ivAvatar.setImageResource(R.drawable.bg_avatar_placeholder);
             }
         }
     }
 
-    // ✅ Ưu tiên full_name để trùng với User_Information
+    // Ưu tiên username -> full_name -> phần trước @ của email
     private String getDisplayName(User u) {
         if (u == null) return "Bạn";
-
         String name = null;
-
-        // 1️⃣ full_name: tên hiển thị trong User_Information
-        if (u.getFull_name() != null && !u.getFull_name().trim().isEmpty()) {
-            name = u.getFull_name().trim();
-        }
-        // 2️⃣ username: fallback
-        else if (u.getUsername() != null && !u.getUsername().trim().isEmpty()) {
+        if (u.getUsername() != null && !u.getUsername().trim().isEmpty()) {
             name = u.getUsername().trim();
-        }
-        // 3️⃣ prefix email: fallback cuối
-        else if (u.getEmail() != null && !u.getEmail().trim().isEmpty()) {
+        } else if (u.getFull_name() != null && !u.getFull_name().trim().isEmpty()) {
+            name = u.getFull_name().trim();
+        } else if (u.getEmail() != null && !u.getEmail().trim().isEmpty()) {
             String email = u.getEmail().trim();
             int at = email.indexOf('@');
             name = (at > 0) ? email.substring(0, at) : email;
         }
-
         if (name == null || name.isEmpty()) return "Bạn";
-
-        // Viết hoa chữ cái đầu mỗi từ
         String[] parts = name.toLowerCase().split("\\s+");
         StringBuilder sb = new StringBuilder();
         for (String p : parts) {
@@ -316,7 +274,6 @@ public class MainActivity extends AppCompatActivity {
         });
         ViewCompat.requestApplyInsets(mainContainer);
     }
-
     private void setHeaderVisible(boolean visible) {
         if (headerRoot != null) headerRoot.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
@@ -332,8 +289,8 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Không tải được banner", Toast.LENGTH_SHORT).show();
                     return;
                 }
-
                 List<BannerDto> data = response.body();
+
                 bannerItems.clear();
                 for (BannerDto b : data) {
                     if (b.images == null) continue;
@@ -356,11 +313,9 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<BannerDto>> call,
-                                  @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<BannerDto>> call, @NonNull Throwable t) {
                 setBannerVisible(false);
-                Toast.makeText(MainActivity.this,
-                        "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -384,10 +339,103 @@ public class MainActivity extends AppCompatActivity {
         autoScrollHandler.removeCallbacksAndMessages(null);
     }
 
+    // ====== LOCATION helpers ======
+    private void checkLocationPermissionAndGet() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{ Manifest.permission.ACCESS_FINE_LOCATION },
+                    REQ_LOCATION
+            );
+        } else {
+            requestHighAccuracyAndGetLocation();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                requestHighAccuracyAndGetLocation();
+            } else {
+                // user từ chối, tuỳ bạn xử lý (có thể show toast)
+            }
+        }
+    }
+
+    private void requestHighAccuracyAndGetLocation() {
+        LocationRequest locationRequest = LocationRequest.create()
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY);
+
+        LocationSettingsRequest.Builder builder =
+                new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
+
+        SettingsClient client = LocationServices.getSettingsClient(this);
+        client.checkLocationSettings(builder.build())
+                .addOnSuccessListener(response -> getCurrentLocation())
+                .addOnFailureListener(e -> {
+                    if (e instanceof ResolvableApiException) {
+                        try {
+                            ((ResolvableApiException) e)
+                                    .startResolutionForResult(MainActivity.this, REQ_RESOLUTION);
+                        } catch (IntentSender.SendIntentException ex) { }
+                    }
+                });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_RESOLUTION && resultCode == RESULT_OK) {
+            // User đã bật location → lấy lại vị trí
+            getCurrentLocation();
+        }
+    }
+
+
+    @SuppressLint("MissingPermission")
+    private void getCurrentLocation() {
+        com.google.android.gms.location.LocationRequest req =
+                com.google.android.gms.location.LocationRequest.create()
+                        .setPriority(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY)
+                        .setInterval(1000)      // 1s
+                        .setNumUpdates(1);      // lấy 1 lần rồi dừng
+
+        fusedLocationClient.requestLocationUpdates(
+                req,
+                new com.google.android.gms.location.LocationCallback() {
+                    @Override
+                    public void onLocationResult(
+                            @NonNull com.google.android.gms.location.LocationResult locationResult) {
+                        android.location.Location loc = locationResult.getLastLocation();
+                        if (loc != null) {
+                            MainActivity.USER_LAT = loc.getLatitude();
+                            MainActivity.USER_LNG = loc.getLongitude();
+                            android.util.Log.d(
+                                    "GPS",
+                                    "userLat=" + USER_LAT + ", userLng=" + USER_LNG
+                            );
+                        } else {
+                            android.util.Log.d("GPS", "Location is null");
+                        }
+
+                        fusedLocationClient.removeLocationUpdates(this);
+                    }
+                },
+                android.os.Looper.getMainLooper()
+        );
+    }
+
+
+    // =============================
+
     // ====== Banner Adapter ======
     private class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.VH> {
-        @NonNull
-        @Override
+        @NonNull @Override
         public VH onCreateViewHolder(@NonNull android.view.ViewGroup parent, int viewType) {
             android.widget.ImageView iv = new android.widget.ImageView(parent.getContext());
             iv.setLayoutParams(new RecyclerView.LayoutParams(
@@ -397,33 +445,21 @@ public class MainActivity extends AppCompatActivity {
             iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
             return new VH(iv);
         }
-
         @Override
         public void onBindViewHolder(@NonNull VH holder, int position) {
             Item it = bannerItems.get(position);
-            Glide.with(holder.iv.getContext())
-                    .load(it.imageUrl)
-                    .centerCrop()
-                    .into(holder.iv);
-
+            Glide.with(holder.iv.getContext()).load(it.imageUrl).centerCrop().into(holder.iv);
             holder.itemView.setOnClickListener(v -> {
                 if (it.movieId != null && !it.movieId.isEmpty()) {
-                    Intent i = new Intent(v.getContext(),
-                            com.example.datn_md_13.activity_movie_detail.class);
+                    Intent i = new Intent(v.getContext(), com.example.datn_md_13.activity_movie_detail.class);
                     i.putExtra("movie_id", it.movieId);
                     v.getContext().startActivity(i);
                 } else {
-                    Toast.makeText(v.getContext(),
-                            "Banner này chưa gắn phim", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(v.getContext(), "Banner này chưa gắn phim", Toast.LENGTH_SHORT).show();
                 }
             });
         }
-
-        @Override
-        public int getItemCount() {
-            return bannerItems.size();
-        }
-
+        @Override public int getItemCount() { return bannerItems.size(); }
         class VH extends RecyclerView.ViewHolder {
             android.widget.ImageView iv;
             VH(@NonNull android.view.View itemView) {

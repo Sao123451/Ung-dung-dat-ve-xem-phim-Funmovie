@@ -100,11 +100,15 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
 
                     int available = 0;
                     for (Seat seat : res.body().seats) {
-                        String st = seat.resolvedStatus(); // available | sold | broken
-                        if (!"sold".equalsIgnoreCase(st) && !"broken".equalsIgnoreCase(st)) {
-                            available++;
+                        String st = seat.resolvedStatus(); // available | holding | sold | broken
+                        if (!"sold".equalsIgnoreCase(st)
+                                && !"broken".equalsIgnoreCase(st)
+                                && !"holding".equalsIgnoreCase(st)) {
+                            available++;   // ✅ chỉ đếm available
                         }
                     }
+
+
 
                     // Lưu cache và cập nhật item theo ID để tránh nhảy số khi recycle
                     availableCache.put(slotId, available);

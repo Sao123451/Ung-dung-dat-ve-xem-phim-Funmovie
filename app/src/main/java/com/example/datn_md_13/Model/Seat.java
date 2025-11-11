@@ -4,17 +4,20 @@ package com.example.datn_md_13.Model;
 import com.google.gson.annotations.SerializedName;
 
 public class Seat {
-    @SerializedName("_id")            public String _id;
+    @SerializedName("_id")
+    public String _id;
+
     public String row;
     public int number;
 
     // normal | vip | couple
-    @SerializedName("seat_type")      public String seat_type;
+    @SerializedName("seat_type")
+    public String seat_type;
 
-    @SerializedName("extra_price")    public int extra_price;
+    @SerializedName("extra_price")
+    public int extra_price;
 
-        // NEW: trạng thái ghế "available" | "sold" | "broken"
-    // để tương thích, nếu server dùng "status" thì cũng map vào đây
+    // [CHANGE] server có thể trả "available" | "holding" | "sold" | "broken"
     @SerializedName(value = "seat_status", alternate = { "status" })
     public String seat_status;
 
@@ -27,7 +30,9 @@ public class Seat {
 
     // Helper: nếu server chưa gửi seat_status, suy ra từ cờ cũ
     public String resolvedStatus() {
-        if (seat_status != null && !seat_status.isEmpty()) return seat_status;
+        if (seat_status != null && !seat_status.isEmpty()) {
+            return seat_status; // có thể là holding
+        }
         if (!active) return "broken";
         return is_booked ? "sold" : "available";
     }

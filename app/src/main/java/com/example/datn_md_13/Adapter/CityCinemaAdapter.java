@@ -1,5 +1,6 @@
 package com.example.datn_md_13.Adapter;
 
+import android.location.Location;
 import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,12 +12,14 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.datn_md_13.Activity.ShowtimesByCinemaActivity;
+import com.example.datn_md_13.MainActivity;
 import com.example.datn_md_13.Model.Cinema;
 import com.example.datn_md_13.R;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -36,7 +39,7 @@ public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private final List<Row> rows = new ArrayList<>();
 
     public CityCinemaAdapter(OnCinemaClick cb) {
-        this.onCinemaClick = cb; //
+        this.onCinemaClick = cb;
     }
 
     public void submit(Map<String, List<Cinema>> grouped) {
@@ -105,11 +108,18 @@ public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             String addr = r.cinema.getAddress();
             vh.tvAddress.setText((addr == null || addr.isEmpty()) ? "—" : addr);
 
+            // ✅ hiển thị khoảng cách
+            String dist = formatDistance(r.cinema);
+            if (dist != null) {
+                vh.tvDistance.setText(dist);
+                vh.tvDistance.setVisibility(View.VISIBLE);
+            } else {
+                vh.tvDistance.setVisibility(View.GONE);
+            }
+
             vh.itemView.setOnClickListener(v -> {
-                // Nếu muốn callback ra ngoài Fragment vẫn hoạt động
                 if (onCinemaClick != null) onCinemaClick.onClick(r.cinema);
 
-                // Mở màn suất chiếu theo rạp
                 Intent i = new Intent(v.getContext(), ShowtimesByCinemaActivity.class);
                 i.putExtra("cinema_id", r.cinema.getId());
                 i.putExtra("cinema_name", r.cinema.getName());
@@ -119,6 +129,19 @@ public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     @Override public int getItemCount() { return rows.size(); }
+
+    // ==== tính khoảng cách km từ user -> rạp ====
+    private String formatDistance(Cinema c) {
+        Double uLat = MainActivity.USER_LAT;
+        Double uLng = MainActivity.USER_LNG;
+        if (uLat == null || uLng == null
+                || c.getLatitude() == null || c.getLongitude() == null) return null;
+
+        float[] res = new float[1];
+        Location.distanceBetween(uLat, uLng, c.getLatitude(), c.getLongitude(), res);
+        float km = res[0] / 1000f;
+        return String.format(Locale.getDefault(), "%.1f km", km);
+    }
 
     // ==== ViewHolders & Row model ====
     static class CityVH extends RecyclerView.ViewHolder {
@@ -133,11 +156,12 @@ public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     static class CinemaVH extends RecyclerView.ViewHolder {
-        TextView tvName, tvAddress;
+        TextView tvName, tvAddress, tvDistance;
         CinemaVH(@NonNull View itemView) {
             super(itemView);
-            tvName = itemView.findViewById(R.id.tvName);
-            tvAddress = itemView.findViewById(R.id.tvAddress);
+            tvName     = itemView.findViewById(R.id.tvName);
+            tvAddress  = itemView.findViewById(R.id.tvAddress);
+            tvDistance = itemView.findViewById(R.id.tvDistance);
         }
     }
 
