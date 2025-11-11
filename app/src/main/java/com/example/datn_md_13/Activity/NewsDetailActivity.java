@@ -48,7 +48,6 @@ public class NewsDetailActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
-        // ✅ Đặt title theo item đã chọn
         String title = getIntent().getStringExtra("title");
         if (title != null) {
             toolbar.setTitle(title);

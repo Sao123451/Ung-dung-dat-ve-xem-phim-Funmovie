@@ -57,18 +57,13 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView rvBanner;
     private View mainContainer;
     private BottomNavigationView bottom;
-
-    // ====== HEADER refs ======
     private View headerRoot;
     private View headerGuest;
     private View headerUser;
     private TextView tvGreeting;
     private ShapeableImageView ivAvatar;
     private View btnGoLogin;
-
     private BannerAdapter bannerAdapter;
-
-    // Banner item
     private static class Item {
         String imageUrl;
         String movieId;
@@ -76,18 +71,12 @@ public class MainActivity extends AppCompatActivity {
     private final List<Item> bannerItems = new ArrayList<>();
     private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
     private int bannerIndex = 0;
-
-    // ====== API authed cho /users/me ======
     private ApiService apiAuthed;
-
-    // ====== LOCATION (GPS) ======
     private static final int REQ_LOCATION   = 1001;
     private static final int REQ_RESOLUTION = 2001;
-
     private FusedLocationProviderClient fusedLocationClient;
     public static Double USER_LAT = null;
     public static Double USER_LNG = null;
-    // ============================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,15 +84,12 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        // Retrofit authed: interceptor sẽ tự gắn Bearer token
         apiAuthed = ApiClient.authed(this).create(ApiService.class);
 
-        // ====== Views ======
         rvBanner      = findViewById(R.id.rv_banner);
         mainContainer = findViewById(R.id.main_container);
         bottom        = findViewById(R.id.bottom_nav);
 
-        // ====== Header ======
         headerRoot = findViewById(R.id.headerCard);
         if (headerRoot != null) {
             headerGuest = headerRoot.findViewById(R.id.header_guest);
@@ -129,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // ====== Insets ======
         ViewCompat.setOnApplyWindowInsetsListener(rvBanner, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(v.getPaddingLeft(), bars.top, v.getPaddingRight(), v.getPaddingBottom());
@@ -142,14 +127,12 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // ====== Banner ======
         rvBanner.setLayoutManager(new LinearLayoutManager(this, RecyclerView.HORIZONTAL, false));
         new PagerSnapHelper().attachToRecyclerView(rvBanner);
         bannerAdapter = new BannerAdapter();
         rvBanner.setAdapter(bannerAdapter);
         loadBanners();
 
-        // ====== BottomNav + Fragment ======
         bottom.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -197,12 +180,10 @@ public class MainActivity extends AppCompatActivity {
 
         setHeaderVisible(true);
 
-        // ====== LOCATION init ======
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         checkLocationPermissionAndGet();
     }
 
-    // ====== Fragment helpers ======
     private Fragment findOrCreate(String tag, Fragment fallback) {
         Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
         return (f != null) ? f : fallback;
@@ -214,15 +195,12 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
-    // ====== Lifecycle ======
     @Override
     protected void onResume() {
         super.onResume();
-        // gọi API để đồng bộ user mới nhất (full_name, avatar...) cho header
         loadCurrentUserAndRenderHeader();
     }
 
-    // ====== HEADER: đồng bộ với /users/me ======
     private void loadCurrentUserAndRenderHeader() {
         if (headerRoot == null) return;
 
@@ -231,28 +209,23 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Gọi API /users/me (không truyền token vì ApiClient.authed đã lo)
         apiAuthed.getUserProfile().enqueue(new Callback<User>() {
             @Override
             public void onResponse(@NonNull Call<User> call,
                                    @NonNull Response<User> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    // fallback: dùng data trong AuthManager nếu API lỗi
                     applyHeaderFromCache();
                     return;
                 }
 
                 User fresh = response.body();
 
-                // Cập nhật cache: nếu AuthManager của bạn có method setLoggedIn/saveUser thì dùng,
-                // ở đây tạm thời chỉ cập nhật hiển thị.
                 applyHeaderUser(fresh);
             }
 
             @Override
             public void onFailure(@NonNull Call<User> call,
                                   @NonNull Throwable t) {
-                // fallback: dùng cache
                 applyHeaderFromCache();
             }
         });
@@ -340,7 +313,6 @@ public class MainActivity extends AppCompatActivity {
         return sb.toString().trim();
     }
 
-    // ====== Banner helpers ======
     private void setBannerVisible(boolean visible) {
         rvBanner.setVisibility(visible ? View.VISIBLE : View.GONE);
         ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
@@ -418,7 +390,6 @@ public class MainActivity extends AppCompatActivity {
         autoScrollHandler.removeCallbacksAndMessages(null);
     }
 
-    // ====== LOCATION helpers ======
     private void checkLocationPermissionAndGet() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -498,7 +469,6 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-    // ====== Banner Adapter ======
     private class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.VH> {
         @NonNull
         @Override

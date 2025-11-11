@@ -67,7 +67,6 @@ public class Activity_member extends AppCompatActivity {
         rowChangePassword = findViewById(R.id.row_change_password);
         ivAvatar         = findViewById(R.id.ivAvatar);
 
-        // Nếu bạn đang dùng interceptor có token:
         apiService = ApiClient.authed(this).create(ApiService.class);
 
         // Logout
@@ -84,7 +83,7 @@ public class Activity_member extends AppCompatActivity {
             startActivity(new Intent(this, User_Information.class));
         });
 
-        // Đi tới màn đổi mật khẩu (nếu bạn đã tạo Activity ChangePassword)
+        // Đi tới màn đổi mật khẩu
         rowChangePassword.setOnClickListener(v -> {
             startActivity(new Intent(this, ChangePassword.class));
         });
@@ -92,7 +91,7 @@ public class Activity_member extends AppCompatActivity {
         // Set label level tạm
         tvLevel.setText("MEMBER");
 
-        // Setup demo tiến độ VIP (sau có API thật thì thay)
+        // Setup demo tiến độ VIP
         setupVipDemo();
     }
 
@@ -121,7 +120,6 @@ public class Activity_member extends AppCompatActivity {
                 tvMemberName.setText(displayName);
                 tvInitial.setText(getInitial(displayName));
 
-                // Avatar: giống logic User_Information
                 String avatar = user.getAvatar();
                 if (avatar != null && !avatar.trim().isEmpty()) {
                     if (!avatar.startsWith("http")) {
@@ -136,13 +134,10 @@ public class Activity_member extends AppCompatActivity {
                             .error(R.drawable.bg_avatar_circle)
                             .into(ivAvatar);
                 } else {
-                    // Không có avatar -> ẩn ảnh, dùng chữ cái
                     ivAvatar.setVisibility(View.GONE);
                     tvInitial.setVisibility(View.VISIBLE);
                 }
 
-                // BỎ DÒNG NÀY ĐI VÌ AuthManager KHÔNG CÓ saveUser():
-                // AuthManager.saveUser(Activity_member.this, user);
             }
 
             @Override

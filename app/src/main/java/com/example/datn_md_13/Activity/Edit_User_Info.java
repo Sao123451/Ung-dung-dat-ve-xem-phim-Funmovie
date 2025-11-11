@@ -43,7 +43,7 @@ public class Edit_User_Info extends AppCompatActivity {
 
     private ApiService apiService;
     private Uri selectedAvatarUri = null;
-    private long lastClickTime = 0; // dùng để phát hiện double click
+    private long lastClickTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +55,6 @@ public class Edit_User_Info extends AppCompatActivity {
 
         apiService = ApiClient.authed(this).create(ApiService.class);
 
-        // Double click để mở DatePicker
         etBirthDate.setOnClickListener(v -> handleBirthDateClick());
         ivAvatar.setOnClickListener(v -> pickImage());
         btnSave.setOnClickListener(v -> updateUserInfo());
@@ -81,7 +80,6 @@ public class Edit_User_Info extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
-    /** Lấy thông tin user */
     private void getUserInfo() {
         apiService.getUserProfile().enqueue(new Callback<User>() {
             @Override
@@ -108,7 +106,6 @@ public class Edit_User_Info extends AppCompatActivity {
         });
     }
 
-    /** Chọn ảnh đại diện */
     private void pickImage() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
@@ -127,19 +124,16 @@ public class Edit_User_Info extends AppCompatActivity {
         }
     }
 
-    /** Cập nhật thông tin */
     private void updateUserInfo() {
         String fullName = safeText(etFullName);
         String phone = safeText(etPhone);
         String birthDate = safeText(etBirthDate);
 
-        // --- Kiểm tra số điện thoại ---
         if (!phone.matches("^\\d{10}$")) {
             Toast.makeText(this, "Số điện thoại không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // --- Kiểm tra ngày sinh ---
         if (!birthDate.isEmpty()) {
             try {
                 String[] parts = birthDate.split("-");
@@ -168,7 +162,6 @@ public class Edit_User_Info extends AppCompatActivity {
             }
         }
 
-        // Không có avatar mới → cập nhật JSON
         if (selectedAvatarUri == null) {
             User body = new User();
             body.setFull_name(fullName);
@@ -199,7 +192,6 @@ public class Edit_User_Info extends AppCompatActivity {
             return;
         }
 
-        // Có chọn avatar mới → multipart
         try {
             MultipartBody.Part avatarPart = createAvatarPart(selectedAvatarUri);
             RequestBody fullNamePart  = RequestBody.create(fullName, MediaType.parse("text/plain"));
@@ -235,21 +227,17 @@ public class Edit_User_Info extends AppCompatActivity {
         }
     }
 
-    /** Xử lý click ngày sinh — 1 lần để nhập, 2 lần để mở DatePicker */
     private void handleBirthDateClick() {
         long now = System.currentTimeMillis();
         if (now - lastClickTime < 300) {
-            // double click -> show DatePicker
             showDatePicker();
         } else {
-            // single click -> focus nhập thủ công
             etBirthDate.requestFocus();
             etBirthDate.setSelection(etBirthDate.getText().length());
         }
         lastClickTime = now;
     }
 
-    /** DatePicker kiểm tra tuổi hợp lệ */
     private void showDatePicker() {
         final Calendar calendar = Calendar.getInstance();
         int year  = calendar.get(Calendar.YEAR);
@@ -281,7 +269,6 @@ public class Edit_User_Info extends AppCompatActivity {
         dialog.show();
     }
 
-    /** Tạo MultipartBody.Part từ Uri ảnh đã chọn */
     private MultipartBody.Part createAvatarPart(Uri uri) throws Exception {
         String mime = getContentResolver().getType(uri);
         if (mime == null) mime = "image/*";

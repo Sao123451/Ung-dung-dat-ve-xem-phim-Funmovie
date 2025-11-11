@@ -46,7 +46,7 @@ public class User_Information extends AppCompatActivity {
         tvBirthDate  = findViewById(R.id.tvBirthDate);
         fabEdit      = findViewById(R.id.fabEdit);
 
-        apiService = ApiClient.authed(this).create(ApiService.class); // ✅ dùng authed client
+        apiService = ApiClient.authed(this).create(ApiService.class);
 
         loadUserInfo();
 
@@ -59,7 +59,7 @@ public class User_Information extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadUserInfo(); // reload khi quay lại
+        loadUserInfo();
     }
 
     private void loadUserInfo() {
