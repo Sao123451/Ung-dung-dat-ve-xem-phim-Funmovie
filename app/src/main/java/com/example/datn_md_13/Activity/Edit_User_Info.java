@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -41,7 +42,8 @@ public class Edit_User_Info extends AppCompatActivity {
     private CircleImageView ivAvatar;
 
     private ApiService apiService;
-    private Uri selectedAvatarUri = null; // ảnh mới nếu user chọn
+    private Uri selectedAvatarUri = null;
+    private long lastClickTime = 0; // dùng để phát hiện double click
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,14 +53,13 @@ public class Edit_User_Info extends AppCompatActivity {
         anhXa();
         setupToolbar();
 
-        // Dùng authed client: Interceptor tự chèn Authorization: Bearer <token>
         apiService = ApiClient.authed(this).create(ApiService.class);
 
-        etBirthDate.setOnClickListener(v -> showDatePicker());
-        ivAvatar.setOnClickListener(v -> pickImage());   // chọn avatar mới
+        // Double click để mở DatePicker
+        etBirthDate.setOnClickListener(v -> handleBirthDateClick());
+        ivAvatar.setOnClickListener(v -> pickImage());
         btnSave.setOnClickListener(v -> updateUserInfo());
 
-        // Load thông tin + avatar hiện tại
         getUserInfo();
     }
 
@@ -80,7 +81,7 @@ public class Edit_User_Info extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
-    /** Lấy thông tin user + avatar hiện tại để hiển thị trên form */
+    /** Lấy thông tin user */
     private void getUserInfo() {
         apiService.getUserProfile().enqueue(new Callback<User>() {
             @Override
@@ -88,11 +89,9 @@ public class Edit_User_Info extends AppCompatActivity {
                                    @NonNull Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     User user = response.body();
-
                     etFullName.setText(user.getFull_name() != null ? user.getFull_name() : "");
                     etPhone.setText(user.getPhone() != null ? user.getPhone() : "");
                     etBirthDate.setText(user.getBirthDate() != null ? user.getBirthDate() : "");
-
                     loadAvatar(user.getAvatar());
                 } else {
                     Toast.makeText(Edit_User_Info.this,
@@ -109,36 +108,67 @@ public class Edit_User_Info extends AppCompatActivity {
         });
     }
 
-    /** Mở gallery chọn ảnh */
+    /** Chọn ảnh đại diện */
     private void pickImage() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
-        startActivityForResult(
-                Intent.createChooser(intent, "Chọn ảnh đại diện"),
-                REQ_PICK_IMAGE
-        );
+        startActivityForResult(Intent.createChooser(intent, "Chọn ảnh đại diện"), REQ_PICK_IMAGE);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode,
-                                    @Nullable Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_PICK_IMAGE && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedAvatarUri = uri;
-                ivAvatar.setImageURI(uri); // preview ảnh mới
+                ivAvatar.setImageURI(uri);
             }
         }
     }
 
-    /** Cập nhật thông tin + (nếu có) avatar mới */
+    /** Cập nhật thông tin */
     private void updateUserInfo() {
         String fullName = safeText(etFullName);
         String phone = safeText(etPhone);
         String birthDate = safeText(etBirthDate);
 
-        // Không chọn avatar mới → cập nhật JSON thường
+        // --- Kiểm tra số điện thoại ---
+        if (!phone.matches("^\\d{10}$")) {
+            Toast.makeText(this, "Số điện thoại không hợp lệ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // --- Kiểm tra ngày sinh ---
+        if (!birthDate.isEmpty()) {
+            try {
+                String[] parts = birthDate.split("-");
+                int y = Integer.parseInt(parts[0]);
+                int m = Integer.parseInt(parts[1]) - 1;
+                int d = Integer.parseInt(parts[2]);
+
+                Calendar selected = Calendar.getInstance();
+                selected.set(y, m, d, 0, 0, 0);
+
+                Calendar today = Calendar.getInstance();
+                Calendar minAllowed = Calendar.getInstance();
+                minAllowed.add(Calendar.YEAR, -10);
+
+                if (selected.after(today)) {
+                    Toast.makeText(this, "Ngày sinh không thể ở tương lai!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (selected.after(minAllowed)) {
+                    Toast.makeText(this, "Ngày sinh quá gần hiện tại (phải ít nhất 10 tuổi)!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "Định dạng ngày sinh không hợp lệ (yyyy-MM-dd)!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        // Không có avatar mới → cập nhật JSON
         if (selectedAvatarUri == null) {
             User body = new User();
             body.setFull_name(fullName);
@@ -169,16 +199,12 @@ public class Edit_User_Info extends AppCompatActivity {
             return;
         }
 
-        // Có chọn avatar mới → gửi multipart
+        // Có chọn avatar mới → multipart
         try {
             MultipartBody.Part avatarPart = createAvatarPart(selectedAvatarUri);
-
-            RequestBody fullNamePart  = RequestBody.create(fullName,
-                    MediaType.parse("text/plain"));
-            RequestBody phonePart     = RequestBody.create(phone,
-                    MediaType.parse("text/plain"));
-            RequestBody birthDatePart = RequestBody.create(birthDate,
-                    MediaType.parse("text/plain"));
+            RequestBody fullNamePart  = RequestBody.create(fullName, MediaType.parse("text/plain"));
+            RequestBody phonePart     = RequestBody.create(phone, MediaType.parse("text/plain"));
+            RequestBody birthDatePart = RequestBody.create(birthDate, MediaType.parse("text/plain"));
 
             apiService.updateMeWithAvatar(
                     avatarPart, fullNamePart, phonePart, birthDatePart
@@ -205,9 +231,54 @@ public class Edit_User_Info extends AppCompatActivity {
             });
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this,
-                    "Không thể đọc file ảnh!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Không thể đọc file ảnh!", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /** Xử lý click ngày sinh — 1 lần để nhập, 2 lần để mở DatePicker */
+    private void handleBirthDateClick() {
+        long now = System.currentTimeMillis();
+        if (now - lastClickTime < 300) {
+            // double click -> show DatePicker
+            showDatePicker();
+        } else {
+            // single click -> focus nhập thủ công
+            etBirthDate.requestFocus();
+            etBirthDate.setSelection(etBirthDate.getText().length());
+        }
+        lastClickTime = now;
+    }
+
+    /** DatePicker kiểm tra tuổi hợp lệ */
+    private void showDatePicker() {
+        final Calendar calendar = Calendar.getInstance();
+        int year  = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day   = calendar.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog dialog = new DatePickerDialog(this, (view, y, m, d) -> {
+            Calendar selected = Calendar.getInstance();
+            selected.set(y, m, d, 0, 0, 0);
+
+            Calendar today = Calendar.getInstance();
+            Calendar minAllowed = Calendar.getInstance();
+            minAllowed.add(Calendar.YEAR, -10);
+
+            if (selected.after(today)) {
+                Toast.makeText(this, "Ngày sinh không hợp lệ!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (selected.after(minAllowed)) {
+                Toast.makeText(this, "Ngày sinh quá gần hiện tại (phải ít nhất 10 tuổi)!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String date = String.format("%04d-%02d-%02d", y, (m + 1), d);
+            etBirthDate.setText(date);
+        }, year, month, day);
+
+        dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
+        dialog.show();
     }
 
     /** Tạo MultipartBody.Part từ Uri ảnh đã chọn */
@@ -224,14 +295,10 @@ public class Edit_User_Info extends AppCompatActivity {
         }
         is.close();
 
-        RequestBody reqFile =
-                RequestBody.create(buffer.toByteArray(), MediaType.parse(mime));
-        // Tên field "avatar" phải trùng upload.single('avatar')
-        return MultipartBody.Part.createFormData("avatar",
-                "avatar.jpg", reqFile);
+        RequestBody reqFile = RequestBody.create(buffer.toByteArray(), MediaType.parse(mime));
+        return MultipartBody.Part.createFormData("avatar", "avatar.jpg", reqFile);
     }
 
-    /** Giống User_Information */
     private void loadAvatar(String avatarUrl) {
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
             if (!avatarUrl.startsWith("http")) {
@@ -248,20 +315,6 @@ public class Edit_User_Info extends AppCompatActivity {
     }
 
     private String safeText(TextInputEditText edt) {
-        return edt.getText() != null
-                ? edt.getText().toString().trim()
-                : "";
-    }
-
-    private void showDatePicker() {
-        final Calendar calendar = Calendar.getInstance();
-        int year  = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day   = calendar.get(Calendar.DAY_OF_MONTH);
-
-        new DatePickerDialog(this, (view, y, m, d) -> {
-            String date = String.format("%04d-%02d-%02d", y, (m + 1), d);
-            etBirthDate.setText(date);
-        }, year, month, day).show();
+        return edt.getText() != null ? edt.getText().toString().trim() : "";
     }
 }
