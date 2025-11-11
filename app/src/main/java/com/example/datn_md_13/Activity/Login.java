@@ -18,7 +18,7 @@ import com.example.datn_md_13.Model.LoginRequest;
 import com.example.datn_md_13.Model.LoginResponse;
 import com.example.datn_md_13.Model.User;
 import com.example.datn_md_13.R;
-import com.example.datn_md_13.auth.AuthManager;
+import com.example.datn_md_13.AuthManager;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;

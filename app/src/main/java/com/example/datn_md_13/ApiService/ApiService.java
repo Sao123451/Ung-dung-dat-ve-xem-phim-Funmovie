@@ -8,6 +8,8 @@ import com.example.datn_md_13.Model.ConfirmReq;
 import com.example.datn_md_13.Model.LoginRequest;
 import com.example.datn_md_13.Model.LoginResponse;
 import com.example.datn_md_13.Model.Movie;
+import com.example.datn_md_13.Model.News;
+import com.example.datn_md_13.Model.NewsListResponse;
 import com.example.datn_md_13.Model.PaymentInit;
 import com.example.datn_md_13.Model.ProductDto;
 import com.example.datn_md_13.Model.ProductListRes;
@@ -22,11 +24,16 @@ import com.example.datn_md_13.Model.VoucherListRes;
 
 import java.util.List;
 
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -40,11 +47,82 @@ public interface ApiService {
     @POST("auth/login")
     Call<LoginResponse> login(@Body LoginRequest body);
 
+    @PUT("users/me/change-password")
+    Call<ChangePasswordResponse> changeMyPassword(@Body ChangePasswordRequest body);
+
+    class ChangePasswordRequest {
+        public String old_password;
+        public String new_password;
+
+        public ChangePasswordRequest(String old_password, String new_password) {
+            this.old_password = old_password;
+            this.new_password = new_password;
+        }
+    }
+
+    class ChangePasswordResponse {
+        public String message;
+    }
+
+    /* ========== User profile ========== */
+
+    // Lấy thông tin user hiện tại (dùng với ApiClient.authed -> tự chèn Authorization)
+    @GET("users/me")
+    Call<User> getUserProfile();
+
+    // Cập nhật thông tin profile (full_name, phone, birth_date, email...) KHÔNG đổi avatar
+    // Backend: res.json({ message, user })
+    @PUT("users/me")
+    Call<UpdateUserResponse> updateMe(@Body User body);
+
+    // Cập nhật thông tin + avatar (multipart)
+    // Field "avatar" phải trùng upload.single('avatar') trên backend
+    @Multipart
+    @PUT("users/me")
+    Call<UpdateUserResponse> updateMeWithAvatar(
+            @Part MultipartBody.Part avatar,
+            @Part("full_name") RequestBody fullName,
+            @Part("phone") RequestBody phone,
+            @Part("birth_date") RequestBody birthDate
+    );
+
+    class UpdateUserResponse {
+        private String message;
+        private User user;
+
+        public String getMessage() {
+            return message;
+        }
+
+        public User getUser() {
+            return user;
+        }
+    }
+
+    /* ========== News ========== */
+    @GET("news/public")
+    Call<NewsListResponse> getNews(
+            @Query("page") Integer page,
+            @Query("limit") Integer limit,
+            @Query("q") String searchTerm,
+            @Query("tag") String tag
+    );
+
+    @GET("news/public/{idOrSlug}")
+    Call<News> getNewsDetail(@Path("idOrSlug") String idOrSlug);
+
     /* ========== Movies ========== */
-    @GET("movies/coming")      Call<List<Movie>> getComing();
-    @GET("movies/now-showing") Call<List<Movie>> getNowShowing();
-    @GET("movies/archived")    Call<List<Movie>> getArchived();
-    @GET("movies/{id}")        Call<Movie> getMovieById(@Path("id") String id);
+    @GET("movies/coming")
+    Call<List<Movie>> getComing();
+
+    @GET("movies/now-showing")
+    Call<List<Movie>> getNowShowing();
+
+    @GET("movies/archived")
+    Call<List<Movie>> getArchived();
+
+    @GET("movies/{id}")
+    Call<Movie> getMovieById(@Path("id") String id);
 
     /* ========== Banners ========== */
     @GET("banners/public/all")
@@ -53,6 +131,7 @@ public interface ApiService {
     @GET("banners/{id}/public")
     Call<BannerPublicDetail> getBannerById(@Path("id") String bannerId,
                                            @Query("withLink") boolean withLink);
+
     class BannerPublicDetail {
         public String link_url;
         public List<String> images;
@@ -67,12 +146,11 @@ public interface ApiService {
             @Query("city") String city
     );
 
-
     @GET("showtimes/public/by-cinema")
     Call<ShowtimesByCinemaResponse> getShowtimesByCinema(
             @Query("cinema") String cinemaId,
-            @Query("date")   String yyyyMMdd,
-            @Query("type")   String type
+            @Query("date") String yyyyMMdd,
+            @Query("type") String type
     );
 
     @GET("showtimes/{id}")
@@ -102,7 +180,7 @@ public interface ApiService {
     Call<BookingCreateResponse> confirmBooking(@Path("id") String id,
                                                @Body ConfirmReq body);
 
-    /* ========== Booking (giữ bản có header cho tương thích cũ) ========== */
+    /* ========== Booking (bản có header cho tương thích cũ) ========== */
     @POST("bookings")
     Call<BookingCreateResponse> createBooking(@Header("Authorization") String token,
                                               @Body BookingRequest req);
@@ -119,7 +197,7 @@ public interface ApiService {
     /* ========== Payments ========== */
     @POST("payments/init")
     Call<PaymentInit.Res> paymentInit(@Body PaymentInit.Req req);
-    // Bản cũ có header (nếu cần)
+
     @POST("payments/init")
     Call<PaymentInit.Res> paymentInit(@Header("Authorization") String token,
                                       @Body PaymentInit.Req req);

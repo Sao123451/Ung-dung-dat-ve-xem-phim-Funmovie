@@ -22,14 +22,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
-import com.example.datn_md_13.Fragment.HomeFragment;
 import com.example.datn_md_13.Fragment.CinemaByAreaFragment;
-import com.example.datn_md_13.Fragment.VoucherFragment;
+import com.example.datn_md_13.Fragment.HomeFragment;
 import com.example.datn_md_13.Fragment.NewsFragment;
 import com.example.datn_md_13.Fragment.ProfileFragment;
+import com.example.datn_md_13.Fragment.VoucherFragment;
 import com.example.datn_md_13.Model.BannerDto;
 import com.example.datn_md_13.Model.User;
-import com.example.datn_md_13.auth.AuthManager;
+import com.example.datn_md_13.AuthManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 
@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private View mainContainer;
     private BottomNavigationView bottom;
 
-    // ====== HEADER refs ======
+    // HEADER refs
     private View headerRoot;
     private View headerGuest;
     private View headerUser;
@@ -55,12 +55,14 @@ public class MainActivity extends AppCompatActivity {
     private View btnGoLogin;
 
     private BannerAdapter bannerAdapter;
+    private ApiService apiAuthed;
 
-    // Item hiển thị banner
+    // Banner item struct
     private static class Item {
         String imageUrl;
         String movieId;
     }
+
     private final List<Item> bannerItems = new ArrayList<>();
     private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
     private int bannerIndex = 0;
@@ -71,12 +73,15 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        // Retrofit có interceptor tự chèn Authorization: Bearer <token>
+        apiAuthed = ApiClient.authed(this).create(ApiService.class);
+
         // ====== Views ======
         rvBanner      = findViewById(R.id.rv_banner);
         mainContainer = findViewById(R.id.main_container);
         bottom        = findViewById(R.id.bottom_nav);
 
-        // Header trong activity_main.xml
+        // ====== Header ======
         headerRoot = findViewById(R.id.headerCard);
         if (headerRoot != null) {
             headerGuest = headerRoot.findViewById(R.id.header_guest);
@@ -85,12 +90,15 @@ public class MainActivity extends AppCompatActivity {
             ivAvatar    = headerRoot.findViewById(R.id.ivAvatar);
             btnGoLogin  = headerRoot.findViewById(R.id.btnGoLogin);
 
+            // Click "Đăng nhập"
             if (btnGoLogin != null) {
                 btnGoLogin.setOnClickListener(v ->
                         startActivity(new Intent(MainActivity.this,
                                 com.example.datn_md_13.Activity.Login.class))
                 );
             }
+
+            // Click header user -> sang màn member
             if (headerUser != null) {
                 headerUser.setOnClickListener(v -> {
                     if (AuthManager.isLoggedIn(MainActivity.this)) {
@@ -121,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         rvBanner.setAdapter(bannerAdapter);
         loadBanners();
 
-        // ====== Bottom nav → dùng Fragment cho tất cả tab ======
+        // ====== Bottom Nav ======
         bottom.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -163,67 +171,128 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        if (savedInstanceState == null) bottom.setSelectedItemId(R.id.nav_home);
+        if (savedInstanceState == null) {
+            bottom.setSelectedItemId(R.id.nav_home);
+        }
+
         setHeaderVisible(true);
     }
 
-    // helper: reuse fragment theo tag (tránh tạo lại)
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadCurrentUserAndRenderHeader(); // luôn sync với server & cache
+    }
+
+    // ====== Fragment helpers ======
     private Fragment findOrCreate(String tag, Fragment fallback) {
         Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
         return (f != null) ? f : fallback;
     }
+
     private void replaceFrag(Fragment f, String tag) {
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.main_container, f, tag)
                 .commit();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        renderHeader();
-    }
-
-    // ====== HEADER logic ======
-    private void renderHeader() {
+    // ====== Header sync với /users/me như User_Information ======
+    private void loadCurrentUserAndRenderHeader() {
         if (headerRoot == null) return;
 
         if (!AuthManager.isLoggedIn(this)) {
             if (headerGuest != null) headerGuest.setVisibility(View.VISIBLE);
-            if (headerUser != null) headerUser.setVisibility(View.GONE);
+            if (headerUser  != null) headerUser.setVisibility(View.GONE);
+            return;
+        }
+
+        apiAuthed.getUserProfile().enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(@NonNull Call<User> call,
+                                   @NonNull Response<User> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User user = response.body();
+                    // ✅ Lưu user mới nhất (full_name, avatar, ...) vào cache chung
+                    AuthManager.saveUser(MainActivity.this, user);
+                    renderHeader(user);
+                } else {
+                    // fallback: dùng cache nếu gọi API lỗi
+                    User cached = AuthManager.getUser(MainActivity.this);
+                    renderHeader(cached);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<User> call,
+                                  @NonNull Throwable t) {
+                User cached = AuthManager.getUser(MainActivity.this);
+                renderHeader(cached);
+            }
+        });
+    }
+
+    // Render header theo User (có thể từ API hoặc cache)
+    private void renderHeader(User u) {
+        if (headerRoot == null) return;
+
+        if (u == null) {
+            if (headerGuest != null) headerGuest.setVisibility(View.VISIBLE);
+            if (headerUser  != null) headerUser.setVisibility(View.GONE);
             return;
         }
 
         if (headerGuest != null) headerGuest.setVisibility(View.GONE);
         if (headerUser  != null) headerUser.setVisibility(View.VISIBLE);
 
-        User u = AuthManager.getUser(this);
+        // ✅ Hiển thị "Chào <full_name>" đồng bộ với User_Information
         String name = getDisplayName(u);
-        if (tvGreeting != null) tvGreeting.setText("Chào " + name);
+        if (tvGreeting != null) {
+            tvGreeting.setText("Chào " + name);
+        }
 
+        // Avatar
         if (ivAvatar != null) {
-            if (u != null && u.getAvatar() != null && !u.getAvatar().trim().isEmpty()) {
-                Glide.with(this).load(u.getAvatar()).into(ivAvatar);
+            String avatar = u.getAvatar();
+            if (avatar != null && !avatar.trim().isEmpty()) {
+                String avatarUrl = avatar.trim();
+                if (!avatarUrl.startsWith("http")) {
+                    avatarUrl = ApiClient.absolutePublicUrl(avatarUrl);
+                }
+                Glide.with(this)
+                        .load(avatarUrl)
+                        .placeholder(R.drawable.bg_avatar_placeholder)
+                        .error(R.drawable.bg_avatar_placeholder)
+                        .into(ivAvatar);
             } else {
                 ivAvatar.setImageResource(R.drawable.bg_avatar_placeholder);
             }
         }
     }
 
-    // Ưu tiên username -> full_name -> phần trước @ của email
+    // ✅ Ưu tiên full_name để trùng với User_Information
     private String getDisplayName(User u) {
         if (u == null) return "Bạn";
+
         String name = null;
-        if (u.getUsername() != null && !u.getUsername().trim().isEmpty()) {
-            name = u.getUsername().trim();
-        } else if (u.getFull_name() != null && !u.getFull_name().trim().isEmpty()) {
+
+        // 1️⃣ full_name: tên hiển thị trong User_Information
+        if (u.getFull_name() != null && !u.getFull_name().trim().isEmpty()) {
             name = u.getFull_name().trim();
-        } else if (u.getEmail() != null && !u.getEmail().trim().isEmpty()) {
+        }
+        // 2️⃣ username: fallback
+        else if (u.getUsername() != null && !u.getUsername().trim().isEmpty()) {
+            name = u.getUsername().trim();
+        }
+        // 3️⃣ prefix email: fallback cuối
+        else if (u.getEmail() != null && !u.getEmail().trim().isEmpty()) {
             String email = u.getEmail().trim();
             int at = email.indexOf('@');
             name = (at > 0) ? email.substring(0, at) : email;
         }
+
         if (name == null || name.isEmpty()) return "Bạn";
+
+        // Viết hoa chữ cái đầu mỗi từ
         String[] parts = name.toLowerCase().split("\\s+");
         StringBuilder sb = new StringBuilder();
         for (String p : parts) {
@@ -247,11 +316,10 @@ public class MainActivity extends AppCompatActivity {
         });
         ViewCompat.requestApplyInsets(mainContainer);
     }
+
     private void setHeaderVisible(boolean visible) {
         if (headerRoot != null) headerRoot.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
-
-
 
     private void loadBanners() {
         ApiService api = ApiClient.get().create(ApiService.class);
@@ -264,8 +332,8 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Không tải được banner", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                List<BannerDto> data = response.body();
 
+                List<BannerDto> data = response.body();
                 bannerItems.clear();
                 for (BannerDto b : data) {
                     if (b.images == null) continue;
@@ -288,9 +356,11 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<BannerDto>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<BannerDto>> call,
+                                  @NonNull Throwable t) {
                 setBannerVisible(false);
-                Toast.makeText(MainActivity.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this,
+                        "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -316,7 +386,8 @@ public class MainActivity extends AppCompatActivity {
 
     // ====== Banner Adapter ======
     private class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.VH> {
-        @NonNull @Override
+        @NonNull
+        @Override
         public VH onCreateViewHolder(@NonNull android.view.ViewGroup parent, int viewType) {
             android.widget.ImageView iv = new android.widget.ImageView(parent.getContext());
             iv.setLayoutParams(new RecyclerView.LayoutParams(
@@ -326,21 +397,33 @@ public class MainActivity extends AppCompatActivity {
             iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
             return new VH(iv);
         }
+
         @Override
         public void onBindViewHolder(@NonNull VH holder, int position) {
             Item it = bannerItems.get(position);
-            Glide.with(holder.iv.getContext()).load(it.imageUrl).centerCrop().into(holder.iv);
+            Glide.with(holder.iv.getContext())
+                    .load(it.imageUrl)
+                    .centerCrop()
+                    .into(holder.iv);
+
             holder.itemView.setOnClickListener(v -> {
                 if (it.movieId != null && !it.movieId.isEmpty()) {
-                    Intent i = new Intent(v.getContext(), com.example.datn_md_13.activity_movie_detail.class);
+                    Intent i = new Intent(v.getContext(),
+                            com.example.datn_md_13.activity_movie_detail.class);
                     i.putExtra("movie_id", it.movieId);
                     v.getContext().startActivity(i);
                 } else {
-                    Toast.makeText(v.getContext(), "Banner này chưa gắn phim", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(v.getContext(),
+                            "Banner này chưa gắn phim", Toast.LENGTH_SHORT).show();
                 }
             });
         }
-        @Override public int getItemCount() { return bannerItems.size(); }
+
+        @Override
+        public int getItemCount() {
+            return bannerItems.size();
+        }
+
         class VH extends RecyclerView.ViewHolder {
             android.widget.ImageView iv;
             VH(@NonNull android.view.View itemView) {
