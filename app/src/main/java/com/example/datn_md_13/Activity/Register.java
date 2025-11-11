@@ -1,10 +1,10 @@
 package com.example.datn_md_13.Activity;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Patterns;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,13 +24,16 @@ import org.json.JSONObject;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
 
 public class Register extends AppCompatActivity {
 
     private TextInputLayout tilFullname, tilEmail, tilPassword, tilConfirmPassword;
     private TextInputEditText edtFullname, edtEmail, edtPassword, edtConfirmPassword;
+    private TextView tvPasswordStrength;
     private Button btnRegister;
-    private TextView tvLogin;
     private ApiService apiService;
 
     @Override
@@ -46,26 +49,64 @@ public class Register extends AppCompatActivity {
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
+        tvPasswordStrength = findViewById(R.id.tvPasswordStrength);
         btnRegister = findViewById(R.id.btnSignUp);
-        tvLogin = findViewById(R.id.tvLogin);
 
         apiService = ApiClient.get().create(ApiService.class);
 
-        btnRegister.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                handleRegister();
+        // 🔹 Ẩn TextView khi mới vào màn hình
+        tvPasswordStrength.setVisibility(View.GONE);
+
+        // 🔹 Theo dõi mật khẩu để hiển thị độ mạnh
+        edtPassword.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                checkPasswordStrength(s.toString());
             }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
-        tvLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(Register.this, Login.class));
-            }
-        });
+        btnRegister.setOnClickListener(v -> handleRegister());
     }
 
+    /** Hiển thị độ mạnh mật khẩu */
+    private void checkPasswordStrength(String password) {
+        if (password.isEmpty()) {
+            // Ẩn khi chưa nhập gì
+            tvPasswordStrength.setVisibility(View.GONE);
+            return;
+        } else {
+            // Hiện lại khi có nhập
+            tvPasswordStrength.setVisibility(View.VISIBLE);
+        }
+
+        int strengthScore = 0;
+
+        // dài >= 8 ký tự
+        if (password.length() >= 8) strengthScore++;
+        // có chữ thường
+        if (password.matches(".*[a-z].*")) strengthScore++;
+        // có chữ hoa
+        if (password.matches(".*[A-Z].*")) strengthScore++;
+        // có số
+        if (password.matches(".*[0-9].*")) strengthScore++;
+        // có ký tự đặc biệt
+        if (password.matches(".*[!@#$%^&*()_+=\\-{}\\[\\]:;\"'<>,.?/].*")) strengthScore++;
+
+        // Đánh giá
+        if (strengthScore <= 2) {
+            tvPasswordStrength.setText("Độ mạnh mật khẩu: Yếu");
+            tvPasswordStrength.setTextColor(Color.RED);
+        } else if (strengthScore == 3 || strengthScore == 4) {
+            tvPasswordStrength.setText("Độ mạnh mật khẩu: Trung bình");
+            tvPasswordStrength.setTextColor(Color.parseColor("#FFA500")); // cam
+        } else {
+            tvPasswordStrength.setText("Độ mạnh mật khẩu: Mạnh");
+            tvPasswordStrength.setTextColor(Color.parseColor("#4CAF50")); // xanh lá
+        }
+    }
+
+    /** Xử lý validate & gọi API đăng ký */
     private void handleRegister() {
         String fullname = edtFullname.getText().toString().trim();
         String email = edtEmail.getText().toString().trim();
@@ -78,27 +119,17 @@ public class Register extends AppCompatActivity {
         tilConfirmPassword.setError(null);
 
         if (fullname.isEmpty()) {
-            tilFullname.setError("Vui lòng nhập họ tên");
+            tilFullname.setError("Vui lòng nhập tên tài khoản");
             return;
         }
-        if (email.isEmpty()) {
-            tilEmail.setError("Vui lòng nhập email");
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches() || !email.endsWith("@gmail.com")) {
+            tilEmail.setError("Email phải hợp lệ và kết thúc bằng @gmail.com");
             return;
         }
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            tilEmail.setError("Email không hợp lệ");
-            return;
-        }
-        if (password.isEmpty()) {
-            tilPassword.setError("Vui lòng nhập mật khẩu");
-            return;
-        }
-        if (password.length() < 6) {
-            tilPassword.setError("Mật khẩu phải có ít nhất 6 ký tự");
-            return;
-        }
-        if (confirmPassword.isEmpty()) {
-            tilConfirmPassword.setError("Vui lòng nhập lại mật khẩu");
+
+        String strongPattern = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#$%^&*()_+=\\-{}\\[\\]:;\"'<>,.?/]).{8,}$";
+        if (!password.matches(strongPattern)) {
+            tilPassword.setError("Mật khẩu yếu! Hãy thêm chữ hoa, số và ký tự đặc biệt.");
             return;
         }
         if (!password.equals(confirmPassword)) {
@@ -106,15 +137,14 @@ public class Register extends AppCompatActivity {
             return;
         }
 
-        // Sửa ở đây: Thêm username vào request
+        // Gửi API đăng ký
         User newUser = new User();
-        newUser.setUsername(fullname); // BẮT BUỘC: Server yêu cầu trường này
+        newUser.setUsername(fullname);
         newUser.setFull_name(fullname);
         newUser.setEmail(email);
         newUser.setPassword(password);
 
-        Call<User> call = apiService.register(newUser);
-        call.enqueue(new Callback<User>() {
+        apiService.register(newUser).enqueue(new Callback<User>() {
             @Override
             public void onResponse(@NonNull Call<User> call, @NonNull Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -122,24 +152,20 @@ public class Register extends AppCompatActivity {
                     startActivity(new Intent(Register.this, Login.class));
                     finish();
                 } else {
-                    // Sửa ở đây: Đọc lỗi chi tiết từ server
-                    tilEmail.setError("Email đã được sử dụng");
-                    String errorMessage = "Đăng ký thất bại.";
+                    String msg = "Đăng ký thất bại";
                     try {
                         if (response.errorBody() != null) {
-                            JSONObject errorObj = new JSONObject(response.errorBody().string());
-                            errorMessage = errorObj.getString("message");
+                            JSONObject obj = new JSONObject(response.errorBody().string());
+                            msg = obj.optString("message", msg);
                         }
-                    } catch (Exception e) {
-                        Log.e("RegisterError", "Error parsing error response: " + e.getMessage());
-                    }
-                    Toast.makeText(Register.this, errorMessage, Toast.LENGTH_LONG).show();
+                    } catch (Exception ignored) {}
+                    Toast.makeText(Register.this, msg, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<User> call, @NonNull Throwable t) {
-                Toast.makeText(Register.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(Register.this, "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
             }
         });
     }
