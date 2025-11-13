@@ -20,10 +20,40 @@ exports.listUsers = async (req, res, next) => {
  * User tự cập nhật hồ sơ của chính mình (không cần admin)
  * Cho phép sửa: full_name, phone, email, avatar, birth_date
  */
+exports.changeMyPassword = async (req, res, next) => {
+  try {
+    const { old_password, new_password } = req.body;
+    if (!old_password || !new_password)
+      return res.status(400).json({ message: 'Thiếu mật khẩu cũ hoặc mới' });
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User không tồn tại' });
+
+    const bcrypt = require('bcryptjs');
+    const isMatch = await bcrypt.compare(old_password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: 'Mật khẩu cũ không đúng' });
+
+    user.password = await bcrypt.hash(new_password, 10);
+    await user.save();
+
+    res.json({ message: 'Đổi mật khẩu thành công' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 exports.updateMe = async (req, res, next) => {
   try {
-    const allowed = ['full_name', 'phone', 'email', 'avatar', 'birth_date'];
+    const allowed = ['full_name', 'phone', 'email', 'birth_date'];
     const data = {};
+
+    // nếu upload có file avatar
+    if (req.file) {
+      data.avatar = `/public/uploads/${req.file.filename}`;
+    }
+
     for (const k of allowed) {
       if (req.body[k] !== undefined) data[k] = req.body[k];
     }
@@ -34,10 +64,22 @@ exports.updateMe = async (req, res, next) => {
       { new: true, runValidators: true }
     ).select('-password');
 
-    res.json({ message: 'Updated', user: updated });
+    res.json({
+      message: 'Updated',
+      user: {
+        ...updated.toJSON(),
+        avatar: updated.avatar ? makeAbs(req, updated.avatar) : null
+      }
+    });
+
   } catch (err) { next(err); }
 };
 
+function makeAbs(req, p) {
+  return /^https?:\/\//i.test(p)
+    ? p
+    : `${req.protocol}://${req.get('host')}${p.startsWith('/') ? '' : '/'}${p}`;
+}
 /**
  * Cập nhật theo ID
  * - Chủ sở hữu được sửa các trường an toàn: full_name, phone, email, avatar, birth_date

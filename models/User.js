@@ -9,7 +9,7 @@ const UserSchema = new Schema({
   phone: { type: String },
   email: { type: String, required: true, unique: true },
   role: { type: String, enum: ['customer','staff','admin','manager'], default: 'customer' },
-  avatar: String,
+  avatar: { type: String},
 
   birth_date: {
     type: Date,
