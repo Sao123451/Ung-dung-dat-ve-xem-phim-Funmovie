@@ -46,8 +46,8 @@ async function buildQuote({ showtimeId, seatIds = [], combos = [], vouchers = []
     .lean();
   if (seats.length !== seatIds.length) throw new Error('Some seatIds are invalid');
 
-  // chặn ghế sold/broken
-  const bad = seats.find(s => ['sold','broken'].includes(s.seat_status));
+  // 🔁 UPDATE: chặn luôn cả holding
+  const bad = seats.find(s => ['sold','broken','holding'].includes(s.seat_status));
   if (bad) throw new Error(`Seat ${bad.row}${bad.number} is not available`);
 
   const seatLines = seats.map(s => {
@@ -61,12 +61,12 @@ async function buildQuote({ showtimeId, seatIds = [], combos = [], vouchers = []
   });
   const seat_subtotal = seatLines.reduce((a,b)=>a+b.price_final,0);
 
-  // combos (demo: FE gửi unit_price; nếu có Product thì lookup thay thế)
+  // combos (demo)
   const comboLines = [];
   let combo_subtotal = 0;
   if (Array.isArray(combos)) {
     for (const c of combos) {
-      if (!isId(c.productId)) continue;         // với cách 1, productId là ObjectId thật
+      if (!isId(c.productId)) continue;
       const qty = Number(c.qty||0);
       if (qty<=0) continue;
       const unit = Number(c.unit_price || 0);
@@ -81,7 +81,7 @@ async function buildQuote({ showtimeId, seatIds = [], combos = [], vouchers = []
     }
   }
 
-  // ======= VOUCHERS: đọc đúng discount_type; áp min/max; không cho total âm =======
+  // ======= VOUCHERS (giữ nguyên) =======
   let discount_seat = 0, discount_combo = 0, discount_order = 0;
   const accepted_vouchers = [];
 
@@ -90,15 +90,11 @@ async function buildQuote({ showtimeId, seatIds = [], combos = [], vouchers = []
     const now = new Date();
 
     for (const v of docs) {
-      // Bỏ qua nếu hết hạn/ chưa đến hạn / vượt usage limit
       if ((v.start_date && now < v.start_date) || (v.end_date && now > v.end_date)) continue;
       if (v.usage_limit > 0 && v.used_count >= v.usage_limit) continue;
 
-      const scope = v.scope || 'order';                 // 'seat' | 'combo' | 'order'
+      const scope = v.scope || 'order';
 
-      // CHÚ THÍCH:
-      // v.discount_type === 'percent'  -> giảm theo % (value = phần trăm)
-      // v.discount_type === 'amount'   -> giảm số tiền cố định (value = VNĐ)
       const dtype = v.discount_type || 'percent';
       const val   = Number(v.value || 0);
       const max   = (v.max_discount != null) ? Number(v.max_discount) : null;
@@ -106,10 +102,10 @@ async function buildQuote({ showtimeId, seatIds = [], combos = [], vouchers = []
 
       const applyReduce = (sub) => {
         if (sub <= 0) return 0;
-        if (sub < minOrder) return 0;                  // không đủ điều kiện áp mã
+        if (sub < minOrder) return 0;
         let d = (dtype === 'percent') ? Math.round(sub * (val / 100)) : val;
-        if (max != null) d = Math.min(d, max);         // trần giảm tối đa
-        d = Math.min(d, sub);                           // không vượt quá phần tính
+        if (max != null) d = Math.min(d, max);
+        d = Math.min(d, sub);
         return d;
       };
 
@@ -194,6 +190,7 @@ exports.create = async (req, res, next) => {
         payment_status: 'unpaid'
       }], use);
 
+      // ====== GHẾ CON (TicketSeat) – reserved ======
       if (seatLines.length) {
         const docs = seatLines.map(s => ({
           ticket: ticket._id,
@@ -209,8 +206,17 @@ exports.create = async (req, res, next) => {
           expires_at // TTL key
         }));
         await TicketSeat.insertMany(docs, use);
+
+        // 🔴 NEW: cập nhật bảng Seat -> holding
+        const seatIdsOnly = seatLines.map(s => s.seatId);
+        await Seat.updateMany(
+          { _id: { $in: seatIdsOnly }, seat_status: { $in: ['available', 'holding'] } },
+          { $set: { seat_status: 'holding' } },
+          use
+        );
       }
 
+      // combos
       if (comboLines.length) {
         const cdocs = comboLines.map(c => ({
           ticket: ticket._id,
@@ -249,18 +255,22 @@ exports.confirm = async (req, res, next) => {
       const method = (req.body.payment_method || t.payment_method || 'unknown').toLowerCase();
       const paymentId = req.body.payment_id || null;
 
-      // 1) Snapshot: reserved -> sold, BỎ TTL để không bị xóa
+      // 1) TicketSeat: reserved -> sold, bỏ TTL
       await TicketSeat.updateMany(
-        { ticket: t._id, status: 'reserved', expires_at: { $gt: new Date() } },
+        { ticket: t._id, status: 'reserved' },
         { $set: { status: 'sold' }, $unset: { expires_at: 1 } },
         use
       );
 
-      // 2) Ghế thật -> sold
+      // 2) GHẾ THẬT: holding/available -> sold
       const seatDocs = await TicketSeat.find({ ticket: t._id }).select('seat').lean();
       const seatIds = seatDocs.map(s => s.seat);
       if (seatIds.length) {
-        await Seat.updateMany({ _id: { $in: seatIds } }, { $set: { seat_status: 'sold' } }, use);
+        await Seat.updateMany(
+          { _id: { $in: seatIds }, seat_status: { $ne: 'broken' } },
+          { $set: { seat_status: 'sold' } },
+          use
+        );
       }
 
       // 3) Ticket & voucher
@@ -271,7 +281,11 @@ exports.confirm = async (req, res, next) => {
       await t.save(use);
 
       if (t.voucher_codes?.length) {
-        await Voucher.updateMany({ code: { $in: t.voucher_codes } }, { $inc: { used_count: 1 } }, use);
+        await Voucher.updateMany(
+          { code: { $in: t.voucher_codes } },
+          { $inc: { used_count: 1 } },
+          use
+        );
       }
 
       return res.json({ message: 'Payment confirmed & seats sold', ticket: t });
@@ -279,7 +293,7 @@ exports.confirm = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /api/bookings/:id  (tiện xem chi tiết)
+// GET /api/bookings/:id
 exports.detail = async (req, res, next) => {
   try {
     const id = String(req.params.id||'');
@@ -296,7 +310,7 @@ exports.detail = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-// POST /api/bookings/:id/cancel (huỷ giữ chỗ ngay)
+// POST /api/bookings/:id/cancel
 exports.cancel = async (req, res, next) => {
   try {
     const id = String(req.params.id||'');
@@ -308,8 +322,24 @@ exports.cancel = async (req, res, next) => {
       if (!t) return res.status(404).json({ message: 'Not found' });
       if (t.status !== 'pending') return res.status(400).json({ message: 'Only pending can cancel' });
 
-      // xoá snapshot reserved thay vì chờ TTL
+      // 🔴 NEW: lấy danh sách ghế trước khi xoá TicketSeat
+      const seatDocs = await TicketSeat.find({ ticket: id, status: 'reserved' })
+        .select('seat')
+        .lean();
+      const seatIds = seatDocs.map(s => s.seat);
+
+      // xoá snapshot reserved
       await TicketSeat.deleteMany({ ticket: id, status: 'reserved' }, use);
+
+      // trả ghế về available nếu đang holding
+      if (seatIds.length) {
+        await Seat.updateMany(
+          { _id: { $in: seatIds }, seat_status: 'holding' },
+          { $set: { seat_status: 'available' } },
+          use
+        );
+      }
+
       t.status = 'cancelled';
       await t.save(use);
 

@@ -26,6 +26,7 @@ exports.publicByRoom = async (req, res, next) => {
           number: s.number,
           seat_type: s.seat_type,
           extra_price: s.extra_price,
+          // [CHANGE] giờ seat_status có thể là available|holding|sold|broken
           seat_status: s.seat_status || 'available',
         });
       }
@@ -60,7 +61,10 @@ exports.list = async (req, res, next) => {
     }
     if (row) filter.row = row;
     if (type) filter.seat_type = type;
-    if (status && ['available','sold','broken'].includes(status)) filter.seat_status = status;
+    // [CHANGE] thêm 'holding'
+    if (status && ['available','holding','sold','broken'].includes(status)) {
+      filter.seat_status = status;
+    }
 
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const [items, total] = await Promise.all([
@@ -88,8 +92,10 @@ exports.create = async (req, res, next) => {
       return res.status(400).json({ message: 'Room seats are locked by preset (enforce_layout=true). Use /rooms/:id/regenerate-seats instead.' });
     }
 
-    if (typeof seat_status !== 'undefined' && !['available','sold','broken'].includes(seat_status)) {
-      return res.status(400).json({ message: 'seat_status must be available|sold|broken' });
+    // [CHANGE] validate thêm holding
+    if (typeof seat_status !== 'undefined' &&
+        !['available','holding','sold','broken'].includes(seat_status)) {
+      return res.status(400).json({ message: 'seat_status must be available|holding|sold|broken' });
     }
 
     const doc = await Seat.create({
@@ -103,7 +109,9 @@ exports.create = async (req, res, next) => {
 
     res.status(201).json(doc);
   } catch (err) {
-    if (err?.code === 11000) return res.status(400).json({ message: 'Duplicate seat (room,row,number) already exists' });
+    if (err?.code === 11000) {
+      return res.status(400).json({ message: 'Duplicate seat (room,row,number) already exists' });
+    }
     next(err);
   }
 };
@@ -113,7 +121,9 @@ exports.bulkCreate = async (req, res, next) => {
   try {
     const { room, rows } = req.body;
     if (!room || !isId(room)) return res.status(400).json({ message: 'room is required & must be ObjectId' });
-    if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ message: 'rows array required' });
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ message: 'rows array required' });
+    }
 
     const roomDoc = await Room.findById(room).lean();
     if (!roomDoc) return res.status(404).json({ message: 'Room not found' });
@@ -129,8 +139,10 @@ exports.bulkCreate = async (req, res, next) => {
         return res.status(400).json({ message: `Invalid row spec: ${JSON.stringify(r)}` });
       }
       for (let n = from; n <= to; n++) {
-        const status = r.seat_status && ['available','sold','broken'].includes(r.seat_status)
-          ? r.seat_status : 'available';
+        // [CHANGE] status cho phép holding
+        const status = r.seat_status && ['available','holding','sold','broken'].includes(r.seat_status)
+          ? r.seat_status
+          : 'available';
 
         docs.push({
           room,
@@ -177,11 +189,14 @@ exports.update = async (req, res, next) => {
     if (typeof row !== 'undefined')        seat.row = String(row).trim();
     if (typeof number !== 'undefined')     seat.number = +number;
     if (typeof seat_type !== 'undefined')  seat.seat_type = seat_type;
-    if (typeof extra_price !== 'undefined')seat.extra_price = Number.isFinite(+extra_price) ? +extra_price : seat.extra_price;
+    if (typeof extra_price !== 'undefined') {
+      seat.extra_price = Number.isFinite(+extra_price) ? +extra_price : seat.extra_price;
+    }
 
     if (typeof seat_status !== 'undefined') {
-      if (!['available','sold','broken'].includes(seat_status)) {
-        return res.status(400).json({ message: 'seat_status must be available|sold|broken' });
+      // [CHANGE] validate thêm holding
+      if (!['available','holding','sold','broken'].includes(seat_status)) {
+        return res.status(400).json({ message: 'seat_status must be available|holding|sold|broken' });
       }
       seat.seat_status = seat_status;
     }
@@ -189,20 +204,23 @@ exports.update = async (req, res, next) => {
     await seat.save();
     res.json(seat);
   } catch (err) {
-    if (err?.code === 11000) return res.status(400).json({ message: 'Duplicate seat (room,row,number) already exists' });
+    if (err?.code === 11000) {
+      return res.status(400).json({ message: 'Duplicate seat (room,row,number) already exists' });
+    }
     next(err);
   }
 };
 
-// PATCH /api/seats/:id/status  { seat_status: 'available'|'sold'|'broken' }
+// PATCH /api/seats/:id/status  { seat_status: 'available'|'holding'|'sold'|'broken' }
 exports.updateStatus = async (req, res, next) => {
   try {
     const id = String(req.params.id || '').trim();
     if (!isId(id)) return res.status(400).json({ message: 'Invalid id' });
 
     const status = String(req.body.seat_status || '').trim();
-    if (!['available','sold','broken'].includes(status)) {
-      return res.status(400).json({ message: 'seat_status must be available|sold|broken' });
+    // [CHANGE] thêm holding
+    if (!['available','holding','sold','broken'].includes(status)) {
+      return res.status(400).json({ message: 'seat_status must be available|holding|sold|broken' });
     }
 
     const seat = await Seat.findByIdAndUpdate(

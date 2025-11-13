@@ -42,7 +42,6 @@ async function findConflicts(roomId, startTime, endTime, excludeId = null) {
 
   const candidates = await Showtime.find(q).lean();
 
-  // existing.start < newEnd+buf && existing.end+buf > newStart
   const conflict = candidates.find((c) => {
     const cStart = new Date(c.start_time).getTime();
     const cEndPlus = new Date(c.end_time).getTime() + bufferMs;
@@ -50,6 +49,20 @@ async function findConflicts(roomId, startTime, endTime, excludeId = null) {
   });
 
   return conflict || null;
+}
+
+/** 
+ * Query lock ghế cho 1 showtime: 
+ * mọi ghế đã có vé (reserved|booked|paid|sold) 
+ */
+function buildLockQuery(showtimeId, now) {
+  return {
+    showtime: showtimeId,
+    $or: [
+      { status: 'reserved', expires_at: { $gt: now } },         // giữ tạm
+      { status: { $in: ['booked', 'paid', 'sold'] } },          // đã có vé
+    ],
+  };
 }
 
 /* ============================= PUBLIC ============================= */
@@ -76,7 +89,11 @@ exports.publicByCinema = async (req, res, next) => {
     if (type) {
       const roomIds = await Room.find({ cinema, type }).distinct('_id').lean();
       if (!roomIds.length) {
-        return res.json({ cinema: String(cinema), date: start.toISOString().slice(0, 10), movies: [] });
+        return res.json({
+          cinema: String(cinema),
+          date: start.toISOString().slice(0, 10),
+          movies: [],
+        });
       }
       roomFilter = { room: { $in: roomIds } };
     }
@@ -110,28 +127,28 @@ exports.publicByCinema = async (req, res, next) => {
         });
       }
 
-      // GHẾ TRỐNG REALTIME = (ghế usable) - (ghế đang lock reserved/booked chưa hết hạn)
+      const now = new Date();
       const [allSeats, locks] = await Promise.all([
         Seat.find({ room: s.room?._id || s.room })
           .select('_id seat_status')
           .lean(),
-        TicketSeat.find({
-          showtime: s._id,
-          status: { $in: ['reserved', 'booked'] },
-          expires_at: { $gt: new Date() },
-        })
-          .select('seat')
+        TicketSeat.find(buildLockQuery(s._id, now))
+          .select('seat status')
           .lean(),
       ]);
 
       const lockedSet = new Set(locks.map((x) => String(x.seat)));
+
+      // usable = KHÔNG broken, KHÔNG sold cố định
       const usable = allSeats.filter(
         (se) => se.seat_status !== 'broken' && se.seat_status !== 'sold'
       );
 
       let available = 0;
       for (const se of usable) {
-        if (!lockedSet.has(String(se._id))) available++;
+        if (se.seat_status === 'holding') continue;         // ghế đang giữ
+        if (lockedSet.has(String(se._id))) continue;        // đã có TicketSeat
+        available++;
       }
 
       map.get(mid).showtimes.push({
@@ -156,10 +173,10 @@ exports.publicByCinema = async (req, res, next) => {
 
 /**
  * GET /api/showtimes/:id/seats
- * Trả chi tiết phòng + danh sách ghế với seat_status chính xác:
- * - Nếu đang lock: booked -> sold, reserved -> reserved
- * - Nếu DB có seat_status: dùng luôn
- * - Nếu schema cũ: fallback từ active/is_booked
+ * Mapping 4 trạng thái:
+ *  - TicketSeat.reserved (còn hạn)  -> holding
+ *  - TicketSeat.booked/paid/sold    -> sold
+ *  - không TicketSeat               -> dùng seat_status trong DB (available|holding|sold|broken)
  */
 exports.publicSeatsByShowtime = async (req, res, next) => {
   try {
@@ -169,16 +186,14 @@ exports.publicSeatsByShowtime = async (req, res, next) => {
     const s = await Showtime.findById(id).populate('room movie cinema');
     if (!s) return res.status(404).json({ message: 'Showtime not found' });
 
+    const now = new Date();
+
     const [seats, locks] = await Promise.all([
       Seat.find({ room: s.room._id })
         .select('_id row number seat_type extra_price seat_status active is_booked')
         .sort({ row: 1, number: 1 })
         .lean(),
-      TicketSeat.find({
-        showtime: s._id,
-        status: { $in: ['reserved', 'booked'] },
-        expires_at: { $gt: new Date() },
-      })
+      TicketSeat.find(buildLockQuery(s._id, now))
         .select('seat status')
         .lean(),
     ]);
@@ -186,19 +201,36 @@ exports.publicSeatsByShowtime = async (req, res, next) => {
     const locked = new Map(locks.map((x) => [String(x.seat), x.status]));
 
     const seatsOut = seats.map((se) => {
-      // Ưu tiên trạng thái lock realtime
-      if (locked.has(String(se._id))) {
-        const st = locked.get(String(se._id));
+      const key = String(se._id);
+      const lockStatus = locked.get(key); // reserved | booked | paid | sold | undefined
+
+      // Đang giữ (vé pending, còn hạn)
+      if (lockStatus === 'reserved') {
         return {
           _id: se._id,
           row: se.row,
           number: se.number,
           seat_type: se.seat_type,
           extra_price: se.extra_price,
-          seat_status: st === 'booked' ? 'sold' : 'reserved',
+          seat_status: 'holding',
+          is_booked: false,
         };
       }
-      // Dùng seat_status nếu có
+
+      // Đã bán qua vé
+      if (['booked', 'paid', 'sold'].includes(lockStatus)) {
+        return {
+          _id: se._id,
+          row: se.row,
+          number: se.number,
+          seat_type: se.seat_type,
+          extra_price: se.extra_price,
+          seat_status: 'sold',
+          is_booked: true,
+        };
+      }
+
+      // Không bị lock: dùng seat_status hiện tại trong DB
       if (se.seat_status) {
         return {
           _id: se._id,
@@ -206,9 +238,11 @@ exports.publicSeatsByShowtime = async (req, res, next) => {
           number: se.number,
           seat_type: se.seat_type,
           extra_price: se.extra_price,
-          seat_status: se.seat_status,
+          seat_status: se.seat_status,          // available | holding | sold | broken
+          is_booked: se.seat_status === 'sold',
         };
       }
+
       // Fallback tương thích schema cũ
       const fallback = !se.active ? 'broken' : se.is_booked ? 'sold' : 'available';
       return {
@@ -218,6 +252,7 @@ exports.publicSeatsByShowtime = async (req, res, next) => {
         seat_type: se.seat_type,
         extra_price: se.extra_price,
         seat_status: fallback,
+        is_booked: fallback === 'sold',
       };
     });
 
@@ -226,6 +261,8 @@ exports.publicSeatsByShowtime = async (req, res, next) => {
         _id: s._id,
         ticket_price: s.ticket_price,
         room: { _id: s.room._id, name: s.room.name, type: s.room.type },
+        movie: { _id: s.movie._id, title: s.movie.title },
+        cinema: { _id: s.cinema._id, name: s.cinema.name },
       },
       seats: seatsOut,
     });
@@ -248,7 +285,7 @@ exports.getAll = async (req, res, next) => {
 exports.getById = async (req, res, next) => {
   try {
     const s = await Showtime.findById(req.params.id).populate('movie cinema room');
-    if (!s) return res.status(404).json({ message: 'Not found' });
+  if (!s) return res.status(404).json({ message: 'Not found' });
     res.json(s);
   } catch (err) {
     next(err);
@@ -270,7 +307,10 @@ exports.create = async (req, res, next) => {
     if (typeof ticket_price !== 'number')
       return res.status(400).json({ message: 'ticket_price is required (number)' });
 
-    const [roomDoc, movieDoc] = await Promise.all([Room.findById(room).lean(), Movie.findById(movie).lean()]);
+    const [roomDoc, movieDoc] = await Promise.all([
+      Room.findById(room).lean(),
+      Movie.findById(movie).lean(),
+    ]);
     if (!roomDoc) return res.status(404).json({ message: 'Room not found' });
     if (!movieDoc) return res.status(404).json({ message: 'Movie not found' });
 
@@ -279,7 +319,6 @@ exports.create = async (req, res, next) => {
       ? new Date(end_time)
       : new Date(startTime.getTime() + (movieDoc.duration || 120) * 60000);
 
-    // Chặn giao thoa + buffer
     const conflict = await findConflicts(room, startTime, endTime, null);
     if (conflict) {
       const bufferMin = getBufferMs() / 60000;
@@ -306,20 +345,25 @@ exports.create = async (req, res, next) => {
       status: 'scheduled',
     });
 
-    // available_seats realtime (đơn giản)
+    const now = new Date();
     const [allSeats, locks] = await Promise.all([
       Seat.find({ room }).select('_id seat_status').lean(),
-      TicketSeat.find({
-        showtime: showtime._id,
-        status: { $in: ['reserved', 'booked'] },
-        expires_at: { $gt: new Date() },
-      })
-        .select('seat')
+      TicketSeat.find(buildLockQuery(showtime._id, now))
+        .select('seat status')
         .lean(),
     ]);
     const locked = new Set(locks.map((x) => String(x.seat)));
-    const usable = allSeats.filter((se) => se.seat_status !== 'broken' && se.seat_status !== 'sold');
-    const available = usable.reduce((n, se) => (locked.has(String(se._id)) ? n : n + 1), 0);
+
+    const usable = allSeats.filter(
+      (se) => se.seat_status !== 'broken' && se.seat_status !== 'sold'
+    );
+
+    let available = 0;
+    for (const se of usable) {
+      if (se.seat_status === 'holding') continue;
+      if (locked.has(String(se._id))) continue;
+      available++;
+    }
 
     res.status(201).json({
       message: 'Created',
@@ -374,22 +418,30 @@ exports.update = async (req, res, next) => {
     if (req.body.status) s.status = req.body.status;
     await s.save();
 
-    // available_seats realtime sau update
+    const now = new Date();
     const [allSeats, locks] = await Promise.all([
       Seat.find({ room: s.room }).select('_id seat_status').lean(),
-      TicketSeat.find({
-        showtime: s._id,
-        status: { $in: ['reserved', 'booked'] },
-        expires_at: { $gt: new Date() },
-      })
-        .select('seat')
+      TicketSeat.find(buildLockQuery(s._id, now))
+        .select('seat status')
         .lean(),
     ]);
     const locked = new Set(locks.map((x) => String(x.seat)));
-    const usable = allSeats.filter((se) => se.seat_status !== 'broken' && se.seat_status !== 'sold');
-    const available = usable.reduce((n, se) => (locked.has(String(se._id)) ? n : n + 1), 0);
 
-    res.json({ message: 'Updated', showtime: { ...s.toObject(), available_seats: available } });
+    const usable = allSeats.filter(
+      (se) => se.seat_status !== 'broken' && se.seat_status !== 'sold'
+    );
+
+    let available = 0;
+    for (const se of usable) {
+      if (se.seat_status === 'holding') continue;
+      if (locked.has(String(se._id))) continue;
+      available++;
+    }
+
+    res.json({
+      message: 'Updated',
+      showtime: { ...s.toObject(), available_seats: available },
+    });
   } catch (err) {
     if (err?.code === 11000) {
       return res.status(400).json({ message: 'Duplicate start_time in this room' });
