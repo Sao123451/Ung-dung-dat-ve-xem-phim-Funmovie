@@ -1,4 +1,3 @@
-// models/User.js
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -8,19 +7,30 @@ const UserSchema = new Schema({
   full_name: { type: String },
   phone: { type: String },
   email: { type: String, required: true, unique: true },
-  role: { type: String, enum: ['customer','staff','admin','manager'], default: 'customer' },
-  avatar: { type: String},
+  role: { 
+    type: String, 
+    enum: ['customer','staff','admin','manager'], 
+    default: 'customer' 
+  },
+  avatar: { type: String },
 
   birth_date: {
     type: Date,
-    get: (v) => v ? v.toISOString().split('T')[0] : null  // ✅ chỉ lấy ngày
+    get: (v) => v ? v.toISOString().split('T')[0] : null
   },
 
   status: { type: String, enum: ['active','disabled'], default: 'active' },
+
+  // ⭐ THÊM DÒNG NÀY — ĐỂ POPULATE CINEMA
+  cinema: { 
+    type: Schema.Types.ObjectId,
+    ref: 'Cinema',
+    default: null
+  },
+
   created_at: { type: Date, default: Date.now }
 });
 
-// ✅ Bật chế độ áp dụng getter khi chuyển về JSON
 UserSchema.set('toJSON', { getters: true });
 
 module.exports = mongoose.model('User', UserSchema);
