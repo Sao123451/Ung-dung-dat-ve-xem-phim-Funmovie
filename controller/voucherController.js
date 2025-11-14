@@ -11,6 +11,7 @@ async function publicList(req, res, next) {
       $or: [{ start_date: null }, { start_date: { $lte: now } }],
       $and: [{ $or: [{ end_date: null }, { end_date: { $gte: now } }] }],
     };
+
     if (q) filter.code = new RegExp(String(q).trim(), 'i');
 
     const pg = parseInt(page, 10);
@@ -19,7 +20,7 @@ async function publicList(req, res, next) {
 
     const [items, total] = await Promise.all([
       Voucher.find(filter)
-        .select('code scope discount_type value min_order end_date used_count usage_limit')
+        .select('code scope discount_type value min_order max_discount end_date used_count usage_limit')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(lm)
@@ -29,10 +30,11 @@ async function publicList(req, res, next) {
 
     const mapped = items.map(v => ({
       code: v.code,
-      scope: v.scope,              // seat | combo | order
-      type: v.discount_type,       // percent | amount (map cho Android)
+      scope: v.scope,              
+      type: v.discount_type,      
       value: v.value,
       min_total: v.min_order ?? 0,
+      max_discount: v.max_discount ?? null,   // ⭐ THÊM Ở ĐÂY
       end_date: v.end_date,
       used_count: v.used_count,
       usage_limit: v.usage_limit
@@ -42,11 +44,41 @@ async function publicList(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// POST /api/vouchers  (admin)
+// POST /api/vouchers (admin)
 async function createVoucher(req, res, next) {
   try {
     const v = await Voucher.create(req.body);
     res.status(201).json({ message: 'Voucher created', voucher: v });
+  } catch (err) { next(err); }
+}
+
+// PUT /api/vouchers/:id  (admin) — UPDATE
+async function updateVoucher(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const updated = await Voucher.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!updated)
+      return res.status(404).json({ message: 'Voucher not found' });
+
+    res.json({ message: 'Voucher updated', voucher: updated });
+  } catch (err) { next(err); }
+}
+
+// DELETE /api/vouchers/:id  (admin) — DELETE
+async function removeVoucher(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Voucher.findByIdAndDelete(id);
+    if (!deleted)
+      return res.status(404).json({ message: 'Voucher not found' });
+
+    res.json({ message: 'Voucher deleted' });
   } catch (err) { next(err); }
 }
 
@@ -72,5 +104,6 @@ module.exports = {
   publicList,
   createVoucher,
   validateVoucher,
+  updateVoucher,
+  removeVoucher
 };
-  

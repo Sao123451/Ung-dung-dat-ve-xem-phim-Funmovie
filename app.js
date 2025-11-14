@@ -51,7 +51,7 @@ app.use('/api/news', require('./routes/news'));
 app.use('/api/wishlist', require('./routes/wishlist'));
 
 app.use('/api/products', require('./routes/products'));
-app.use('/api/bookings', require('./routes/bookings'));
+//app.use('/api/bookings', require('./routes/bookings'));
 
 
 

@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
 
-const ctrl = require('../controller/voucherController'); // đúng thư mục: controller (không phải controllers)
+const ctrl = require('../controller/voucherController');
 
-//
-// THỨ TỰ ROUTE: đặt /public trước /:code để tránh nuốt route
-//
-router.get('/public', ctrl.publicList);             // public list
-router.get('/:code/validate', ctrl.validateVoucher);// validate theo code
+router.get('/public', ctrl.publicList);
+router.get('/:code/validate', ctrl.validateVoucher);
 
 // ADMIN
 const { verifyToken, isAdmin } = require('../middlewares/auth');
+
 router.post('/', verifyToken, isAdmin, ctrl.createVoucher);
+router.put('/:id', verifyToken, isAdmin, ctrl.updateVoucher);
+router.delete('/:id', verifyToken, isAdmin, ctrl.removeVoucher);
 
 module.exports = router;
