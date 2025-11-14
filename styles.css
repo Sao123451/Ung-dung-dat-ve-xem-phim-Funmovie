@@ -498,6 +498,43 @@ img.banner-thumb { display:block; width:100%; height:220px; object-fit:contain; 
   background: #1b2440;
 }
 
+.movie-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.mv-card {
+  background: #0f1626;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+}
+.mv-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.25); }
+
+.mv-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  background: #0b1220;
+}
+
+.mv-card .cap { padding: 8px 10px; }
+.mv-card .cap .t { font-size: 14px; font-weight: 600; line-height: 1.2; }
+.mv-card .cap .m { font-size: 12px; color: #9aa4bc; margin-top: 2px; }
+
+.picker-pager {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  margin-top: 10px;
+}
+
+
 
 
 /* ----- Validate ----- */
