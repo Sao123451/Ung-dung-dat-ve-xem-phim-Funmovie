@@ -4,29 +4,30 @@ const Showtime = require('../models/Showtime');
 const Room = require('../models/Room');
 const Movie = require('../models/Movie');
 const Seat = require('../models/Seat');
-const TicketSeat = require('../models/TicketSeat');
+const ShowtimeSeat = require('../models/ShowtimeSeat');
 
 /* ============================ Helpers ============================ */
 
-/** Buffer giữa 2 suất chiếu (ms). Mặc định 30 phút, có thể set SHOWTIME_BUFFER_MIN=60 */
+/** Buffer giữa 2 suất chiếu (ms). Mặc định 30 phút */
 function getBufferMs() {
   const m = parseInt(process.env.SHOWTIME_BUFFER_MIN || '30', 10);
   return (Number.isFinite(m) ? m : 30) * 60 * 1000;
 }
 
-/** Khoảng ngày theo VN (UTC+7) từ tham số YYYY-MM-DD (hoặc hôm nay nếu thiếu) */
+/** Lấy khoảng ngày theo dạng YYYY-MM-DD */
 function getDateRange(dateStr) {
   const yyyyMMdd =
     dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
       ? dateStr
       : new Date().toISOString().slice(0, 10);
+
   const start = new Date(`${yyyyMMdd}T00:00:00+07:00`);
   const end = new Date(`${yyyyMMdd}T00:00:00+07:00`);
   end.setDate(end.getDate() + 1);
   return { start, end };
 }
 
-/** Tìm suất giao thoa trong cùng phòng có xét buffer (loại trừ id hiện tại nếu update) */
+/** Tìm suất giao thoa trong cùng phòng */
 async function findConflicts(roomId, startTime, endTime, excludeId = null) {
   const bufferMs = getBufferMs();
   const endPlusBuf = new Date(endTime.getTime() + bufferMs);
@@ -38,69 +39,26 @@ async function findConflicts(roomId, startTime, endTime, excludeId = null) {
     start_time: { $lt: endPlusBuf },
     end_time: { $gt: startMinusBuf },
   };
+
   if (excludeId) q._id = { $ne: excludeId };
 
-  const candidates = await Showtime.find(q).lean();
-
-  const conflict = candidates.find((c) => {
-    const cStart = new Date(c.start_time).getTime();
-    const cEndPlus = new Date(c.end_time).getTime() + bufferMs;
-    return cStart < endPlusBuf.getTime() && cEndPlus > startTime.getTime();
-  });
-
-  return conflict || null;
-}
-
-/** 
- * Query lock ghế cho 1 showtime: 
- * mọi ghế đã có vé (reserved|booked|paid|sold) 
- */
-function buildLockQuery(showtimeId, now) {
-  return {
-    showtime: showtimeId,
-    $or: [
-      { status: 'reserved', expires_at: { $gt: now } },         // giữ tạm
-      { status: { $in: ['booked', 'paid', 'sold'] } },          // đã có vé
-    ],
-  };
+  return await Showtime.findOne(q).lean();
 }
 
 /* ============================= PUBLIC ============================= */
 
-/**
- * GET /api/showtimes/public/by-cinema?cinema=<id>&date=YYYY-MM-DD&type=2D
- * Trả movies[] mỗi phần tử chứa các showtimes có available_seats realtime
- */
+/** GET /api/showtimes/public/by-cinema */
 exports.publicByCinema = async (req, res, next) => {
   try {
     const { cinema, date } = req.query;
-    let { type } = req.query;
 
-    if (!cinema || !mongoose.isValidObjectId(String(cinema))) {
-      return res.status(400).json({ message: 'cinema is required & must be valid ObjectId' });
-    }
-
-    type = typeof type === 'string' ? String(type).toUpperCase().trim() : null;
-    if (type && !['2D', '3D', 'IMAX'].includes(type)) type = null;
+    if (!cinema || !mongoose.isValidObjectId(cinema))
+      return res.status(400).json({ message: 'cinema is required & must be ObjectId' });
 
     const { start, end } = getDateRange(date);
 
-    let roomFilter = {};
-    if (type) {
-      const roomIds = await Room.find({ cinema, type }).distinct('_id').lean();
-      if (!roomIds.length) {
-        return res.json({
-          cinema: String(cinema),
-          date: start.toISOString().slice(0, 10),
-          movies: [],
-        });
-      }
-      roomFilter = { room: { $in: roomIds } };
-    }
-
     const items = await Showtime.find({
       cinema,
-      ...roomFilter,
       start_time: { $gte: start, $lt: end },
       status: { $in: ['scheduled', 'ongoing'] },
     })
@@ -112,50 +70,23 @@ exports.publicByCinema = async (req, res, next) => {
     const map = new Map();
 
     for (const s of items) {
-      const mid = String(s.movie?._id || s.movie);
+      const movieId = String(s.movie._id);
 
-      if (!map.has(mid)) {
-        map.set(mid, {
-          movie: {
-            _id: mid,
-            title: s.movie?.title || '',
-            poster: s.movie?.poster || '',
-            genre: s.movie?.genre || [],
-            duration: s.movie?.duration ?? null,
-          },
-          showtimes: [],
-        });
+      if (!map.has(movieId)) {
+        map.set(movieId, { movie: s.movie, showtimes: [] });
       }
 
-      const now = new Date();
-      const [allSeats, locks] = await Promise.all([
-        Seat.find({ room: s.room?._id || s.room })
-          .select('_id seat_status')
-          .lean(),
-        TicketSeat.find(buildLockQuery(s._id, now))
-          .select('seat status')
-          .lean(),
-      ]);
+      // ⭐ Đếm ghế theo ShowtimeSeat
+      const available = await ShowtimeSeat.countDocuments({
+        showtime: s._id,
+        status: 'available',
+      });
 
-      const lockedSet = new Set(locks.map((x) => String(x.seat)));
-
-      // usable = KHÔNG broken, KHÔNG sold cố định
-      const usable = allSeats.filter(
-        (se) => se.seat_status !== 'broken' && se.seat_status !== 'sold'
-      );
-
-      let available = 0;
-      for (const se of usable) {
-        if (se.seat_status === 'holding') continue;         // ghế đang giữ
-        if (lockedSet.has(String(se._id))) continue;        // đã có TicketSeat
-        available++;
-      }
-
-      map.get(mid).showtimes.push({
-        _id: String(s._id),
+      map.get(movieId).showtimes.push({
+        _id: s._id,
         start_time: s.start_time,
-        room_type: s.room?.type || '2D',
-        room_name: s.room?.name || '',
+        room_name: s.room.name,
+        room_type: s.room.type,
         available_seats: available,
         ticket_price: s.ticket_price,
       });
@@ -171,100 +102,34 @@ exports.publicByCinema = async (req, res, next) => {
   }
 };
 
-/**
- * GET /api/showtimes/:id/seats
- * Mapping 4 trạng thái:
- *  - TicketSeat.reserved (còn hạn)  -> holding
- *  - TicketSeat.booked/paid/sold    -> sold
- *  - không TicketSeat               -> dùng seat_status trong DB (available|holding|sold|broken)
- */
+/** GET /api/showtimes/:id/seats */
 exports.publicSeatsByShowtime = async (req, res, next) => {
   try {
-    const id = String(req.params.id).trim();
-    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid id' });
+    const id = req.params.id;
+    if (!mongoose.isValidObjectId(id))
+      return res.status(400).json({ message: 'Invalid showtime id' });
 
-    const s = await Showtime.findById(id).populate('room movie cinema');
+    const s = await Showtime.findById(id)
+      .populate('room movie cinema')
+      .lean();
+
     if (!s) return res.status(404).json({ message: 'Showtime not found' });
 
-    const now = new Date();
-
-    const [seats, locks] = await Promise.all([
-      Seat.find({ room: s.room._id })
-        .select('_id row number seat_type extra_price seat_status active is_booked')
-        .sort({ row: 1, number: 1 })
-        .lean(),
-      TicketSeat.find(buildLockQuery(s._id, now))
-        .select('seat status')
-        .lean(),
-    ]);
-
-    const locked = new Map(locks.map((x) => [String(x.seat), x.status]));
-
-    const seatsOut = seats.map((se) => {
-      const key = String(se._id);
-      const lockStatus = locked.get(key); // reserved | booked | paid | sold | undefined
-
-      // Đang giữ (vé pending, còn hạn)
-      if (lockStatus === 'reserved') {
-        return {
-          _id: se._id,
-          row: se.row,
-          number: se.number,
-          seat_type: se.seat_type,
-          extra_price: se.extra_price,
-          seat_status: 'holding',
-          is_booked: false,
-        };
-      }
-
-      // Đã bán qua vé
-      if (['booked', 'paid', 'sold'].includes(lockStatus)) {
-        return {
-          _id: se._id,
-          row: se.row,
-          number: se.number,
-          seat_type: se.seat_type,
-          extra_price: se.extra_price,
-          seat_status: 'sold',
-          is_booked: true,
-        };
-      }
-
-      // Không bị lock: dùng seat_status hiện tại trong DB
-      if (se.seat_status) {
-        return {
-          _id: se._id,
-          row: se.row,
-          number: se.number,
-          seat_type: se.seat_type,
-          extra_price: se.extra_price,
-          seat_status: se.seat_status,          // available | holding | sold | broken
-          is_booked: se.seat_status === 'sold',
-        };
-      }
-
-      // Fallback tương thích schema cũ
-      const fallback = !se.active ? 'broken' : se.is_booked ? 'sold' : 'available';
-      return {
-        _id: se._id,
-        row: se.row,
-        number: se.number,
-        seat_type: se.seat_type,
-        extra_price: se.extra_price,
-        seat_status: fallback,
-        is_booked: fallback === 'sold',
-      };
-    });
+    // ⭐ Lấy ghế từ ShowtimeSeat
+    const seats = await ShowtimeSeat.find({ showtime: id })
+      .select('row number seat_type extra_price status')
+      .sort({ row: 1, number: 1 })
+      .lean();
 
     res.json({
       showtime: {
         _id: s._id,
         ticket_price: s.ticket_price,
-        room: { _id: s.room._id, name: s.room.name, type: s.room.type },
-        movie: { _id: s.movie._id, title: s.movie.title },
-        cinema: { _id: s.cinema._id, name: s.cinema.name },
+        room: s.room,
+        cinema: s.cinema,
+        movie: s.movie,
       },
-      seats: seatsOut,
+      seats,
     });
   } catch (err) {
     next(err);
@@ -273,23 +138,21 @@ exports.publicSeatsByShowtime = async (req, res, next) => {
 
 /* ============================== CRUD ============================== */
 
+/** GET all */
 exports.getAll = async (req, res, next) => {
   try {
     const list = await Showtime.find().populate('movie cinema room');
     res.json(list);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
+/** GET by id */
 exports.getById = async (req, res, next) => {
   try {
     const s = await Showtime.findById(req.params.id).populate('movie cinema room');
-  if (!s) return res.status(404).json({ message: 'Not found' });
+    if (!s) return res.status(404).json({ message: 'Not found' });
     res.json(s);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 /** POST /api/showtimes */
@@ -297,41 +160,29 @@ exports.create = async (req, res, next) => {
   try {
     const { movie, cinema, room, start_time, end_time, ticket_price } = req.body;
 
-    if (!mongoose.isValidObjectId(String(movie)))
+    if (!mongoose.isValidObjectId(movie))
       return res.status(400).json({ message: 'Invalid movie id' });
-    if (!mongoose.isValidObjectId(String(cinema)))
+    if (!mongoose.isValidObjectId(cinema))
       return res.status(400).json({ message: 'Invalid cinema id' });
-    if (!mongoose.isValidObjectId(String(room)))
+    if (!mongoose.isValidObjectId(room))
       return res.status(400).json({ message: 'Invalid room id' });
-    if (!start_time) return res.status(400).json({ message: 'start_time is required' });
-    if (typeof ticket_price !== 'number')
-      return res.status(400).json({ message: 'ticket_price is required (number)' });
 
-    const [roomDoc, movieDoc] = await Promise.all([
-      Room.findById(room).lean(),
-      Movie.findById(movie).lean(),
-    ]);
-    if (!roomDoc) return res.status(404).json({ message: 'Room not found' });
+    const movieDoc = await Movie.findById(movie).lean();
     if (!movieDoc) return res.status(404).json({ message: 'Movie not found' });
 
+    const roomDoc = await Room.findById(room).lean();
+    if (!roomDoc) return res.status(404).json({ message: 'Room not found' });
+
     const startTime = new Date(start_time);
-    const endTime = end_time
+    const endTimeReal = end_time
       ? new Date(end_time)
       : new Date(startTime.getTime() + (movieDoc.duration || 120) * 60000);
 
-    const conflict = await findConflicts(room, startTime, endTime, null);
+    const conflict = await findConflicts(room, startTime, endTimeReal);
     if (conflict) {
-      const bufferMin = getBufferMs() / 60000;
-      const endPlusBuffer = new Date(new Date(conflict.end_time).getTime() + getBufferMs());
       return res.status(400).json({
-        message: 'Showtime overlaps or violates buffer in this room',
-        buffer_min: bufferMin,
-        conflict: {
-          id: conflict._id,
-          start_time: conflict.start_time,
-          end_time: conflict.end_time,
-          end_plus_buffer: endPlusBuffer,
-        },
+        message: 'Showtime overlaps another showtime',
+        conflict,
       });
     }
 
@@ -340,122 +191,84 @@ exports.create = async (req, res, next) => {
       cinema,
       room,
       start_time: startTime,
-      end_time: endTime,
+      end_time: endTimeReal,
       ticket_price,
       status: 'scheduled',
     });
 
-    const now = new Date();
-    const [allSeats, locks] = await Promise.all([
-      Seat.find({ room }).select('_id seat_status').lean(),
-      TicketSeat.find(buildLockQuery(showtime._id, now))
-        .select('seat status')
-        .lean(),
-    ]);
-    const locked = new Set(locks.map((x) => String(x.seat)));
+    // ⭐ Clone ghế từ Seat → ShowtimeSeat
+    const seats = await Seat.find({ room }).lean();
 
-    const usable = allSeats.filter(
-      (se) => se.seat_status !== 'broken' && se.seat_status !== 'sold'
-    );
+    const clones = seats.map((s) => ({
+      showtime: showtime._id,
+      seat: s._id,
+      row: s.row,
+      number: s.number,
+      seat_type: s.seat_type,
+      extra_price: s.extra_price,
+      status: s.seat_status,
+    }));
 
-    let available = 0;
-    for (const se of usable) {
-      if (se.seat_status === 'holding') continue;
-      if (locked.has(String(se._id))) continue;
-      available++;
-    }
+    await ShowtimeSeat.insertMany(clones);
 
     res.status(201).json({
       message: 'Created',
-      showtime: { ...showtime.toObject(), available_seats: available },
+      showtime,
     });
-  } catch (err) {
-    if (err?.code === 11000) {
-      return res.status(400).json({ message: 'Duplicate start_time in this room' });
-    }
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 /** PUT /api/showtimes/:id */
 exports.update = async (req, res, next) => {
   try {
-    const id = String(req.params.id);
+    const id = req.params.id;
     const s = await Showtime.findById(id);
     if (!s) return res.status(404).json({ message: 'Not found' });
 
-    const roomId = req.body.room ? String(req.body.room) : String(s.room);
-    const movieId = req.body.movie ? String(req.body.movie) : String(s.movie);
+    const newRoom = req.body.room || s.room;
 
-    const mv = await Movie.findById(movieId).lean();
-    const startTime = req.body.start_time ? new Date(req.body.start_time) : s.start_time;
-    const endTime = req.body.end_time
-      ? new Date(req.body.end_time)
-      : s.end_time || new Date(startTime.getTime() + (mv?.duration || 120) * 60000);
+    // ⭐ Nếu đổi phòng → clone lại ghế
+    if (req.body.room && req.body.room !== String(s.room)) {
+      await ShowtimeSeat.deleteMany({ showtime: s._id });
 
-    const conflict = await findConflicts(roomId, startTime, endTime, s._id);
-    if (conflict) {
-      const bufferMin = getBufferMs() / 60000;
-      const endPlusBuffer = new Date(new Date(conflict.end_time).getTime() + getBufferMs());
-      return res.status(400).json({
-        message: 'Showtime overlaps or violates buffer in this room',
-        buffer_min: bufferMin,
-        conflict: {
-          id: conflict._id,
-          start_time: conflict.start_time,
-          end_time: conflict.end_time,
-          end_plus_buffer: endPlusBuffer,
-        },
-      });
+      const newSeats = await Seat.find({ room: newRoom }).lean();
+
+      const clones = newSeats.map((se) => ({
+        showtime: s._id,
+        seat: se._id,
+        row: se.row,
+        number: se.number,
+        seat_type: se.seat_type,
+        extra_price: se.extra_price,
+        status: se.seat_status,
+      }));
+
+      await ShowtimeSeat.insertMany(clones);
     }
 
-    s.movie = mongoose.isValidObjectId(movieId) ? movieId : s.movie;
-    s.cinema = req.body.cinema || s.cinema;
-    s.room = roomId;
-    s.start_time = startTime;
-    s.end_time = endTime;
-    if (typeof req.body.ticket_price === 'number') s.ticket_price = req.body.ticket_price;
+    if (req.body.start_time) s.start_time = new Date(req.body.start_time);
+    if (req.body.end_time) s.end_time = new Date(req.body.end_time);
+    if (req.body.ticket_price) s.ticket_price = req.body.ticket_price;
     if (req.body.status) s.status = req.body.status;
+    s.room = newRoom;
+
     await s.save();
-
-    const now = new Date();
-    const [allSeats, locks] = await Promise.all([
-      Seat.find({ room: s.room }).select('_id seat_status').lean(),
-      TicketSeat.find(buildLockQuery(s._id, now))
-        .select('seat status')
-        .lean(),
-    ]);
-    const locked = new Set(locks.map((x) => String(x.seat)));
-
-    const usable = allSeats.filter(
-      (se) => se.seat_status !== 'broken' && se.seat_status !== 'sold'
-    );
-
-    let available = 0;
-    for (const se of usable) {
-      if (se.seat_status === 'holding') continue;
-      if (locked.has(String(se._id))) continue;
-      available++;
-    }
 
     res.json({
       message: 'Updated',
-      showtime: { ...s.toObject(), available_seats: available },
+      showtime: s,
     });
-  } catch (err) {
-    if (err?.code === 11000) {
-      return res.status(400).json({ message: 'Duplicate start_time in this room' });
-    }
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
-/** DELETE /api/showtimes/:id */
+/** DELETE */
 exports.delete = async (req, res, next) => {
   try {
-    await Showtime.findByIdAndDelete(req.params.id);
+    const id = req.params.id;
+
+    await ShowtimeSeat.deleteMany({ showtime: id }); // ⭐ xoá ghế của suất
+    await Showtime.findByIdAndDelete(id);
+
     res.json({ message: 'Deleted' });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
