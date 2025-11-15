@@ -50,36 +50,54 @@ async function findConflicts(roomId, startTime, endTime, excludeId = null) {
 /** GET /api/showtimes/public/by-cinema */
 exports.publicByCinema = async (req, res, next) => {
   try {
-    const { cinema, date } = req.query;
+    const { cinema, date, type } = req.query;
 
     if (!cinema || !mongoose.isValidObjectId(cinema))
-      return res.status(400).json({ message: 'cinema is required & must be ObjectId' });
+      return res
+        .status(400)
+        .json({ message: "cinema is required & must be ObjectId" });
 
+    // Ngày
     const { start, end } = getDateRange(date);
 
+    // ⚡ BUILD FILTER CHO ROOM TYPE
+    let roomMatch = {};
+    if (type && ["2D", "3D", "IMAX"].includes(type)) {
+      roomMatch = { type };
+    }
+
+    // Tìm suất chiếu
     const items = await Showtime.find({
       cinema,
       start_time: { $gte: start, $lt: end },
-      status: { $in: ['scheduled', 'ongoing'] },
+      status: { $in: ["scheduled", "ongoing"] },
     })
-      .populate('movie', 'title poster genre duration')
-      .populate('room', 'name type')
+      .populate("movie", "title poster genre duration")
+      .populate({
+        path: "room",
+        select: "name type",
+        match: roomMatch, // ⭐ CHỈ LẤY PHÒNG ĐÚNG TYPE
+      })
       .sort({ start_time: 1 })
       .lean();
 
+    // ⭐ BỎ NHỮNG SUẤT CHIẾU KHÔNG TRÙNG LOẠI (room = null)
+    const filtered = items.filter((s) => s.room);
+
+    // Gom theo phim
     const map = new Map();
 
-    for (const s of items) {
+    for (const s of filtered) {
       const movieId = String(s.movie._id);
 
       if (!map.has(movieId)) {
         map.set(movieId, { movie: s.movie, showtimes: [] });
       }
 
-      // ⭐ Đếm ghế theo ShowtimeSeat
+      // ⭐ Đếm ghế available trong ShowtimeSeat
       const available = await ShowtimeSeat.countDocuments({
         showtime: s._id,
-        status: 'available',
+        status: "available",
       });
 
       map.get(movieId).showtimes.push({
@@ -101,6 +119,7 @@ exports.publicByCinema = async (req, res, next) => {
     next(err);
   }
 };
+
 
 /** GET /api/showtimes/:id/seats */
 exports.publicSeatsByShowtime = async (req, res, next) => {
