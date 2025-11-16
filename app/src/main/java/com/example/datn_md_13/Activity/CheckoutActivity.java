@@ -272,36 +272,55 @@ public class CheckoutActivity extends AppCompatActivity {
             req.combos = new ArrayList<>();
             for (ProductQtyAdapter.Row r : sel) {
                 BookingRequest.ComboReq c = new BookingRequest.ComboReq();
-                c.productId = r.id; c.qty = r.qty; c.unit_price = r.price;
-                c.name = r.name; c.type = r.type;
+                c.productId = r.id;
+                c.qty = r.qty;
+                c.unit_price = r.price;
+                c.name = r.name;
+                c.type = r.type;
                 req.combos.add(c);
             }
         }
 
         // Interceptor sẽ tự thêm Authorization; truyền null để không override
         api.createBooking(null, req).enqueue(new Callback<BookingCreateResponse>() {
-            @Override public void onResponse(Call<BookingCreateResponse> call, Response<BookingCreateResponse> res) {
+            @Override
+            public void onResponse(Call<BookingCreateResponse> call, Response<BookingCreateResponse> res) {
                 showLoading(false);
-                if (!res.isSuccessful() || res.body()==null || res.body().ticket==null) {
-                    toast("Đặt vé thất bại!"); return;
+
+
+                if (!res.isSuccessful() || res.body() == null || res.body().ticket_id == null) {
+
+                    try {
+                        Log.e("BOOKING_ERR", res.errorBody() != null ? res.errorBody().string() : "null");
+                    } catch (Exception ignore){}
+
+                    toast("Đặt vé thất bại!");
+                    return;
                 }
-                String ticketId = res.body().ticket.getId();
+
+
+                String ticketId = res.body().ticket_id;
+
                 new android.app.AlertDialog.Builder(CheckoutActivity.this)
-                        .setTitle("Đã tạo vé (giả lập)")
+                        .setTitle("Đặt vé thành công!")
                         .setMessage(
                                 "Mã vé: " + ticketId +
-                                        "\nTrạng thái: pending / processing" +
+                                        "\nMã đặt chỗ: " + res.body().reservation_code +
+                                        "\nGiữ ghế tới: " + res.body().expires_at +
                                         "\n\nBạn có thể:\n• POST /api/bookings/" + ticketId + "/confirm để chốt\n" +
-                                        "• Hoặc sửa trực tiếp trên Mongo (status='paid', payment_status='paid')\n" +
-                                        "• Hoặc POST /api/bookings/" + ticketId + "/cancel để hủy")
-                        .setPositiveButton("OK", (d,w) -> finish())
+                                        "• POST /api/bookings/" + ticketId + "/cancel để hủy")
+                        .setPositiveButton("OK", (d, w) -> finish())
                         .show();
             }
-            @Override public void onFailure(Call<BookingCreateResponse> call, Throwable t) {
-                showLoading(false); toast("Lỗi kết nối khi tạo vé!");
+
+            @Override
+            public void onFailure(Call<BookingCreateResponse> call, Throwable t) {
+                showLoading(false);
+                toast("Lỗi kết nối khi tạo vé!");
             }
         });
     }
+
 
     /* ===== Helpers ===== */
     private void showLoading(boolean s) { progress.setVisibility(s ? View.VISIBLE : View.GONE); }

@@ -111,12 +111,15 @@ public class Activity_seat_selection extends AppCompatActivity {
         });
     }
 
+    // -------------------- FIXED: KHÔNG LỌC TRÙNG SAI --------------------
+
     private void loadSeats() {
-        // hủy call cũ nếu có
+
         if (inFlight != null) inFlight.cancel();
 
         progress.setVisibility(View.VISIBLE);
         inFlight = api.getSeatsByShowtime(showtimeId);
+
         inFlight.enqueue(new retrofit2.Callback<ShowtimeSeatResponse>() {
             @Override
             public void onResponse(Call<ShowtimeSeatResponse> call, Response<ShowtimeSeatResponse> res) {
@@ -129,51 +132,46 @@ public class Activity_seat_selection extends AppCompatActivity {
                 }
 
                 List<Seat> seats = res.body().seats;
-                int rawCount = seats.size();
 
-                // ===== 0) Lọc trùng theo _id và theo (row,number) =====
-                // (Nếu API trả nhầm/duplicate -> app vẫn hiển thị đúng số ghế thực)
-                Map<String, Seat> uniqueById = new LinkedHashMap<>();
-                Set<String> keyRowNum = new LinkedHashSet<>();
-                List<Seat> cleaned = new ArrayList<>();
-                for (Seat s : seats) {
-                    if (s == null) continue;
-                    if (s._id == null || s._id.isEmpty()) continue;
-                    String rn = String.format(Locale.US, "%s#%d", (s.row == null ? "" : s.row), s.number);
-                    if (uniqueById.containsKey(s._id)) continue;           // trùng _id
-                    if (keyRowNum.contains(rn)) continue;                   // trùng (row,number)
-                    uniqueById.put(s._id, s);
-                    keyRowNum.add(rn);
-                    cleaned.add(s);
-                }
+                // -------------------
+                // ❌ BỎ TOÀN BỘ FILTER TRÙNG
+                // -------------------
+                // ShowtimeSeat luôn trả 1 seat = 1 id nên KHÔNG ĐƯỢC lọc theo (row,number)
+                // Chỉ cần dùng nguyên danh sách trả về
+                List<Seat> cleaned = new ArrayList<>(seats);
 
-                // ===== 1) Gom hàng & merge ghế đôi -> danh sách 'flat' =====
-                Map<String, List<Seat>> byRowRaw = new LinkedHashMap<>();
+                // -------------------
+                // 🟢 GOM GHẾ THEO HÀNG
+                // -------------------
+                Map<String, List<Seat>> byRow = new LinkedHashMap<>();
                 for (Seat s : cleaned) {
-                    String key = s.row == null ? "" : s.row;
-                    byRowRaw.computeIfAbsent(key, k -> new ArrayList<>()).add(s);
+                    String r = s.row == null ? "" : s.row;
+                    byRow.computeIfAbsent(r, k -> new ArrayList<>()).add(s);
                 }
 
                 List<SeatVM> flat = new ArrayList<>();
-                Set<String> usedIds = new LinkedHashSet<>(); // đánh dấu id đã dùng (để không push lặp)
-                for (Map.Entry<String, List<Seat>> e : byRowRaw.entrySet()) {
-                    String row = e.getKey();
-                    List<Seat> rowSeats = e.getValue();
-                    rowSeats.sort((a,b) -> Integer.compare(a.number, b.number));
+                Set<String> used = new LinkedHashSet<>();
+
+                for (String row : byRow.keySet()) {
+                    List<Seat> rowSeats = byRow.get(row);
+                    rowSeats.sort((a,b)->Integer.compare(a.number,b.number));
 
                     for (int i = 0; i < rowSeats.size();) {
                         Seat s = rowSeats.get(i);
-                        if (s == null || usedIds.contains(s._id)) { i++; continue; }
+                        if (used.contains(s._id)) { i++; continue; }
+
                         boolean merged = false;
 
-                        // GHẾ ĐÔI
-                        if ("couple".equalsIgnoreCase(s.seat_type) && i + 1 < rowSeats.size()) {
-                            Seat s2 = rowSeats.get(i + 1);
-                            if (s2 != null
-                                    && !usedIds.contains(s2._id)
-                                    && "couple".equalsIgnoreCase(s2.seat_type)
-                                    && safeEq(s2.row, s.row)
-                                    && s2.number == s.number + 1) {
+                        // -------------------
+                        // 🟢 GHẾ ĐÔI
+                        // -------------------
+                        if ("couple".equalsIgnoreCase(s.seat_type) && i+1 < rowSeats.size()) {
+                            Seat s2 = rowSeats.get(i+1);
+                            if (s2 != null &&
+                                    "couple".equalsIgnoreCase(s2.seat_type) &&
+                                    safeEq(s2.row, s.row) &&
+                                    s2.number == s.number + 1 &&
+                                    !used.contains(s2._id)) {
 
                                 SeatVM vm = new SeatVM();
                                 vm._id = s._id;
@@ -181,74 +179,71 @@ public class Activity_seat_selection extends AppCompatActivity {
                                 vm.row = row;
                                 vm.number = s.number;
                                 vm.type = "couple";
-                                vm.priceExtra = s.extra_price + s2.extra_price;
                                 vm.span = 2;
+                                vm.priceExtra = s.extra_price + s2.extra_price;
 
-                                // [CHANGE] gộp status: ưu tiên broken > sold > holding > available
+                                // Merge trạng thái
                                 String st1 = s.resolvedStatus();
                                 String st2 = s2.resolvedStatus();
-                                if ("broken".equalsIgnoreCase(st1) || "broken".equalsIgnoreCase(st2)) {
+                                if ("broken".equalsIgnoreCase(st1) || "broken".equalsIgnoreCase(st2))
                                     vm.status = "broken";
-                                } else if ("sold".equalsIgnoreCase(st1) || "sold".equalsIgnoreCase(st2)) {
+                                else if ("sold".equalsIgnoreCase(st1) || "sold".equalsIgnoreCase(st2))
                                     vm.status = "sold";
-                                } else if ("holding".equalsIgnoreCase(st1) || "holding".equalsIgnoreCase(st2)) {
+                                else if ("holding".equalsIgnoreCase(st1) || "holding".equalsIgnoreCase(st2))
                                     vm.status = "holding";
-                                } else {
-                                    vm.status = "available";
-                                }
+                                else vm.status = "available";
 
                                 flat.add(vm);
-                                usedIds.add(s._id);
-                                usedIds.add(s2._id);
+                                used.add(s._id);
+                                used.add(s2._id);
+
                                 merged = true;
                                 i += 2;
                             }
                         }
 
-// GHẾ ĐƠN (giữ nguyên, chỉ cần chắc chắn dùng resolvedStatus)
                         if (!merged) {
                             SeatVM vm = new SeatVM();
                             vm._id = s._id;
                             vm.row = row;
                             vm.number = s.number;
                             vm.type = s.seat_type;
-                            vm.priceExtra = s.extra_price;
-                            vm.status = s.resolvedStatus();   // luôn dùng helper, có thể là holding
                             vm.span = 1;
+                            vm.priceExtra = s.extra_price;
+                            vm.status = s.resolvedStatus();
+
                             flat.add(vm);
-                            usedIds.add(s._id);
+                            used.add(s._id);
                             i += 1;
                         }
                     }
                 }
 
-                // ===== 2) Tính span theo hàng sau khi merge =====
+                // -------------------
+                // 🟢 TÍNH SPAN
+                // -------------------
                 int span = calcColumnsFromFlat(flat);
                 GridLayoutManager glm = (GridLayoutManager) rvSeats.getLayoutManager();
                 if (glm != null) glm.setSpanCount(span);
 
-                // ===== 3) Làm sạch pool/spacing rồi mới đẩy dữ liệu =====
                 rvSeats.getRecycledViewPool().clear();
-                while (rvSeats.getItemDecorationCount() > 0) rvSeats.removeItemDecorationAt(0);
+                while (rvSeats.getItemDecorationCount() > 0)
+                    rvSeats.removeItemDecorationAt(0);
+
                 rvSeats.addItemDecoration(new GridSpacingDecoration(span, dp(4), dp(4), true));
-                rvSeats.setHasFixedSize(true);
                 rvSeats.setItemAnimator(null);
 
-                // ===== 4) Nạp data =====
-                Log.d(TAG, "raw=" + rawCount + ", cleaned=" + cleaned.size()
-                        + ", flat=" + flat.size() + ", span=" + span);
                 seatAdapter.submit(flat);
                 updateSelectedUI();
             }
 
             private int calcColumnsFromFlat(List<SeatVM> flat) {
-                Map<String, Integer> perRow = new LinkedHashMap<>();
-                for (SeatVM s : flat) {
-                    String r = s.row == null ? "" : s.row;
-                    perRow.put(r, perRow.getOrDefault(r, 0) + Math.max(1, s.span));
+                Map<String, Integer> rowWidth = new LinkedHashMap<>();
+                for (SeatVM vm : flat) {
+                    rowWidth.put(vm.row, rowWidth.getOrDefault(vm.row, 0) + vm.span);
                 }
                 int max = 1;
-                for (int v : perRow.values()) if (v > max) max = v;
+                for (int v : rowWidth.values()) max = Math.max(max, v);
                 return max;
             }
 
@@ -261,6 +256,7 @@ public class Activity_seat_selection extends AppCompatActivity {
             }
         });
     }
+
 
     private boolean safeEq(String a, String b) {
         if (a == null && b == null) return true;
