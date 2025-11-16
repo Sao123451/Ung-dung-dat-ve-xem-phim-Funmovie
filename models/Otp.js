@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 const OtpSchema = new Schema({
   email: { type: String, required: true },
   code: { type: String, required: true },       // OTP 6 số
-  expires_at: { type: Date, required: true }    // Hết hạn sau 5 phút
+  expires_at: { type: Date, required: true }    // Hết hạn sau 1 phút
 }, {
   timestamps: true
 });

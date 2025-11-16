@@ -1,0 +1,67 @@
+const nodemailer = require("nodemailer");
+const QRCode = require("qrcode");
+
+exports.sendEmail = async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+    const { email } = req.body;
+
+    const ticket = await Ticket.findById(ticketId)
+      .populate("cinema")
+      .populate("room")
+      .populate("showtime")
+      .lean();
+
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+    // Lấy danh sách ghế
+    const seats = await TicketSeat.find({ ticket: ticketId }).lean();
+    const seatNames = seats.map(s => `${s.row}${s.number}`).join(", ");
+
+    // Tạo QR
+    const qrPng = await QRCode.toDataURL(ticket.qr_data);
+
+    // Mail transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+
+    const html = `
+      <h2>VÉ XEM PHIM FUNMOVIE</h2>
+      <p><strong>Mã vé:</strong> ${ticket.reservation_code}</p>
+
+      <img src="${qrPng}" width="200"/>
+
+      <p><strong>Phim:</strong> ${ticket.showtime.title || "Tên phim"}</p>
+      <p><strong>Rạp:</strong> ${ticket.cinema.name}</p>
+      <p><strong>Phòng chiếu:</strong> ${ticket.room.name}</p>
+      <p><strong>Ghế:</strong> ${seatNames}</p>
+      <p><strong>Thời gian:</strong> ${ticket.showtime.start_time}</p>
+
+      <hr/>
+      <p>Cảm ơn bạn đã đặt vé tại FunMovie!</p>
+    `;
+
+    await transporter.sendMail({
+      from: `"FunMovie" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: "Vé xem phim FunMovie của bạn",
+      html
+    });
+
+    res.json({
+      message: "Email sent",
+      ticket_id: ticketId,
+      to: email
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Send email failed", error: err.message });
+  }
+};
+    

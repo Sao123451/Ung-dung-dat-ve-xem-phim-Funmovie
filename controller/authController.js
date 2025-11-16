@@ -1,3 +1,4 @@
+// controller/authController.js
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -7,7 +8,19 @@ const { sendOTP } = require('../utils/email');
 const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
 
 /* ================================================================
-   📌 1) REGISTER — AUTO OTP + KHÔNG GỬI MÃ MỚI KHI MÃ CŨ CÒN HIỆU LỰC
+   📌 0) HELPER: TẠO JWT TOKEN
+================================================================ */
+function signToken(user) {
+  return jwt.sign(
+    { id: user._id, role: user.role },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+}
+
+
+/* ================================================================
+   📌 1) REGISTER — SEND OTP → VERIFY OTP → TẠO USER
 ================================================================ */
 exports.register = async (req, res, next) => {
   try {
@@ -16,13 +29,15 @@ exports.register = async (req, res, next) => {
     if (!email)
       return res.status(400).json({ message: "Thiếu email" });
 
-    // CASE 1: Gửi OTP lần đầu
+    /* -----------------------------------------------------------
+       CASE 1 — CHƯA CÓ OTP → GỬI OTP MỚI
+    ----------------------------------------------------------- */
     if (!otp_code) {
       const usedEmail = await User.findOne({ email });
       if (usedEmail)
         return res.status(400).json({ message: "Email đã được sử dụng" });
 
-      // Kiểm tra OTP cũ
+      // Kiểm tra OTP cũ còn hiệu lực
       const oldOtp = await Otp.findOne({ email }).sort({ createdAt: -1 });
       if (oldOtp && oldOtp.expires_at > Date.now()) {
         return res.json({
@@ -33,7 +48,7 @@ exports.register = async (req, res, next) => {
 
       // Tạo OTP mới
       const code = String(Math.floor(100000 + Math.random() * 900000));
-      const expires = new Date(Date.now() + 1 * 60 * 1000);
+      const expires = new Date(Date.now() + 2 * 60 * 1000);
 
       await Otp.create({ email, code, expires_at: expires });
       await sendOTP(email, code);
@@ -44,7 +59,9 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    // CASE 2: Xác nhận OTP
+    /* -----------------------------------------------------------
+       CASE 2 — NHẬP OTP ĐỂ TẠO USER
+    ----------------------------------------------------------- */
     const otp = await Otp.findOne({ email, code: otp_code });
     if (!otp)
       return res.status(400).json({ message: "OTP không hợp lệ" });
@@ -52,20 +69,25 @@ exports.register = async (req, res, next) => {
     if (otp.expires_at < Date.now())
       return res.status(400).json({ message: "OTP đã hết hạn" });
 
+    // Kiểm tra username
     const existsUser = await User.findOne({ username });
     if (existsUser)
       return res.status(400).json({ message: "Username đã được sử dụng" });
 
+    // Hash password
     const hashed = await bcrypt.hash(password, 10);
 
+    // Tạo user customer (membership card tự sinh)
     const user = await User.create({
       username,
       email,
       password: hashed,
       full_name,
-      phone
+      phone,
+      email_verified: true   // ⭐ SAU KHI OTP VÀO ĐÂY → VERIFIED
     });
 
+    // Xóa OTP sau khi dùng
     await Otp.deleteMany({ email });
 
     return res.status(201).json({
@@ -73,7 +95,8 @@ exports.register = async (req, res, next) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        membership_card: user.membership_card
       }
     });
 
@@ -92,7 +115,10 @@ exports.login = async (req, res, next) => {
     const { usernameOrEmail, password } = req.body;
 
     const user = await User.findOne({
-      $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }]
+      $or: [
+        { username: usernameOrEmail },
+        { email: usernameOrEmail }
+      ]
     });
 
     if (!user)
@@ -102,21 +128,12 @@ exports.login = async (req, res, next) => {
     if (!ok)
       return res.status(400).json({ message: "Sai mật khẩu" });
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = signToken(user);
 
     return res.json({
       message: "Đăng nhập thành công",
       token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role
-      }
+      user
     });
 
   } catch (err) {
@@ -144,11 +161,7 @@ exports.staffLogin = async (req, res, next) => {
     if (!ok)
       return res.status(400).json({ message: "Sai mật khẩu" });
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = signToken(user);
 
     return res.json({
       message: "Đăng nhập STAFF thành công",
@@ -186,14 +199,11 @@ exports.staffRegister = async (req, res, next) => {
       full_name,
       phone,
       role: "staff",
-      status: "active"
+      status: "active",
+      email_verified: true // STAFF ĐƯỢC COI NHƯ VERIFIED
     });
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = signToken(user);
 
     return res.json({
       message: "Đăng ký STAFF thành công",
@@ -209,7 +219,7 @@ exports.staffRegister = async (req, res, next) => {
 
 
 /* ================================================================
-   📌 5) CHANGE PASSWORD WITH OTP — AUTO
+   📌 5) CHANGE PASSWORD WITH OTP
 ================================================================ */
 exports.changePasswordWithOtp = async (req, res, next) => {
   try {
@@ -218,24 +228,26 @@ exports.changePasswordWithOtp = async (req, res, next) => {
     if (!email)
       return res.status(400).json({ message: "Thiếu email" });
 
-    // CASE 1: Gửi OTP lần đầu
+    /* ------------------------------------------
+       CASE 1 – GỬI OTP
+    ------------------------------------------- */
     if (!otp_code || !new_password) {
       const user = await User.findOne({ email });
       if (!user)
         return res.status(400).json({ message: "Email không tồn tại" });
 
-      // Check OTP cũ
+      // Kiểm tra OTP cũ
       const oldOtp = await Otp.findOne({ email }).sort({ createdAt: -1 });
       if (oldOtp && oldOtp.expires_at > Date.now()) {
         return res.json({
           step: "verify_otp",
-          message: "OTP vẫn còn hiệu lực, vui lòng kiểm tra email"
+          message: "OTP vẫn còn hiệu lực"
         });
       }
 
       // Gửi OTP mới
       const code = String(Math.floor(100000 + Math.random() * 900000));
-      const expires = new Date(Date.now() + 5 * 60 * 1000);
+      const expires = new Date(Date.now() + 3 * 60 * 1000);
 
       await Otp.create({ email, code, expires_at: expires });
       await sendOTP(email, code);
@@ -246,7 +258,9 @@ exports.changePasswordWithOtp = async (req, res, next) => {
       });
     }
 
-    // CASE 2: Xác nhận OTP + đổi mật khẩu
+    /* ------------------------------------------
+       CASE 2 – VERIFY OTP + ĐỔI MẬT KHẨU
+    ------------------------------------------- */
     const otp = await Otp.findOne({ email, code: otp_code });
     if (!otp)
       return res.status(400).json({ message: "OTP không hợp lệ" });
@@ -260,8 +274,8 @@ exports.changePasswordWithOtp = async (req, res, next) => {
 
     const hashed = await bcrypt.hash(new_password, 10);
     user.password = hashed;
-    await user.save();
 
+    await user.save();
     await Otp.deleteMany({ email });
 
     return res.json({ message: "Đổi mật khẩu thành công" });
