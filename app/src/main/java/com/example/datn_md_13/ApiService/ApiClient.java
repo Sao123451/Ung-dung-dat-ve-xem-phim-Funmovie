@@ -2,7 +2,7 @@ package com.example.datn_md_13.ApiService;
 
 import android.content.Context;
 
-import com.example.datn_md_13.auth.AuthManager;
+import com.example.datn_md_13.AuthManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -21,7 +20,9 @@ public class ApiClient {
     private static Retrofit retrofitAuthed;  // tự chèn token
 
     private static final String BASE_URL = "http://10.0.2.2:3000/api/";
-//    private static final String BASE_URL = "http://192.168.1.18:3000/api/";
+
+    public static final String PUBLIC_BASE = "http://10.0.2.2:3000/";
+
     /** Retrofit thường (public APIs) */
     public static Retrofit get() {
         if (retrofit == null) {
@@ -70,4 +71,19 @@ public class ApiClient {
         }
         return retrofitAuthed;
     }
+
+    // ✅ BỔ SUNG: tạo sẵn ApiService (tùy chọn, không bắt buộc dùng)
+    public static ApiService api() {
+        return get().create(ApiService.class);
+    }
+
+    // ✅ BỔ SUNG: helper chuyển relative path -> absolute URL
+    public static String absolutePublicUrl(String path) {
+        if (path == null || path.isEmpty()) return null;
+        if (path.startsWith("http")) return path;
+        String p = path.startsWith("/") ? path.substring(1) : path;
+        return PUBLIC_BASE + p;
+    }
+
+
 }
