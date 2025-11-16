@@ -11,7 +11,7 @@ import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
 import com.example.datn_md_13.Model.BookingCreateResponse;
 import com.example.datn_md_13.R;
-import com.example.datn_md_13.auth.AuthManager;
+import com.example.datn_md_13.AuthManager;
 
 import java.util.Locale;
 

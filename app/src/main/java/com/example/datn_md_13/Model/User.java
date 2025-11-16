@@ -5,11 +5,16 @@ import java.util.Date;
 
 public class User {
 
-    // basic
+    // Thêm trường token
+    @SerializedName("token")
+    private String token;
+
+    @SerializedName("_id")
+    private String id;
+
     @SerializedName("username")
     private String username;
 
-    // not included in toString or logs for security
     @SerializedName("password")
     private String password;
 
@@ -34,40 +39,43 @@ public class User {
     @SerializedName("created_at")
     private Date created_at;
 
-    // field used for login payload (usernameOrEmail expected by backend)
+    @SerializedName("gender")
+    private String gender;
+
+    @SerializedName("birth_date")
+    private String birthDate;
+
+    @SerializedName("address")
+    private String address;
+
     @SerializedName("usernameOrEmail")
     private String usernameOrEmail;
 
+    @SerializedName("currentPassword")
+    private String currentPassword;
+
+    @SerializedName("newPassword")
+    private String newPassword;
+
     public User() { }
 
-    // convenient constructors
     public User(String email, String password) {
         this.email = email;
         this.password = password;
     }
 
     public User(String usernameOrEmail, String password, boolean isLoginConstructor) {
-        // isLoginConstructor just to differentiate signature if needed
         this.usernameOrEmail = usernameOrEmail;
         this.password = password;
     }
 
-    // full constructor if you really need it
-    public User(String username, String password, String full_name, String phone, String email,
-                String role, String avatar, String status, Date created_at, String usernameOrEmail) {
-        this.username = username;
-        this.password = password;
-        this.full_name = full_name;
-        this.phone = phone;
-        this.email = email;
-        this.role = role;
-        this.avatar = avatar;
-        this.status = status;
-        this.created_at = created_at;
-        this.usernameOrEmail = usernameOrEmail;
-    }
+    // ✅ Getters và Setters
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 
-    // getters / setters
+    public String getId() { return id; } // Bạn đã có getter này với tên là getId()
+    public void setId(String id) { this.id = id; }
+
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 
@@ -95,18 +103,37 @@ public class User {
     public Date getCreated_at() { return created_at; }
     public void setCreated_at(Date created_at) { this.created_at = created_at; }
 
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getBirthDate() { return birthDate; }
+    public void setBirthDate(String birthDate) { this.birthDate = birthDate; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
     public String getUsernameOrEmail() { return usernameOrEmail; }
     public void setUsernameOrEmail(String usernameOrEmail) { this.usernameOrEmail = usernameOrEmail; }
+
+    public String getCurrentPassword() { return currentPassword; }
+    public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
+
+    public String getNewPassword() { return newPassword; }
+    public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
 
     @Override
     public String toString() {
         return "User{" +
-                "username='" + username + '\'' +
+                "id='" + id + '\'' +
+                ", username='" + username + '\'' +
                 ", full_name='" + full_name + '\'' +
                 ", phone='" + phone + '\'' +
                 ", email='" + email + '\'' +
                 ", role='" + role + '\'' +
                 ", avatar='" + avatar + '\'' +
+                ", gender='" + gender + '\'' +
+                ", birthDate='" + birthDate + '\'' +
+                ", address='" + address + '\'' +
                 ", status='" + status + '\'' +
                 ", created_at=" + created_at +
                 '}';

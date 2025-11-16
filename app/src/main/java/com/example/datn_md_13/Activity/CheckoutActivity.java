@@ -24,7 +24,7 @@ import com.example.datn_md_13.Model.ProductListRes;
 import com.example.datn_md_13.Model.VoucherDto;
 import com.example.datn_md_13.Model.VoucherListRes;
 import com.example.datn_md_13.R;
-import com.example.datn_md_13.auth.AuthManager;
+import com.example.datn_md_13.AuthManager;
 import com.google.gson.Gson;
 
 import java.text.NumberFormat;

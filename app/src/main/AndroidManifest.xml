@@ -19,6 +19,18 @@
         android:theme="@style/Theme.DATN_MD13"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".Activity.ChangePassword"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.Edit_User_Info"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.User_Information"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.NewsDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".Activity.TicketDetailActivity"
             android:exported="false" />
         <activity
