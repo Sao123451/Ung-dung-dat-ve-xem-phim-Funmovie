@@ -12,7 +12,7 @@ const TicketSchema = new Schema(
     cinema: { type: Schema.Types.ObjectId, ref: 'Cinema' },
     room: { type: Schema.Types.ObjectId, ref: 'Room' },
 
-    // ⭐ NEW: Lưu membership card của khách hàng
+    // ⭐ Membership card snapshot
     membership_card: { type: String, default: null },
 
     // ===============================
@@ -58,9 +58,11 @@ const TicketSchema = new Schema(
     // SNAPSHOT
     // ===============================
 
-    reservation_code: { type: String, required: true, unique: true }, // Mã vé
+    reservation_code: { type: String, required: true, unique: true },
 
-    qr_data: { type: String, required: true },
+    // ⭐ FIXED — KHÔNG REQUIRED NỮA
+    // Vì QR chỉ được tạo ở bước confirm()
+    qr_data: { type: String, default: "" },
 
     seats: [{ type: String }], // Ví dụ: ["A5", "A6"]
 
@@ -71,7 +73,8 @@ const TicketSchema = new Schema(
 
     cinema_snapshot: {
       name: String,
-      address: String
+      address: String,
+      city: String
     },
 
     room_snapshot: {
@@ -88,7 +91,6 @@ const TicketSchema = new Schema(
     // EXPIRATION
     // ===============================
     expires_at: { type: Date, default: null }
-
   },
   { timestamps: true }
 );

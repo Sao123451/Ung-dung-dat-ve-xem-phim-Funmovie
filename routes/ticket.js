@@ -3,12 +3,18 @@ const r = require('express').Router();
 const t = require('../controller/ticketController');
 const { verifyToken, requireRoles } = require('../middlewares/auth');
 
-// CUSTOMER (phải đăng nhập)
+// CUSTOMER
 r.get('/my', verifyToken, t.myTickets);
 r.get('/:id', verifyToken, t.detail);
 r.post('/', verifyToken, t.create);
 r.patch('/:id/cancel', verifyToken, t.cancelMy);
 r.get('/:id/qr', verifyToken, t.getQR);
+
+// SEARCH BY RESERVATION CODE
+r.get('/find/by-code/:code', verifyToken, t.findByCode);
+
+// SEARCH BY QR DATA
+r.get('/find/by-qr/:qr', verifyToken, t.findByQR);
 
 // ADMIN / MANAGER / STAFF
 r.get('/', verifyToken, requireRoles('admin','manager','staff'), t.list);

@@ -14,7 +14,7 @@ const HOLD_MINUTES = parseInt(process.env.TICKET_HOLD_MIN || "15", 10);
 
 
 // =========================================================
-//                      QUOTE
+// QUOTE
 // =========================================================
 exports.quote = async (req, res) => {
   try {
@@ -27,7 +27,6 @@ exports.quote = async (req, res) => {
     if (!showtime)
       return res.status(404).json({ message: "Showtime not found" });
 
-    // ===== GET VALID SEATS =====
     const seats = await ShowtimeSeat.find({
       _id: { $in: seatIds },
       showtime: showtimeId,
@@ -39,14 +38,12 @@ exports.quote = async (req, res) => {
       0
     );
 
-    // ===== COMBO SUBTOTAL =====
     let combo_subtotal = 0;
     for (const c of combos) {
       const p = await Product.findById(c.productId);
       if (p) combo_subtotal += p.price * c.qty;
     }
 
-    // ===== VOUCHERS =====
     let discount_seat = 0,
       discount_combo = 0,
       discount_order = 0;
@@ -58,19 +55,22 @@ exports.quote = async (req, res) => {
       let discount = 0;
 
       if (v.scope === "seat")
-        discount = v.discount_type === "percent"
-          ? seat_subtotal * (v.value / 100)
-          : v.value;
+        discount =
+          v.discount_type === "percent"
+            ? seat_subtotal * (v.value / 100)
+            : v.value;
 
       if (v.scope === "combo")
-        discount = v.discount_type === "percent"
-          ? combo_subtotal * (v.value / 100)
-          : v.value;
+        discount =
+          v.discount_type === "percent"
+            ? combo_subtotal * (v.value / 100)
+            : v.value;
 
       if (v.scope === "order")
-        discount = v.discount_type === "percent"
-          ? (seat_subtotal + combo_subtotal) * (v.value / 100)
-          : v.value;
+        discount =
+          v.discount_type === "percent"
+            ? (seat_subtotal + combo_subtotal) * (v.value / 100)
+            : v.value;
 
       if (v.max_discount) discount = Math.min(discount, v.max_discount);
 
@@ -99,19 +99,13 @@ exports.quote = async (req, res) => {
 };
 
 
-
 // =========================================================
-//                      CUSTOMER CREATE
+// CUSTOMER CREATE (UNPAID)
 // =========================================================
 exports.create = async (req, res) => {
   try {
-    const {
-      showtimeId,
-      seatIds = [],
-      combos = [],
-      vouchers = [],
-      payment_method,
-    } = req.body;
+    const { showtimeId, seatIds = [], combos = [], vouchers = [], payment_method } =
+      req.body;
 
     const userId = req.user?._id;
     if (!userId)
@@ -125,7 +119,6 @@ exports.create = async (req, res) => {
     if (!showtime)
       return res.status(404).json({ message: "Showtime not found" });
 
-    // ===== VALIDATE SEATS =====
     const validSeats = [];
     for (const id of seatIds) {
       const ss = await ShowtimeSeat.findOne({
@@ -140,19 +133,19 @@ exports.create = async (req, res) => {
       validSeats.push(ss);
     }
 
-    // ===== CALCULATE =====
     const seat_subtotal = validSeats.reduce(
       (t, x) => t + showtime.ticket_price + x.extra_price,
       0
     );
 
+    // COMBOS
     let combo_subtotal = 0;
     for (const c of combos) {
       const p = await Product.findById(c.productId);
       if (p) combo_subtotal += p.price * c.qty;
     }
 
-    // ===== VOUCHER =====
+    // VOUCHERS
     let discount_seat = 0,
       discount_combo = 0,
       discount_order = 0;
@@ -167,19 +160,22 @@ exports.create = async (req, res) => {
       let discount = 0;
 
       if (v.scope === "seat")
-        discount = v.discount_type === "percent"
-          ? seat_subtotal * (v.value / 100)
-          : v.value;
+        discount =
+          v.discount_type === "percent"
+            ? seat_subtotal * (v.value / 100)
+            : v.value;
 
       if (v.scope === "combo")
-        discount = v.discount_type === "percent"
-          ? combo_subtotal * (v.value / 100)
-          : v.value;
+        discount =
+          v.discount_type === "percent"
+            ? combo_subtotal * (v.value / 100)
+            : v.value;
 
       if (v.scope === "order")
-        discount = v.discount_type === "percent"
-          ? (seat_subtotal + combo_subtotal) * (v.value / 100)
-          : v.value;
+        discount =
+          v.discount_type === "percent"
+            ? (seat_subtotal + combo_subtotal) * (v.value / 100)
+            : v.value;
 
       if (v.max_discount) discount = Math.min(discount, v.max_discount);
 
@@ -192,12 +188,12 @@ exports.create = async (req, res) => {
     const total_after =
       total_before - (discount_seat + discount_combo + discount_order);
 
-    // ===== RESERVATION =====
     const reservation_code = Math.floor(10000000 + Math.random() * 90000000);
-    const qr_data = `${reservation_code}|${user._id}`;
     const expires_at = new Date(Date.now() + HOLD_MINUTES * 60000);
 
-    // ===== CREATE TICKET =====
+    // ⭐ Lưu ghế dạng "A5"
+    const seat_codes = validSeats.map(s => `${s.row}${s.number}`);
+
     const ticket = await Ticket.create({
       user: user._id,
       showtime: showtimeId,
@@ -217,13 +213,15 @@ exports.create = async (req, res) => {
       total_before,
       total_after,
 
+      seats: seat_codes,
       reservation_code,
-      qr_data,
+      qr_data: "",
+
       expires_at,
       voucher_codes,
     });
 
-    // ===== CREATE TICKET SEATS =====
+    // CREATE TICKET SEATS
     for (const ss of validSeats) {
       await TicketSeat.create({
         ticket: ticket._id,
@@ -245,27 +243,11 @@ exports.create = async (req, res) => {
       );
     }
 
-    // ===== COMBO CREATE =====
-    for (const c of combos) {
-      const p = await Product.findById(c.productId);
-      if (!p) continue;
-
-      await TicketCombo.create({
-        ticket: ticket._id,
-        product: p._id,
-        name: p.name,
-        type: p.type,
-        qty: c.qty,
-        unit_price: p.price,
-        line_total: p.price * c.qty,
-      });
-    }
-
     return res.json({
       message: "Ticket created",
       ticket_id: ticket._id,
       reservation_code,
-      qr_data,
+      seats: seat_codes,
       expires_at,
     });
   } catch (err) {
@@ -275,9 +257,9 @@ exports.create = async (req, res) => {
 
 
 
-/* ======================================================
-   STAFF CREATE (TẠI QUẦY) – SHOW CINEMA FROM STAFF
-====================================================== */
+// ======================================================
+// STAFF CREATE (PAID IMMEDIATELY)
+// ======================================================
 exports.staffCreate = async (req, res) => {
   try {
     const {
@@ -289,15 +271,14 @@ exports.staffCreate = async (req, res) => {
       email_override,
     } = req.body;
 
-    // ⭐ Staff phải populate cinema để lấy name/address
-    const staff = await mongoose.model("User")
+    const staff = await mongoose
+      .model("User")
       .findById(req.user._id)
       .populate("cinema");
 
     if (!staff)
       return res.status(401).json({ message: "Unauthorized staff" });
 
-    // ⭐ User theo membership card (nếu có)
     let user = null;
 
     if (membership_card) {
@@ -318,7 +299,7 @@ exports.staffCreate = async (req, res) => {
     if (!showtime)
       return res.status(404).json({ message: "Showtime not found" });
 
-    // ----- GHẾ -----
+    // VALIDATE SEATS
     const validSeats = [];
     for (const seatId of seatIds) {
       const ss = await ShowtimeSeat.findOne({
@@ -332,12 +313,12 @@ exports.staffCreate = async (req, res) => {
       validSeats.push(ss);
     }
 
-    // ----- TÍNH TIỀN -----
     const seat_subtotal = validSeats.reduce(
       (s, x) => s + showtime.ticket_price + x.extra_price,
       0
     );
 
+    // COMBOS
     let combo_subtotal = 0;
     for (const cb of combos) {
       const p = await mongoose.model("Product").findById(cb.productId);
@@ -348,33 +329,31 @@ exports.staffCreate = async (req, res) => {
     const total_before = seat_subtotal + combo_subtotal;
     const total_after = total_before;
 
-    const reservation_code =
-      Math.floor(10000000 + Math.random() * 90000000).toString();
+    const reservation_code = Math.floor(10000000 + Math.random() * 90000000);
+
+    const seat_codes = validSeats.map(s => `${s.row}${s.number}`);
 
     const qr_data = `${reservation_code}|${user ? user._id : "guest"}`;
 
-    // ⭐ SAVE SNAPSHOT RẠP – phòng khi cinema thay đổi sau này
     const cinema_snapshot = {
       name: staff.cinema?.name || "Không xác định",
       address: staff.cinema?.address || "",
       city: staff.cinema?.city || "",
     };
 
-    // ----- TẠO VÉ -----
     const ticket = await Ticket.create({
       user: user ? user._id : null,
       showtime: showtime._id,
-
-      // ⭐ VÉ CHO STAFF → LUÔN LẤY RẠP THEO STAFF
       cinema: staff.cinema?._id,
       room: showtime.room,
 
-      cinema_snapshot, // ⭐ LẤY THÔNG TIN RẠP STAFF
+      cinema_snapshot,
 
       membership_card: user ? user.membership_card : null,
       status: "paid",
       payment_status: "paid",
       payment_method: payment_method || "cash",
+      payment_time: new Date(),   // ⭐ STAFF PAYMENT ALWAYS HAS payment_time
 
       seat_subtotal,
       combo_subtotal,
@@ -385,12 +364,13 @@ exports.staffCreate = async (req, res) => {
       total_before,
       total_after,
 
+      seats: seat_codes,
       reservation_code,
       qr_data,
       voucher_codes: [],
     });
 
-    // ----- GHẾ SOLD -----
+    // TICKET SEATS
     for (const ss of validSeats) {
       await TicketSeat.create({
         ticket: ticket._id,
@@ -411,7 +391,7 @@ exports.staffCreate = async (req, res) => {
       );
     }
 
-    // ----- COMBO -----
+    // COMBOS
     for (const cb of combos) {
       const p = await mongoose.model("Product").findById(cb.productId);
       if (!p) continue;
@@ -427,7 +407,7 @@ exports.staffCreate = async (req, res) => {
       });
     }
 
-    // ----- EMAIL -----
+    // EMAIL SEND
     const emailToSend = email_override || (user ? user.email : null);
 
     if (emailToSend) {
@@ -435,8 +415,13 @@ exports.staffCreate = async (req, res) => {
         const seats = await TicketSeat.find({ ticket: ticket._id });
         const combosData = await TicketCombo.find({ ticket: ticket._id });
 
-        // ⭐ TRUYỀN CINEMA SNAPSHOT SANG EMAIL
-        await sendTicketEmail(emailToSend, ticket, showtime, seats, combosData);
+        await sendTicketEmail(
+          emailToSend,
+          ticket,
+          showtime,
+          seats,
+          combosData
+        );
       } catch (e) {
         console.log("Email error:", e.message);
       }
@@ -447,6 +432,7 @@ exports.staffCreate = async (req, res) => {
       ticket_id: ticket._id,
       membership_card: membership_card || null,
       reservation_code,
+      seats: seat_codes,
       user_type: user ? "member" : "guest",
     });
   } catch (err) {
@@ -457,15 +443,18 @@ exports.staffCreate = async (req, res) => {
   }
 };
 
-/* ======================================================
-   CONFIRM
-====================================================== */
+
+
+// ======================================================
+// CONFIRM (CUSTOMER PAYMENT SUCCESS)
+// ======================================================
 exports.confirm = async (req, res) => {
   try {
     const ticketId = req.params.id;
 
     const t = await Ticket.findById(ticketId).populate("user");
-    if (!t) return res.status(404).json({ message: "Ticket not found" });
+    if (!t)
+      return res.status(404).json({ message: "Ticket not found" });
 
     if (t.status === "paid")
       return res.status(400).json({ message: "Ticket already paid" });
@@ -478,18 +467,24 @@ exports.confirm = async (req, res) => {
       .populate("cinema")
       .populate("room");
 
+    // UPDATE SHOWTIME SEAT → SOLD
     for (const s of seats) {
       await ShowtimeSeat.updateOne(
-        { showtime: t.showtime, seat: s.seat },
+        { showtime: t.showtime, row: s.row, number: s.number },
         { $set: { status: "sold" } }
       );
     }
 
+    // UPDATE TICKET
     t.status = "paid";
     t.payment_status = "paid";
-    t.payment_time = new Date();
+    t.payment_time = new Date();   // ⭐ ALWAYS SET
+    t.qr_data = `${t.reservation_code}|${t._id}`;
+    t.seats = seats.map(s => `${s.row}${s.number}`);
+
     await t.save();
 
+    // UPDATE VOUCHER USAGE
     if (t.voucher_codes?.length) {
       await Voucher.updateMany(
         { code: { $in: t.voucher_codes } },
@@ -497,11 +492,14 @@ exports.confirm = async (req, res) => {
       );
     }
 
+    // SEND EMAIL
     await sendTicketEmail(t.user.email, t, showtime, seats, combos);
 
     res.json({
       message: "Ticket confirmed & email sent",
       ticket_id: t._id,
+      qr_data: t.qr_data,
+      seats: t.seats,
       payment_time: t.payment_time,
     });
   } catch (e) {
@@ -509,9 +507,11 @@ exports.confirm = async (req, res) => {
   }
 };
 
-/* ======================================================
-   ADMIN SEND EMAIL AGAIN
-====================================================== */
+
+
+// ======================================================
+// MANUAL EMAIL
+// ======================================================
 exports.sendEmail = async (req, res) => {
   try {
     const ticketId = req.params.id;
@@ -521,7 +521,8 @@ exports.sendEmail = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
 
     const t = await Ticket.findById(ticketId).populate("user");
-    if (!t) return res.status(404).json({ message: "Ticket not found" });
+    if (!t)
+      return res.status(404).json({ message: "Ticket not found" });
 
     const seats = await TicketSeat.find({ ticket: ticketId });
     const combos = await TicketCombo.find({ ticket: ticketId });
@@ -542,14 +543,16 @@ exports.sendEmail = async (req, res) => {
   }
 };
 
-/* ======================================================
-   CANCEL
-====================================================== */
+
+
+// ======================================================
+// CANCEL
+// ======================================================
 exports.cancel = async (req, res) => {
   try {
     const id = req.params.id;
-
     const ticket = await Ticket.findById(id);
+
     if (!ticket)
       return res.status(404).json({ message: "Ticket not found" });
 
@@ -573,22 +576,28 @@ exports.cancel = async (req, res) => {
   }
 };
 
-/* ======================================================
-   DETAIL
-====================================================== */
+
+
+// ======================================================
+// DETAIL
+// ======================================================
 exports.detail = async (req, res) => {
   try {
     const t = await Ticket.findById(req.params.id).lean();
-    if (!t) return res.status(404).json({ message: "Ticket not found" });
+    if (!t)
+      return res.status(404).json({ message: "Ticket not found" });
+
     res.json(t);
   } catch (err) {
     res.status(500).json({ message: "Detail error" });
   }
 };
 
-/* ======================================================
-   MY TICKETS
-====================================================== */
+
+
+// ======================================================
+// MY TICKETS
+// ======================================================
 exports.myTickets = async (req, res) => {
   try {
     const items = await Ticket.find({ user: req.user._id })
@@ -601,9 +610,11 @@ exports.myTickets = async (req, res) => {
   }
 };
 
-/* ======================================================
-   LIST
-====================================================== */
+
+
+// ======================================================
+// LIST
+// ======================================================
 exports.list = async (req, res) => {
   try {
     const items = await Ticket.find()
@@ -617,12 +628,15 @@ exports.list = async (req, res) => {
   }
 };
 
-/* ======================================================
-   UPDATE STATUS
-====================================================== */
+
+
+// ======================================================
+// UPDATE STATUS
+// ======================================================
 exports.updateStatus = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id);
+
     if (!ticket)
       return res.status(404).json({ message: "Ticket not found" });
 
@@ -635,12 +649,15 @@ exports.updateStatus = async (req, res) => {
   }
 };
 
-/* ======================================================
-   REMOVE
-====================================================== */
+
+
+// ======================================================
+// REMOVE
+// ======================================================
 exports.remove = async (req, res) => {
   try {
     const t = await Ticket.findById(req.params.id);
+
     if (!t)
       return res.status(404).json({ message: "Ticket not found" });
 

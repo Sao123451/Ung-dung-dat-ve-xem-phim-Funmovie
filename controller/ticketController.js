@@ -54,18 +54,15 @@ exports.cancelMy = async (req, res) => {
 
     if (!t) return res.status(404).json({ message: "Not found" });
 
-    // Cập nhật trạng thái vé
     t.status = "cancelled";
     t.payment_status = "failed";
     await t.save();
 
-    // Huỷ TicketSeat
     await TicketSeat.updateMany(
       { ticket: id },
       { $set: { status: 'cancelled' } }
     );
 
-    // Mở lại ShowtimeSeat
     for (const code of t.seats) {
       const row = code[0];
       const number = Number(code.slice(1));
@@ -120,10 +117,56 @@ exports.remove = async (req, res) => {
 };
 
 /* ======================================================
-   CUSTOMER — TẠO VÉ (nếu không dùng bookingController)
+   CUSTOMER — TẠO VÉ (không dùng, bookingController xử lý)
 ====================================================== */
 exports.create = async (req, res) => {
   res.status(400).json({
     message: "Ticket creation must be done via /api/bookings"
   });
+};
+
+/* ======================================================
+   FIND TICKET BY RESERVATION CODE
+====================================================== */
+exports.findByCode = async (req, res) => {
+  try {
+    const code = req.params.code;
+
+    const ticket = await Ticket.findOne({ reservation_code: code })
+      .populate("user", "full_name email membership_card")
+      .populate("showtime")
+      .populate("cinema")
+      .populate("room")
+      .lean();
+
+    if (!ticket)
+      return res.status(404).json({ message: "Ticket not found" });
+
+    res.json(ticket);
+  } catch (err) {
+    res.status(500).json({ message: "Find ticket error", error: err.message });
+  }
+};
+
+/* ======================================================
+   FIND TICKET BY QR (qr_data)
+====================================================== */
+exports.findByQR = async (req, res) => {
+  try {
+    const qr = req.params.qr;
+
+    const ticket = await Ticket.findOne({ qr_data: qr })
+      .populate("user", "full_name email membership_card")
+      .populate("showtime")
+      .populate("cinema")
+      .populate("room")
+      .lean();
+
+    if (!ticket)
+      return res.status(404).json({ message: "Ticket not found" });
+
+    res.json(ticket);
+  } catch (err) {
+    res.status(500).json({ message: "Find QR error", error: err.message });
+  }
 };

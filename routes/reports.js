@@ -1,9 +1,38 @@
-// routes/reports.js
-const express = require('express');
-const router = express.Router();
-const ctrl = require('../controller/reportController');
-const { verifyToken, isAdmin } = require('../middlewares/auth');
+const r = require("express").Router();
+const { verifyToken, requireRoles } = require("../middlewares/auth");
+const report = require("../controller/reportController");
 
-router.get('/revenue', verifyToken, isAdmin, ctrl.revenueByDate);
+// ADMIN + MANAGER mới xem được
+const ALLOW = ["admin", "manager"];
 
-module.exports = router;
+/* =======================================
+   1) DOANH THU THEO RẠP
+======================================= */
+r.get(
+  "/revenue-by-cinema",
+  verifyToken,
+  requireRoles(...ALLOW),
+  report.revenueByCinema
+);
+
+/* =======================================
+   2) DOANH THU THEO NGÀY
+======================================= */
+r.get(
+  "/revenue-by-day",
+  verifyToken,
+  requireRoles(...ALLOW),
+  report.revenueByDay
+);
+
+/* =======================================
+   3) DOANH THU THEO THÁNG
+======================================= */
+r.get(
+  "/revenue-by-month",
+  verifyToken,
+  requireRoles(...ALLOW),
+  report.revenueByMonth
+);
+
+module.exports = r;
