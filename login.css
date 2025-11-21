@@ -1,0 +1,180 @@
+/* ===============================
+   GLOBAL LOGIN PAGE
+================================*/
+body.login-page {
+    background: linear-gradient(135deg, #0b1220, #111827);
+    margin: 0;
+    font-family: "Inter", system-ui, sans-serif;
+    color: #e5e7eb;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* ===============================
+   LOGIN WRAPPER / CARD
+================================*/
+.login-wrapper {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.login-card {
+    background: #131a2b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 36px 30px;
+    box-shadow: 0px 12px 50px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+}
+
+/* ===============================
+   TITLE
+================================*/
+.login-title {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+}
+
+.login-subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #9ca3af;
+    margin-bottom: 22px;
+}
+
+/* ===============================
+   LABEL
+================================*/
+.form-label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #cbd5e1;
+}
+
+/* ===============================
+   INPUT FIELD
+================================*/
+.form-control {
+    background: #131c34 !important;
+    border: 1px solid #253045;
+    color: #f1f5f9 !important;
+    border-radius: 12px;
+    padding: 12px 15px;
+    font-size: 15px;
+    transition: 0.2s;
+}
+
+.form-control:focus {
+    background: #0f172a !important;
+    border-color: #4f6bff !important;
+    box-shadow: 0 0 0 2px rgba(79, 107, 255, 0.4);
+    color: #fff !important;
+}
+
+/* ===============================
+   INPUT - DISABLE AUTOFILL
+================================*/
+input.form-control,
+input.form-control:-webkit-autofill,
+input.form-control:-webkit-autofill:hover,
+input.form-control:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #131c34 inset !important;
+    box-shadow: 0 0 0 1000px #131c34 inset !important;
+    -webkit-text-fill-color: #e5e7eb !important;
+    caret-color: #e5e7eb !important;
+    transition: background-color 9999s ease-in-out 0s !important;
+}
+
+/* Chặn Chrome tự fill luôn */
+input,
+input:focus {
+    autocomplete: off !important;
+}
+
+/* ===============================
+   PASSWORD EYE
+================================*/
+.pw-wrap {
+    position: relative;
+}
+
+.pw-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 16px;
+}
+
+.pw-eye:hover {
+    color: #d1d5db;
+}
+
+/* ===============================
+   BUTTON LOGIN
+================================*/
+.btn-login {
+    width: 100%;
+    background: #4f6bff;
+    border: none;
+    padding: 13px;
+    border-radius: 14px;
+    margin-top: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: 0.25s;
+    color: #fff;
+}
+
+.btn-login:hover {
+    background: #3d55ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(79, 107, 255, 0.5);
+}
+
+/* ===============================
+   LINKS
+================================*/
+.login-footer a {
+    color: #6d83ff;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+/* ===============================
+   ALERTS
+================================*/
+.alert-custom {
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.alert-success-custom {
+    background: rgba(34,197,94,.12);
+    border: 1px solid rgba(34,197,94,.35);
+    color: #4ade80;
+}
+
+.alert-error-custom {
+    background: rgba(239,68,68,.12);
+    border: 1px solid rgba(239,68,68,.4);
+    color: #fb7171;
+}
