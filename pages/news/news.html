@@ -1,0 +1,30 @@
+
+  <div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+      <h3 style="margin:0">Danh sách tin tức</h3>
+
+      <div style="display:flex; align-items:center; gap:8px">
+        <input id="news-q" class="search" placeholder="Tìm theo tiêu đề/nội dung..." style="width:280px">
+
+        <select id="news-filter" style="padding:8px 12px; border-radius:10px; border:1px solid var(--line); background:#0f1530; color:#fff">
+          <option value="all">Tất cả</option>
+          <option value="published">Đã publish</option>
+          <option value="draft">Nháp</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="news-table" class="table-wrap">
+      <div class="muted">Đang tải...</div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; margin-top:10px">
+      <div class="muted" id="news-info"></div>
+      <div class="pager">
+        <button class="btn" id="news-prev">←</button>
+        <span id="news-page" class="muted">1</span>
+        <button class="btn" id="news-next">→</button>
+      </div>
+    </div>
+  </div>
+

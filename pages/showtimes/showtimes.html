@@ -1,0 +1,71 @@
+<div class="showtimes-page">
+
+  <!-- ==================== FILTER BAR ==================== -->
+  <div class="card filter-bar st-flex">
+
+    <div class="st-item">
+      <label>Rạp</label>
+      <select id="st-cinema"></select>
+    </div>
+
+    <div class="st-item">
+      <label>Phòng</label>
+      <select id="st-room">
+        <option value="">Tất cả</option>
+      </select>
+    </div>
+
+    <div class="st-item">
+      <label>Phim</label>
+      <select id="st-movie">
+        <option value="">Tất cả</option>
+      </select>
+    </div>
+
+    <div class="st-item">
+      <label>Ngày chiếu</label>
+      <input type="date" id="st-date" />
+    </div>
+
+    <div class="st-item">
+      <label>Trạng thái</label>
+      <select id="st-status">
+        <option value="">Tất cả</option>
+        <option value="scheduled">Sắp chiếu</option>
+        <option value="ongoing">Đang chiếu</option>
+        <option value="finished">Đã chiếu</option>
+        <option value="cancelled">Đã hủy</option>
+      </select>
+    </div>
+
+    <div class="st-item st-action">
+      <button id="st-btn-filter" class="btn primary full">Lọc</button>
+    </div>
+
+  </div>
+
+  <!-- ==================== TABLE ==================== -->
+  <div class="card mt-3">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Phim</th>
+          <th>Rạp</th>
+          <th>Phòng</th>
+          <th>Giá vé</th>
+          <th>Bắt đầu</th>
+          <th>Kết thúc</th>
+          <th>Trạng thái</th>
+          <th class="text-right">Hành động</th>
+        </tr>
+      </thead>
+      <tbody id="st-tbody">
+        <tr><td colspan="8" class="muted text-center">Không có dữ liệu</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== PAGER ==================== -->
+  <div id="st-pager" class="pager mt-2"></div>
+
+</div>

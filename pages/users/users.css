@@ -1,0 +1,18 @@
+/* Giữ các style cần cho User Page */
+#user-create-card .help {
+  font-size: 13px;
+  color: #f87171;
+}
+
+.table-wrap .row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+input.fm-date::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1);
+}
+
+input.fm-date {
+  color-scheme: dark;
+}

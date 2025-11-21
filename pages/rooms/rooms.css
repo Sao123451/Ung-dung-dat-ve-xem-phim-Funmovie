@@ -1,0 +1,35 @@
+/* pages/rooms/rooms.css */
+
+.rm-wrap { width: 100%; }
+
+.rm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.rm-head h3 {
+  margin: 0;
+}
+
+.rm-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#rm-cinema,
+#rm-type {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0f1530;
+  color: #fff;
+}
+
+.rm-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}

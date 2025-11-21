@@ -1,0 +1,45 @@
+.products-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.products-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.pd-select {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0f1530;
+  color: #fff;
+}
+
+.pd-search {
+  width: 260px;
+}
+
+/* Footer */
+.products-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+/* Modal preview image */
+#pd-preview {
+  width: 120px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+/* Row actions */
+.row-actions {
+  display: flex;
+  gap: 8px;
+}

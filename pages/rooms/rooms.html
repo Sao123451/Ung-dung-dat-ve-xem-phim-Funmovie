@@ -1,0 +1,27 @@
+<!-- pages/rooms/rooms.html -->
+<div class="card rm-wrap">
+  <div class="rm-head">
+    <h3>Danh sách phòng</h3>
+    <div class="rm-filters">
+      <input id="rm-q" class="search" placeholder="Tìm theo tên phòng…">
+      <select id="rm-cinema"></select>
+      <select id="rm-type">
+        <option value="">-- Tất cả loại --</option>
+        <option value="2D">2D</option>
+        <option value="3D">3D</option>
+        <option value="IMAX">IMAX</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="rm-table" class="table-wrap"><div class="muted">Đang tải...</div></div>
+
+  <div class="rm-foot">
+    <div id="rm-info" class="muted"></div>
+    <div class="pager">
+      <button class="btn" id="rm-prev">←</button>
+      <span id="rm-page" class="muted">1</span>
+      <button class="btn" id="rm-next">→</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,25 @@
+/* ===== Movies page only ===== */
+.poster{
+  width:52px; height:70px; object-fit:cover;
+  border-radius:8px; border:1px solid var(--line);
+}
+.mv-poster-preview{
+  width:140px; height:186px; object-fit:cover;
+  border-radius:10px; border:1px solid var(--line);
+  background:#0b1220;
+}
+.row-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Toolbar: giữ gọn ô tìm kiếm để không ép tab */
+.toolbar { flex-wrap: wrap; gap:10px; }
+.toolbar .search{
+  min-width: 220px;
+  width: 320px;
+  flex: 0 0 auto;
+}
+#mv-tabs { flex: 0 0 auto; }
+
+/* Bảng nhìn thoáng hơn */
+.table th, .table td{
+  padding: 10px 10px;
+}

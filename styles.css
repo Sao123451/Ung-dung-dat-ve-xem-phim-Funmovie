@@ -585,3 +585,82 @@ img.banner-thumb { display:block; width:100%; height:220px; object-fit:contain; 
   color: #b8c0ff;
   margin-top: 4px;
 }
+/* ==== Showtime Detail (modal) — scroll mượt & ẩn thanh cuộn ==== */
+.fm-scroll-smooth{
+  max-height: 80vh;
+  overflow: auto;
+  -ms-overflow-style: none;     /* IE/Edge */
+  scrollbar-width: none;        /* Firefox */
+}
+.fm-scroll-smooth::-webkit-scrollbar{ width:0; height:0; } /* Chrome/Safari */
+
+/* ==== Seat grid (chi tiết suất chiếu) ==== */
+.st-meta{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap:10px;
+  margin-bottom:12px;
+}
+.st-meta .item{
+  background: rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:10px;
+  padding:10px;
+}
+@media (max-width: 680px){ .st-meta{ grid-template-columns: 1fr; } }
+
+.st-screen{ text-align:center; color:#a3a3a3; margin:10px 0 14px; }
+
+.st-rows{ display:flex; flex-direction:column; gap:10px; }
+.st-row{ display:flex; align-items:center; gap:10px; justify-content:center; }
+.st-label{ width:18px; text-align:left; font-size:12px; opacity:.9; }
+
+/* hàng thường/VIP (không couple) — số cột lấy theo --cols */
+.st-cells{
+  display:grid;
+  grid-template-columns: repeat(var(--cols, 12), 38px);
+  gap:8px;
+  justify-content:center;
+  flex:1;
+}
+
+/* hàng couple riêng ở cuối — mỗi "cặp" rộng hơn */
+.st-cells-couple{
+  display:grid;
+  grid-template-columns: repeat(var(--cols, 6), 68px);
+  gap:10px;
+  justify-content:center;
+}
+
+/* ghế */
+.st-seat{
+  min-width:38px; height:30px;
+  border-radius:10px; padding:0 6px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; user-select:none;
+}
+.st-seat.normal{ background:#2b67ff22; border:1px solid #2b67ff66; }
+.st-seat.vip{    background:#ff3b3022; border:1px solid #ff3b3066; }
+.st-seat.couple{ background:#ff3bb422; border:1px solid #ff3bb466; min-width:68px; }
+
+/* trạng thái */
+.st-seat.available{ opacity:1; }
+.st-seat.holding{ box-shadow:0 0 0 2px #f59e0b inset; background:transparent; }
+.st-seat.sold{ opacity:.45; filter:grayscale(.1); }
+.st-seat.broken{ opacity:.35; filter:grayscale(.6); }
+
+/* legend */
+.st-legend{
+  display:flex; flex-wrap:wrap; gap:12px;
+  align-items:center; justify-content:center; margin:12px 0 4px;
+  font-size:12px;
+}
+.st-tag{ display:inline-flex; align-items:center; gap:6px; }
+.st-dot{ width:14px; height:14px; border-radius:4px; display:inline-block; }
+.st-dot.normal{ background:#3b82f6; }
+.st-dot.vip{    background:#ef4444; }
+.st-dot.couple{ background:#db2777; }
+.st-dot.sold{   background:#6b7280; }
+.st-dot.holding{ border:2px dashed #f59e0b; background:transparent; width:12px; height:12px; }
+.st-dot.broken{ background:#111827; border:1px solid #374151; }
+

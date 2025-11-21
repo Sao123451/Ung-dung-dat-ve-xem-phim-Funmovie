@@ -1,0 +1,90 @@
+<div class="card" id="user-create-card">
+  <h3 style="margin:0 0 8px">Tạo tài khoản nhân sự</h3>
+
+  <div class="form">
+    <div class="row">
+      <div class="col-6 field">
+        <label>Username *</label>
+        <input id="cu-username" />
+        <div class="error-text"></div>
+      </div>
+
+      <div class="col-6 field">
+        <label>Email (@gmail.com) *</label>
+        <input id="cu-email" />
+        <div class="error-text"></div>
+      </div>
+
+      <div class="col-6 field">
+        <label>Mật khẩu *</label>
+        <input id="cu-password" type="password" placeholder="≥8 ký tự" />
+        <div class="error-text"></div>
+      </div>
+
+      <div class="col-6 field">
+        <label>Họ tên *</label>
+        <input id="cu-fullname" />
+        <div class="error-text"></div>
+      </div>
+
+      <div class="col-6 field">
+        <label>SĐT *</label>
+        <input id="cu-phone" type="text" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+        <div class="error-text"></div>
+      </div>
+
+      <div class="col-6 field">
+        <label>Vai trò *</label>
+        <select id="cu-role">
+          <option value="staff">staff</option>
+          <option value="manager">manager</option>
+          <option value="admin">admin</option>
+        </select>
+        <div class="error-text"></div>
+      </div>
+
+      <div class="col-6 field" id="cu-cinema-wrap" style="display:none">
+        <label>Rạp hoạt động *</label>
+        <select id="cu-cinema"></select>
+        <div class="error-text"></div>
+      </div>
+
+      <div class="col-6 field">
+        <label>Ngày sinh (tùy chọn)</label>
+        <input id="cu-birth" type="date" class="fm-date" />
+        <div class="error-text"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-6">
+        <button class="btn primary" id="btn-create-user">Tạo tài khoản</button>
+      </div>
+      <div class="col-6" style="text-align:right">
+        <span class="help" id="cu-help"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+    <h3 style="margin:0">Người dùng</h3>
+    <div style="display:flex; gap:8px">
+      <input id="usr-q" class="search" placeholder="Tìm username/email..." style="width:260px">
+    </div>
+  </div>
+
+  <div id="usr-table" class="table-wrap">
+    <div class="muted">Đang tải người dùng...</div>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; margin-top:10px">
+    <div class="muted" id="usr-info"></div>
+    <div class="pager">
+      <button class="btn" id="usr-prev">←</button>
+      <span id="usr-page" class="muted">1</span>
+      <button class="btn" id="usr-next">→</button>
+    </div>
+  </div>
+</div>

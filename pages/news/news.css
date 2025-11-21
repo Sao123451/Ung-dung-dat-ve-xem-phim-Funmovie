@@ -1,0 +1,23 @@
+.news-filter {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0f1530;
+  color: #fff;
+}
+
+.news-thumb {
+  width: 70px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.error-text {
+  color: #f87171 !important;
+}

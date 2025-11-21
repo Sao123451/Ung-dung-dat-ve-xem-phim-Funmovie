@@ -1,0 +1,88 @@
+<!-- Dashboard Page -->
+<div class="dashboard-page">
+  <h2>Dashboard</h2>
+
+  <!-- Tabs -->
+  <div class="dash-tabs">
+    <button class="dash-tab active" data-tab="cinema">Theo rạp</button>
+    <button class="dash-tab" data-tab="month">Theo tháng</button>
+    <button class="dash-tab" data-tab="day">Theo ngày</button>
+  </div>
+
+  <!-- TAB 1: THEO RẠP -->
+  <div class="dash-section" id="tab-cinema">
+    <div class="card">
+      <h3>Doanh thu theo rạp</h3>
+      <canvas id="chartCinema"></canvas>
+    </div>
+
+    <div class="card">
+      <h3>Bảng doanh thu rạp</h3>
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Rạp</th>
+            <th>Số vé bán</th>
+            <th>Doanh thu</th>
+          </tr>
+        </thead>
+        <tbody id="tblCinemaRevenue"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: THEO THÁNG -->
+  <div class="dash-section hidden" id="tab-month">
+    <div class="filters">
+      <select id="yearSelect"></select>
+      <button id="btnLoadMonth" class="btn">Tải</button>
+    </div>
+
+    <div class="card">
+      <h3>Doanh thu theo tháng</h3>
+      <canvas id="chartMonth"></canvas>
+    </div>
+
+    <div class="card">
+      <h3>Bảng doanh thu tháng</h3>
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Tháng</th>
+            <th>Doanh thu</th>
+            <th>Số vé bán</th>
+          </tr>
+        </thead>
+        <tbody id="tblMonthRevenue"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: THEO NGÀY -->
+  <div class="dash-section hidden" id="tab-day">
+    <div class="filters">
+      <select id="dayMonthSelect"></select>
+      <select id="dayYearSelect"></select>
+      <button id="btnLoadDay" class="btn">Tải</button>
+    </div>
+
+    <div class="card">
+      <h3>Doanh thu theo ngày</h3>
+      <canvas id="chartDay"></canvas>
+    </div>
+
+    <div class="card">
+      <h3>Bảng doanh thu ngày</h3>
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Doanh thu</th>
+            <th>Số vé bán</th>
+          </tr>
+        </thead>
+        <tbody id="tblDayRevenue"></tbody>
+      </table>
+    </div>
+  </div>
+</div>

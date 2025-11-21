@@ -1,0 +1,42 @@
+.tickets-page .filter-bar {
+  margin-bottom: 16px;
+}
+
+.filter-bar .filter-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Badge trạng thái */
+.tk-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #000;
+  font-weight: 600;
+}
+
+.tk-badge.pending { background: #ffe8a3; }
+.tk-badge.paid { background: #b5f7c5; }
+.tk-badge.cancelled { background: #ffb6b6; }
+
+/* Modal QR */
+.tk-qr-wrap {
+  text-align: center;
+  padding: 10px;
+}
+.tk-qr-wrap img {
+  width: 220px;
+  height: 220px;
+}
+
+/* Ghế + combo */
+.tk-seat-badge {
+  display: inline-block;
+  padding: 3px 6px;
+  background: #e7f1ff;
+  color: #000;
+  border-radius: 4px;
+  margin: 2px;
+}

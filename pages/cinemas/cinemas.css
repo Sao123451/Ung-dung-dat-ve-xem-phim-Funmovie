@@ -1,0 +1,9 @@
+/* path: WEB_ADMIN_DATN/pages/cinemas/cinemas.css */
+
+.table-wrap { min-height: 160px; }
+
+/* ô hotline để nổi nhẹ */
+.cn-hotline { font-weight: 600; letter-spacing: .3px; }
+
+/* nút hành động theo hàng */
+.row-actions { display:flex; gap:8px; flex-wrap:wrap; }

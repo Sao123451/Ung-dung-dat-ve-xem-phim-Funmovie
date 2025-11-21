@@ -1,0 +1,60 @@
+/* vouchers.css — giữ style giống bản cũ */
+
+.vc-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.vc-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:12px;
+}
+
+.table-wrap{ width:100%; overflow-x:auto; }
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.table th, .table td{
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+}
+
+.badge{
+  background:#8fb8ff;
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:12px;
+  color:#000 !important;  
+}
+
+.badge.ok{
+  background:#8fffb8;
+  color:#000 !important;   
+}
+
+.badge.warn{
+  background:#ffd490;
+  color:#000 !important;  
+}
+
+
+.btn.danger{ background:#e11d48 !important; color:#fff; }
+
+.pager button{ min-width:32px; }
+
+.search{
+  padding:6px 10px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  color:var(--text);
+}

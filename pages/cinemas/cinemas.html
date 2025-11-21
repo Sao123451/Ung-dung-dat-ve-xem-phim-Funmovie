@@ -1,0 +1,25 @@
+<!-- path: WEB_ADMIN_DATN/pages/cinemas/cinemas.html -->
+<div class="card">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:nowrap; margin-bottom:8px">
+    <h3 style="margin:0">Rạp chiếu phim</h3>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:nowrap">
+      <select id="cn-city" style="min-width:180px">
+        <option value="">Tất cả thành phố</option>
+      </select>
+      <input id="cn-q" class="search" placeholder="Tìm theo tên rạp/địa chỉ/điện thoại..." style="width:300px" />
+    </div>
+  </div>
+
+  <div id="cn-table" class="table-wrap">
+    <div class="muted">Đang tải danh sách rạp...</div>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; margin-top:10px">
+    <div class="muted" id="cn-info"></div>
+    <div class="pager">
+      <button class="btn" id="cn-prev">←</button>
+      <span id="cn-page" class="muted">1</span>
+      <button class="btn" id="cn-next">→</button>
+    </div>
+  </div>
+</div>

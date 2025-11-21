@@ -1,0 +1,302 @@
+.showtimes-page .filter-bar label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.showtimes-page .filter-bar select,
+.showtimes-page .filter-bar input[type="date"] {
+  width: 100%;
+  padding: 6px 10px;
+}
+
+.showtimes-page .table th {
+  font-weight: 600;
+}
+
+.badge.st {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #000;
+}
+
+.badge.st.scheduled { background:#c9f7ff; }
+.badge.st.ongoing   { background:#bbf7d0; }
+.badge.st.finished  { background:#e5e7eb; }
+.badge.st.cancelled { background:#fecaca; }
+
+.action-btn {
+  padding: 3px 8px;
+  margin-left: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background:#fff;
+}
+.action-btn:hover { background:#f4f4f4; }
+
+/* ===== FLEX CONTAINER ===== */
+.st-flex {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap; /* đảm bảo không vỡ layout trên màn nhỏ */
+}
+
+/* ===== MỖI ITEM TRONG FILTER ===== */
+.st-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+/* Label đồng bộ style dark theme */
+.st-item label {
+  font-size: 13px;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
+/* Input/select */
+.st-item select,
+.st-item input[type="date"] {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  color: #e2e8f0;
+}
+
+.st-item select:focus,
+.st-item input[type="date"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Nút lọc */
+.st-action {
+  display: flex;
+  align-items: flex-end;
+  min-width: 100px;
+}
+/* Icon lịch của input datetime-local -> trắng */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
+}
+.st-screen {
+  text-align: center;
+  margin: 12px 0;
+  padding: 6px;
+  background: rgba(255,255,255,0.1);
+  font-size: 13px;
+}
+
+.st-rows { margin-top: 10px; }
+
+.st-row { display: flex; align-items: center; margin-bottom: 6px; }
+.st-label { width: 28px; text-align: right; margin-right: 8px; opacity: .7; }
+
+.st-cells { display: flex; gap: 6px; }
+
+.st-seat {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.type-normal { background: #1e293b; }
+.type-vip { background: #0ea5e9; }
+.type-couple { background: #f472b6; }
+
+.st-sold { background: #64748b !important; }
+.st-holding { background: #facc15 !important; }
+.st-broken { background: #ef4444 !important; }
+
+.st-legend {
+  margin-top: 16px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.st-tag { display: flex; align-items: center; gap: 6px; }
+.st-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.st-dot.normal { background:#1e293b; }
+.st-dot.vip { background:#0ea5e9; }
+.st-dot.couple { background:#f472b6; }
+.st-dot.sold { background:#64748b; }
+.st-dot.holding { background:#facc15; }
+.st-dot.broken { background:#ef4444; }
+
+/* ======= CHI TIẾT SUẤT CHIẾU ======= */
+
+.st-detail h4 {
+  margin-bottom: 10px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 16px;
+  margin-bottom: 10px;
+}
+
+/* ======= SEAT LEGEND ======= */
+
+.st-legend {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 15px;
+}
+
+.st-tag {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  gap: 5px;
+}
+
+.st-tag .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.st-tag.normal  .dot { background: #93c5fd; }
+.st-tag.vip     .dot { background: #facc15; }
+.st-tag.couple  .dot { background: #fb7185; }
+.st-tag.sold    .dot { background: #9ca3af; }
+.st-tag.broken  .dot { background: #ef4444; }
+
+
+/* ======= SEAT MAP ======= */
+
+.seat-map {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #1e293b;
+  padding: 15px;
+  border-radius: 10px;
+  background: #0f172a;
+  overflow-x: auto;
+}
+
+.st-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.st-label {
+  width: 28px;
+  text-align: center;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.st-cells {
+  display: flex;
+  gap: 4px;
+}
+
+.st-seat {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-weight: 600;
+}
+
+.st-info-box {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 15px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.st-legend {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.st-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-tag .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: block;
+}
+
+.st-tag.normal .dot { background:#93c5fd; }
+.st-tag.vip .dot { background:#facc15; }
+.st-tag.couple .dot { background:#fb7185; }
+.st-tag.sold .dot { background:#9ca3af; }
+.st-tag.broken .dot { background:#ef4444; }
+
+.seat-map {
+  padding: 12px;
+  border-radius: 10px;
+  background:#0f172a;
+  border:1px solid #1e293b;
+}
+
+.st-row {
+  display:flex;
+  margin-bottom:5px;
+  align-items:center;
+}
+
+.st-label {
+  width:30px;
+  text-align:center;
+  font-weight:bold;
+  color:#e2e8f0;
+}
+
+.st-cells {
+  display:flex;
+  gap:4px;
+}
+
+.st-seat {
+  width:26px;
+  height:26px;
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:bold;
+  color:#000;
+}
+
+.st-seat.normal { background:#93c5fd; }
+.st-seat.vip { background:#facc15; }
+.st-seat.couple { background:#fb7185; }
+.st-seat.sold { background:#9ca3af !important; color:#fff; }
+.st-seat.broken { background:#ef4444 !important; color:#fff; }

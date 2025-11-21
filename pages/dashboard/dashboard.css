@@ -1,0 +1,122 @@
+/* ===============================
+   DASHBOARD PAGE LAYOUT
+   =============================== */
+.dashboard-page {
+  padding: 20px;
+  color: #fff;
+}
+
+.dashboard-page h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* ===============================
+   CAPSULE TABS
+   =============================== */
+.dash-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.dash-tab {
+  padding: 10px 22px;
+  background: transparent;
+  border: 1px solid #5865f2;
+  border-radius: 30px;
+  cursor: pointer;
+  color: #d0d4ff;
+  transition: 0.25s ease;
+  font-size: 15px;
+}
+
+.dash-tab:hover {
+  background: rgba(88, 101, 242, 0.15);
+}
+
+.dash-tab.active {
+  background: #5865f2;
+  color: white;
+  border-color: #5865f2;
+}
+
+/* ===============================
+   SECTION VISIBILITY
+   =============================== */
+.hidden {
+  display: none;
+}
+
+/* ===============================
+   CARD CONTAINER
+   =============================== */
+.card {
+  background: #12172A;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.card h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* ===============================
+   FILTER AREA
+   =============================== */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.filters select,
+.filters input[type="date"] {
+  background: #0f1322;
+  border: 1px solid #2c3553;
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.filters .btn {
+  background: #5865f2;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* ===============================
+   TABLE STYLES
+   =============================== */
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #e6e6e6;
+}
+
+.dash-table th {
+  text-align: left;
+  padding: 12px;
+  background: rgba(255,255,255,0.05);
+  font-weight: bold;
+}
+
+.dash-table td {
+  padding: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.dash-table tr:hover td {
+  background: rgba(255,255,255,0.05);
+}

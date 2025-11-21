@@ -1,0 +1,75 @@
+.bn-title {
+  margin: 0 0 10px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tab {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+/* Banner list grid */
+.banner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.banner-item {
+  padding: 10px;
+  background: var(--panel-2);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.banner-thumb {
+  width: 100%;
+  border-radius: 10px;
+  height: 200px;
+  object-fit: cover;
+}
+
+/* Row actions */
+.row-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+/* No wrap buttons */
+.row-actions .btn {
+  white-space: nowrap;
+}
+
+/* Modal upload fix */
+#f-files {
+  width: 100%;
+  padding: 8px;
+  background: var(--panel);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+#bn-images {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.banner-item {
+  min-width: 260px;
+}
+
