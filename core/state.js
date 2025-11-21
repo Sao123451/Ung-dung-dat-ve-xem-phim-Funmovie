@@ -1,49 +1,68 @@
 export const S = {
+    /* ======================================
+       MOVIES
+    ====================================== */
     movieTab: "now",
-
-    // Movies
     allMovies: [],
     nowMovies: [],
     comingMovies: [],
     movie: null,
 
-    // Cinema
+    /* ======================================
+       CINEMA (STAFF WORKING)
+    ====================================== */
     cinemas: [],
     staffCinemaId: null,
     staffCinemaName: null,
 
-    // Showtime
+    /* ======================================
+       SHOWTIME
+    ====================================== */
     showtimes: [],
     pickedShowtime: null,
 
-    // Seats
+    /* ======================================
+       SEATS
+    ====================================== */
     seatsRaw: [],
-    seatByKey: new Map(),
-    seatIdByKey: new Map(),
+    seatByKey: new Map(),        // key = "A1", value = Seat info
+    seatIdByKey: new Map(),      // key = "A1", value = seatId (ShowtimeSeat ID)
     seatsSelected: new Set(),
 
-    // Voucher
+    /* ======================================
+       VOUCHER
+    ====================================== */
     voucherCode: "",
     voucherInfo: null,
     voucherOptions: [],
     voucherPay: null,
 
-    // Combo
+    /* ======================================
+       COMBOS
+    ====================================== */
     combos: [],
     comboPick: [],
     comboList: [],
 
-    // Payment method
+    /* ======================================
+       PAYMENT METHOD
+    ====================================== */
     payMethod: "Tiền mặt",
 
-    // Booking
-    lastTicketId: null,
-    lastTicketTotal: 0     // ⭐ THÊM — lưu tổng tiền sau giảm giá
+    /* ======================================
+       BOOKING / OFFLINE / PRINT
+    ====================================== */
+    lastTicketId: null,          // ID vé vừa tạo
+    lastTicketDetail: null,      // ⭐ CHÚ Ý — thêm để chứa dữ liệu vé đầy đủ
+    lastTicketTotal: 0           // tổng tiền (tự động tính từ detail)
 };
 
+/* ==========================================
+   GHẾ HOLD / STATUS
+========================================== */
 export const SEAT_HOLD_SECONDS = 2 * 60;
 
-// ⭐ GHẾ CHỈ BỊ KHÓA KHI THỰC SỰ SOLD
+// Ghế đang thật sự bị khóa (sold/broken) — không click được
 export const BAD_STATUSES = new Set([
     "sold",
     "broken"

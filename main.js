@@ -1,12 +1,26 @@
+/************************************************************
+ *  MAIN.JS — VERSION FIXED FOR OFFLINE BOOKING + DETAIL
+ ************************************************************/
+
+import { hardGuard } from "./core/auth.js";
+import { loadStaffCinema } from "./features/cinema.js";
+import { fetchMovies, renderHome } from "./features/movies.js";
+import { bindApplyVoucher, loadVoucherOptions } from "./features/pay.js";
+import { bindGoPay } from "./features/seats.js";
+import { bindConfirmPay, createPaidBooking } from "./features/booking.js";
+import { bindSidebar, switchView } from "./core/routes.js";
+import { bindOfflineViewAutoLoad } from "./features/offline.js";
+import { loadPrintTicket } from "./features/print.js";
+import { S } from "./core/state.js";
+import { api } from "./core/api.js";
+
 /* ============================================================
    GLOBAL POPUP
 ============================================================ */
 window.showMidAlert = function (msg) {
     const box = document.getElementById("midAlert");
     const msgEl = document.getElementById("midAlertMsg");
-
-    if (!box || !msgEl) return console.error("midAlert không tồn tại!");
-
+    if (!box || !msgEl) return;
     msgEl.textContent = msg;
     box.classList.remove("d-none");
 };
@@ -15,25 +29,6 @@ window.hideMidAlert = function () {
     const box = document.getElementById("midAlert");
     if (box) box.classList.add("d-none");
 };
-
-
-/* ============================================================
-   IMPORT MODULES
-============================================================ */
-import { hardGuard } from "./core/auth.js";
-import { loadStaffCinema } from "./features/cinema.js";
-import { fetchMovies, renderHome } from "./features/movies.js";
-
-import { bindApplyVoucher } from "./features/pay.js";
-import { bindGoPay } from "./features/seats.js";
-import { bindConfirmPay } from "./features/booking.js";
-
-import { bindSidebar } from "./core/routes.js";
-import { bindOfflineViewAutoLoad } from "./features/offline.js";
-import { loadPrintTicket } from "./features/print.js";
-
-import { S } from "./core/state.js";
-
 
 /* ============================================================
    DOMContentLoaded
@@ -61,66 +56,58 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // PAYMENT + VOUCHER
     bindApplyVoucher();
-    bindConfirmPay();
+    bindConfirmPay();        // ⭐ FIXED: CHỈ ĐĂNG KÝ 1 LẦN
     bindPayMethodButtons();
     setupVoucherListButton();
 
-    // ⭐ AUTO LOAD OFFLINE
+    // ⭐ AUTO LOAD OFFLINE VIEW
     bindOfflineViewAutoLoad();
 
-    // ⭐ BIND BACK BUTTONS
+    // BACK BUTTONS
     bindBackFromPay();
     bindBackFromSeats();
 
     renderHome();
 });
 
+/* ============================================================
+   STAFF CREATED EVENT → LOAD DETAIL
+============================================================ */
+document.addEventListener("staff-created", async (ev) => {
+    const ticketId = ev.detail?.ticket_id;
+    if (!ticketId) return;
+
+    try {
+        const t = await api(`/bookings/detail/${ticketId}`);  // ⭐ CHUẨN STAFF-BOOKING
+        S.lastTicketDetail = t;
+        S.lastTicketId = ticketId;
+
+        console.log("⭐ Loaded staff detail:", t);
+
+        const mod = await import("./features/offline.js");
+        mod.loadOfflineView();
+
+    } catch (err) {
+        console.error("Lỗi load detail:", err);
+    }
+});
 
 /* ============================================================
-   BACK BUTTON: PAY → SEATS
+   PAY METHOD BUTTONS
 ============================================================ */
-function bindBackFromPay() {
-    const btn = document.getElementById("btnBackFromPay");
-    if (!btn) return;
+function bindPayMethodButtons() {
+    document.querySelectorAll(".pay-pill").forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll(".pay-pill").forEach(b =>
+                b.classList.remove("active")
+            );
+            btn.classList.add("active");
 
-    btn.onclick = () => {
-        console.log("BACK: pay → seats");
-        window.switchView("seats");
-    };
+            S.payMethod = btn.innerText.trim();
+            console.log("Phương thức thanh toán:", S.payMethod);
+        };
+    });
 }
-
-/* ============================================================
-   BACK BUTTON: SEATS → SCHEDULE
-============================================================ */
-function bindBackFromSeats() {
-    const btn = document.getElementById("btnBackFromSeats");
-    if (!btn) return;
-
-    btn.onclick = () => {
-        console.log("BACK: seats → schedule");
-        window.switchView("schedule");
-    };
-}
-
-
-/* ============================================================
-   VOUCHER LIST BUTTON
-============================================================ */
-function setupVoucherListButton() {
-    const btn = document.getElementById("btnShowVoucher");
-    const box = document.getElementById("voucherOptions");
-
-    if (!btn || !box) return;
-
-    btn.onclick = async () => {
-        if (!S.voucherOptions.length) {
-            const mod = await import("./features/pay.js");
-            await mod.loadVoucherOptions();
-        }
-        box.classList.toggle("d-none");
-    };
-}
-
 
 /* ============================================================
    TOPBAR
@@ -133,7 +120,6 @@ function setupTopbar() {
         nameEl.textContent = u.full_name;
     }
 }
-
 
 /* ============================================================
    LOGOUT
@@ -148,7 +134,6 @@ function bindLogout() {
     }
 }
 
-
 /* ============================================================
    RELOAD
 ============================================================ */
@@ -156,7 +141,6 @@ function bindReload() {
     const btn = document.getElementById("btnReload");
     if (btn) btn.onclick = () => location.reload();
 }
-
 
 /* ============================================================
    MOVIE TABS
@@ -184,7 +168,6 @@ function bindMovieTabs() {
     S.movieTab = "now";
 }
 
-
 /* ============================================================
    DISABLE ALL WHEN STAFF HAS NO CINEMA
 ============================================================ */
@@ -210,20 +193,43 @@ function disableAllFeatures() {
     });
 }
 
+/* ============================================================
+   BACK BUTTON: PAY → SEATS
+============================================================ */
+function bindBackFromPay() {
+    const btn = document.getElementById("btnBackFromPay");
+    if (!btn) return;
+
+    btn.onclick = () => {
+        window.switchView("seats");
+    };
+}
 
 /* ============================================================
-   PAY METHOD BUTTONS
+   BACK BUTTON: SEATS → SCHEDULE
 ============================================================ */
-function bindPayMethodButtons() {
-    document.querySelectorAll(".pay-pill").forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll(".pay-pill").forEach(b =>
-                b.classList.remove("active")
-            );
-            btn.classList.add("active");
+function bindBackFromSeats() {
+    const btn = document.getElementById("btnBackFromSeats");
+    if (!btn) return;
 
-            S.payMethod = btn.innerText.trim();
-            console.log("Phương thức thanh toán:", S.payMethod);
-        };
-    });
+    btn.onclick = () => {
+        window.switchView("schedule");
+    };
+}
+
+/* ============================================================
+   VOUCHER LIST BUTTON
+============================================================ */
+function setupVoucherListButton() {
+    const btn = document.getElementById("btnShowVoucher");
+    const box = document.getElementById("voucherOptions");
+
+    if (!btn || !box) return;
+
+    btn.onclick = async () => {
+        if (!S.voucherOptions.length) {
+            await loadVoucherOptions();
+        }
+        box.classList.toggle("d-none");
+    };
 }

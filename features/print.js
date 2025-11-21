@@ -2,45 +2,66 @@ import { api } from "../core/api.js";
 import { esc } from "../core/helper.js";
 import { S } from "../core/state.js";
 
+/* ============================================================
+   LOAD PRINT TICKET (STAFF)
+============================================================ */
 export async function loadPrintTicket(ticketId = null) {
     const wrap = document.getElementById("printWrap");
     wrap.innerHTML = `<div class="text-center muted">Đang tải vé...</div>`;
 
     try {
         if (!ticketId) ticketId = S.lastTicketId;
-
         if (!ticketId) {
             wrap.innerHTML = `<div class="text-danger">Chưa có vé để in.</div>`;
             return;
         }
 
-        // Lấy ticket
-        const t = await api(`/bookings/${ticketId}`);
+        // 🔥 LẤY TOÀN BỘ CHI TIẾT TỪ API STAFF
+        const t = await api(`/bookings/detail/${ticketId}`);
 
         if (!t || t.status !== "paid") {
-            wrap.innerHTML = `<div class="text-danger">Chưa có vé hợp lệ để in.</div>`;
+            wrap.innerHTML = `<div class="text-danger">Vé chưa thanh toán — không thể in.</div>`;
             return;
         }
 
-        // Lấy showtime đầy đủ
-        const show = await api(`/showtimes/${t.showtime}`);
+        /* ======================================================
+           CHUẨN HÓA DỮ LIỆU
+        ====================================================== */
 
-        const movieTitle  = show.movie?.title  || t.movie_title  || "Không rõ phim";
-        const cinemaName  = show.cinema?.name  || t.cinema_name  || "Không rõ rạp";
-        const roomName    = show.room?.name    || t.room_name    || "Không rõ phòng";
+        // Movie
+        const movieTitle = t.movie_title || "Không rõ phim";
 
-        const date = new Date(show.start_time).toLocaleDateString("vi-VN");
-        const time = new Date(show.start_time).toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+        // Cinema
+        const cinemaName =
+            t.cinema_name ||
+            t.cinema_snapshot?.name ||
+            "Không rõ rạp";
 
-        const seats = Array.isArray(t.seats) ? t.seats.join(", ") : "—";
+        // Room
+        const roomName = t.room_name || "Không rõ phòng";
 
-        // Lấy combo
-        const combos = await api(`/ticket-combos/${ticketId}`);
-        const comboHTML = combos.length
-            ? combos.map(cb => `
+        // Showtime datetime
+        const start = t.showtime_start ? new Date(t.showtime_start) : null;
+
+        const date = start
+            ? start.toLocaleDateString("vi-VN")
+            : "—";
+
+        const time = start
+            ? start.toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+              })
+            : "—";
+
+        // Seats
+        const seats = Array.isArray(t.seats)
+            ? t.seats.join(", ")
+            : "—";
+
+        // Combos
+        const comboList = (t.combos?.length)
+            ? t.combos.map(cb => `
                 <div class="print-ticket-row">
                     <span class="label">${esc(cb.name)}</span>
                     <span class="value">${cb.qty} × ${cb.unit_price.toLocaleString("vi-VN")}đ</span>
@@ -48,21 +69,22 @@ export async function loadPrintTicket(ticketId = null) {
             `).join("")
             : `<div class="print-ticket-row"><span class="label">Combo</span><span class="value">Không có</span></div>`;
 
-        // Voucher
-        const voucherHTML = t.voucher_codes?.length
-            ? t.voucher_codes.map(code => `
+        // Vouchers
+        const voucherList = t.vouchers?.length
+            ? t.vouchers.map(code => `
                 <div class="print-ticket-row">
                     <span class="label">Voucher</span>
                     <span class="value">${esc(code)}</span>
                 </div>
-            `).join("")
+              `).join("")
             : `<div class="print-ticket-row"><span class="label">Voucher</span><span class="value">Không áp dụng</span></div>`;
 
-        const total =
-            t.total_after ||
-            t.total_amount ||
-            t.total ||
-            0;
+        // Total
+        const total = Number(t.total || 0);
+
+        /* ======================================================
+           RENDER HTML
+        ====================================================== */
 
         wrap.innerHTML = `
             <div class="print-ticket-card">
@@ -81,9 +103,11 @@ export async function loadPrintTicket(ticketId = null) {
 
                 <div class="ticket-line"></div>
 
-                ${comboHTML}
+                ${comboList}
+
                 <div class="ticket-line"></div>
-                ${voucherHTML}
+
+                ${voucherList}
 
                 <div class="ticket-line"></div>
 
@@ -102,15 +126,17 @@ export async function loadPrintTicket(ticketId = null) {
             </div>
         `;
 
-        // QR Code
+        /* ======================================================
+           QR CODE
+        ====================================================== */
         new QRCode(document.getElementById("printTicketQRCode"), {
             width: 160,
             height: 160,
-            text: t._id
+            text: t.reservation_code || t._id
         });
 
     } catch (err) {
-        console.error(err);
+        console.error("PRINT ERROR:", err);
         wrap.innerHTML = `<div class="text-danger">Lỗi tải vé!</div>`;
     }
 }

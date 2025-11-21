@@ -2,8 +2,11 @@ import { api } from "../core/api.js";
 import { showToast } from "../core/helper.js";
 import { S } from "../core/state.js";
 import { switchView } from "../core/routes.js";
-import { loadOfflineView } from "./offline.js";   // ⭐ THÊM
+import { loadOfflineView } from "./offline.js";
 
+/* ============================================================
+   BUILD PAYLOAD
+============================================================ */
 export function buildBookingPayload() {
 
     const seatIds = [...S.seatsSelected].map(k => S.seatIdByKey.get(k));
@@ -31,15 +34,17 @@ export function buildBookingPayload() {
     };
 }
 
+/* ============================================================
+   STAFF CONFIRM PAYMENT (UNPAID → PAID)
+============================================================ */
 export function bindConfirmPay() {
-    
+
     const btn = document.getElementById("btnConfirmPay");
     if (!btn) return;
 
     btn.onclick = async () => {
 
         const payload = buildBookingPayload();
-
         if (!payload) return showToast("Lỗi dữ liệu tạo vé!");
 
         try {
@@ -55,13 +60,15 @@ export function bindConfirmPay() {
                 return;
             }
 
+            /* ⭐ LẤY CHI TIẾT VÉ CHUẨN CHO WEB STAFF */
+            const detail = await api(`/bookings/detail/${res.ticket_id}`);
+
             S.lastTicketId = res.ticket_id;
+            S.lastTicketDetail = detail;
 
             showToast("✔ Đặt vé thành công!");
 
             switchView("offline");
-
-            // ⭐ AUTO LOAD VÉ
             loadOfflineView();
 
         } catch (e) {
@@ -71,6 +78,9 @@ export function bindConfirmPay() {
     };
 }
 
+/* ============================================================
+   STAFF CREATE PAID BOOKING (KHÁCH TRẢ TRƯỚC)
+============================================================ */
 export async function createPaidBooking() {
 
     if (!S.seatsSelected.size)
@@ -107,15 +117,37 @@ export async function createPaidBooking() {
         if (!res.ticket_id)
             return showToast("Không tạo được vé!");
 
-        S.lastTicketId = res.ticket_id;
+        /* ⭐ LẤY CHI TIẾT */
+        const detail = await api(`/bookings/detail/${res.ticket_id}`);
 
-        showToast("✔ Đã thanh toán thành công!");
+        S.lastTicketId = res.ticket_id;
+        S.lastTicketDetail = detail;
+
+        showToast("✔ Đã thanh toán!");
 
         switchView("offline");
-        loadOfflineView();   // ⭐ THÊM
+        loadOfflineView();
 
     } catch (err) {
         console.error(err);
         showToast("Lỗi tạo vé!");
     }
 }
+
+
+/* ============================================================
+   GLOBAL MIDDLE POPUP
+============================================================ */
+window.showMidAlert = function (msg) {
+    const box = document.getElementById("midAlert");
+    const msgEl = document.getElementById("midAlertMsg");
+
+    if (!box || !msgEl) return;
+    msgEl.textContent = msg;
+    box.classList.remove("d-none");
+};
+
+window.hideMidAlert = function () {
+    const box = document.getElementById("midAlert");
+    if (box) box.classList.add("d-none");
+};

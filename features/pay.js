@@ -1,16 +1,19 @@
-import { api, apiPublic } from "../core/api.js";
+import { api, apiPublic, API_ORIGIN, resolveAsset } from "../core/api.js";
 import { $, $$, esc, showToast } from "../core/helper.js";
 import { S } from "../core/state.js";
 import { switchView } from "../core/routes.js";
 
 /* ============================================================
-   FIX ẢNH COMBO
+   FIX ẢNH COMBO — CHUẨN 100%
 ============================================================ */
 function comboImg(path) {
     if (!path) return "";
-    if (path.startsWith("http")) return path;
+
+    // Normalize path
     if (!path.startsWith("/")) path = "/" + path;
-    return "http://localhost:3000/public" + path;
+
+    // Dùng API_ORIGIN để KHÔNG BAO GIỜ sai domain
+    return `${API_ORIGIN}/public${path}`;
 }
 
 /* ============================================================
@@ -119,7 +122,7 @@ function syncComboPick() {
 }
 
 /* ============================================================
-   VOUCHER
+   VOUCHER LOAD
 ============================================================ */
 export async function loadVoucherOptions() {
     let res;
@@ -313,7 +316,7 @@ export function computeSeatSubtotal() {
 }
 
 /* ============================================================
-   EXPORT CHUẨN — KHÔNG BAO GIỜ LỖI IMPORT
+   EXPORT CHUẨN
 ============================================================ */
 export default {
     loadCombos,
