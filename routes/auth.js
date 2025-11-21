@@ -1,22 +1,34 @@
+// routes/auth.js
 const express = require('express');
 const router = express.Router();
-
-// ⚠ Kiểm tra đúng đường dẫn thư mục "controller"
 const auth = require('../controller/authController');
 
-// REGISTER — auto send OTP + verify OTP
+/* ============================================================
+   📌 AUTH CUSTOMER
+============================================================ */
+
+// Đăng ký (2 bước: gửi OTP → verify OTP → tạo user)
 router.post('/register', auth.register);
 
-// LOGIN
+// Login (username/email)
 router.post('/login', auth.login);
 
-// CHANGE PASSWORD WITH OTP
+// QUÊN MẬT KHẨU bằng OTP (3 bước)
+router.post('/password/forgot', auth.forgotPassword);
+
+// Đổi mật khẩu bằng OTP (auto verify)
 router.post('/password/change-otp', auth.changePasswordWithOtp);
 
-// STAFF LOGIN
+
+/* ============================================================
+   📌 AUTH STAFF
+============================================================ */
+
+// Staff login
 router.post('/staff/login', auth.staffLogin);
 
-// STAFF REGISTER
+// Staff register
 router.post('/staff/register', auth.staffRegister);
+
 
 module.exports = router;

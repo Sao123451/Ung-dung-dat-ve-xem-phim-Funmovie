@@ -284,3 +284,94 @@ exports.changePasswordWithOtp = async (req, res, next) => {
     next(err);
   }
 };
+
+/* ================================================================
+   📌 6) FORGOT PASSWORD — SEND OTP → VERIFY OTP → RESET PASSWORD
+================================================================ */
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email, otp_code, new_password } = req.body;
+
+    if (!email)
+      return res.status(400).json({ message: "Thiếu email" });
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "Email không tồn tại" });
+
+    /* -----------------------------------------------------------
+       CASE 1 — GỬI OTP (client chỉ gửi email)
+    ----------------------------------------------------------- */
+    if (!otp_code && !new_password) {
+      // Kiểm tra OTP cũ còn thời hạn không
+      const oldOtp = await Otp.findOne({ email }).sort({ createdAt: -1 });
+
+      if (oldOtp && oldOtp.expires_at > Date.now()) {
+        return res.json({
+          step: "verify_otp",
+          expires_in: Math.floor((oldOtp.expires_at - Date.now()) / 1000),
+          message: "OTP vẫn còn hiệu lực, vui lòng kiểm tra email"
+        });
+      }
+
+      // Tạo OTP mới
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const expires = new Date(Date.now() + 2 * 60 * 1000); // 2 phút
+
+      await Otp.create({ email, code, expires_at: expires });
+      await sendOTP(email, code);
+
+      return res.json({
+        step: "verify_otp",
+        expires_in: 120,
+        message: "OTP đã được gửi vào email"
+      });
+    }
+
+    /* -----------------------------------------------------------
+       CASE 2 — VERIFY OTP (client gửi email + otp_code)
+    ----------------------------------------------------------- */
+    if (otp_code && !new_password) {
+      const otp = await Otp.findOne({ email, code: otp_code });
+
+      if (!otp)
+        return res.status(400).json({ message: "OTP không hợp lệ" });
+
+      if (otp.expires_at < Date.now())
+        return res.status(400).json({ message: "OTP đã hết hạn" });
+
+      return res.json({
+        step: "set_new_password",
+        message: "OTP hợp lệ, vui lòng nhập mật khẩu mới"
+      });
+    }
+
+    /* -----------------------------------------------------------
+       CASE 3 — ĐẶT MẬT KHẨU MỚI (email + otp_code + new_password)
+    ----------------------------------------------------------- */
+    if (otp_code && new_password) {
+      const otp = await Otp.findOne({ email, code: otp_code });
+
+      if (!otp)
+        return res.status(400).json({ message: "OTP không hợp lệ" });
+
+      if (otp.expires_at < Date.now())
+        return res.status(400).json({ message: "OTP đã hết hạn" });
+
+      // Hash password mới
+      const hashed = await bcrypt.hash(new_password, 10);
+      user.password = hashed;
+      await user.save();
+
+      // Xóa OTP sau khi dùng
+      await Otp.deleteMany({ email });
+
+      return res.json({
+        message: "Đặt lại mật khẩu thành công"
+      });
+    }
+
+  } catch (err) {
+    next(err);
+  }
+};
