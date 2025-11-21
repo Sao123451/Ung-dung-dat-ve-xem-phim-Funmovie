@@ -37,6 +37,7 @@ r.get("/:id", verifyToken, c.detail);
    ADMIN LIST / UPDATE / REMOVE
 ====================================================== */
 r.get("/", verifyToken, requireRoles("admin", "manager", "staff"), c.list);
+r.get("/detail/:id", verifyToken, requireRoles("staff","manager","admin"), c.detailBooking);
 r.patch("/:id/status", verifyToken, requireRoles("admin", "manager", "staff"), c.updateStatus);
 r.delete("/:id", verifyToken, requireRoles("admin", "manager"), c.remove);
 
