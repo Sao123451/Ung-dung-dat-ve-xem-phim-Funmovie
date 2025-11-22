@@ -1,8 +1,10 @@
+// features/booking.js — VERSION REMOVED OFFLINE, DIRECT PRINT
+
 import { api } from "../core/api.js";
 import { showToast } from "../core/helper.js";
 import { S } from "../core/state.js";
 import { switchView } from "../core/routes.js";
-import { loadOfflineView } from "./offline.js";
+import { loadPrintTicket } from "./print.js";   // ✔ dùng print.js, bỏ offline.js
 
 /* ============================================================
    BUILD PAYLOAD
@@ -53,8 +55,6 @@ export function bindConfirmPay() {
                 body: payload
             });
 
-            console.log("BOOKING API TRẢ VỀ:", res);
-
             if (!res || !res.ticket_id) {
                 showToast("Không tạo được vé!");
                 return;
@@ -68,8 +68,9 @@ export function bindConfirmPay() {
 
             showToast("✔ Đặt vé thành công!");
 
-            switchView("offline");
-            loadOfflineView();
+            // ⭐⭐ BỎ OFFLINE – NHẢY THẲNG VÀO TRANG IN VÉ
+            await loadPrintTicket(res.ticket_id);
+            switchView("print");
 
         } catch (e) {
             console.error(e);
@@ -125,8 +126,9 @@ export async function createPaidBooking() {
 
         showToast("✔ Đã thanh toán!");
 
-        switchView("offline");
-        loadOfflineView();
+        // ⭐⭐ BỎ OFFLINE – NHẢY THẲNG VÀO TRANG IN VÉ
+        await loadPrintTicket(res.ticket_id);
+        switchView("print");
 
     } catch (err) {
         console.error(err);
@@ -134,9 +136,8 @@ export async function createPaidBooking() {
     }
 }
 
-
 /* ============================================================
-   GLOBAL MIDDLE POPUP
+   GLOBAL POPUP
 ============================================================ */
 window.showMidAlert = function (msg) {
     const box = document.getElementById("midAlert");

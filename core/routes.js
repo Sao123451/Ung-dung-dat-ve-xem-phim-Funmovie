@@ -10,12 +10,12 @@ export function switchView(view, from = null) {
     const target = document.getElementById(`view-${view}`);
     if (target) target.classList.remove("d-none");
 
+    // ❌ ĐÃ XOÁ OFFLINE KHỎI TITLE MAP
     const titleMap = {
         home: "Chọn phim",
         schedule: "Chọn suất",
         seats: "Chọn ghế",
         pay: "Thanh toán",
-        offline: "Xác nhận vé offline",
         print: "In vé",
         online: "Quét mã vé online",
         loyalty: "Tích điểm"
@@ -24,6 +24,7 @@ export function switchView(view, from = null) {
     const pageTitle = document.getElementById("pageTitle");
     if (titleMap[view]) pageTitle.textContent = titleMap[view];
 
+    // Active sidebar
     document.querySelectorAll(".nav-linkx")
         .forEach(x => {
             x.classList.toggle("active", x.dataset.view === view);

@@ -1,5 +1,5 @@
 /************************************************************
- *  MAIN.JS — VERSION FIXED FOR OFFLINE BOOKING + DETAIL
+ *  MAIN.JS — VERSION FIXED FOR DIRECT PRINT (NO OFFLINE)
  ************************************************************/
 
 import { hardGuard } from "./core/auth.js";
@@ -7,9 +7,8 @@ import { loadStaffCinema } from "./features/cinema.js";
 import { fetchMovies, renderHome } from "./features/movies.js";
 import { bindApplyVoucher, loadVoucherOptions } from "./features/pay.js";
 import { bindGoPay } from "./features/seats.js";
-import { bindConfirmPay, createPaidBooking } from "./features/booking.js";
+import { bindConfirmPay } from "./features/booking.js";
 import { bindSidebar, switchView } from "./core/routes.js";
-import { bindOfflineViewAutoLoad } from "./features/offline.js";
 import { loadPrintTicket } from "./features/print.js";
 import { S } from "./core/state.js";
 import { api } from "./core/api.js";
@@ -56,12 +55,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // PAYMENT + VOUCHER
     bindApplyVoucher();
-    bindConfirmPay();        // ⭐ FIXED: CHỈ ĐĂNG KÝ 1 LẦN
+    bindConfirmPay();        
     bindPayMethodButtons();
     setupVoucherListButton();
 
-    // ⭐ AUTO LOAD OFFLINE VIEW
-    bindOfflineViewAutoLoad();
+    // ❌ ĐÃ XOÁ HOÀN TOÀN OFFLINE — KHÔNG import, KHÔNG auto load
+    // bindOfflineViewAutoLoad();
 
     // BACK BUTTONS
     bindBackFromPay();
@@ -71,21 +70,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* ============================================================
-   STAFF CREATED EVENT → LOAD DETAIL
+   STAFF CREATED EVENT → DIRECT PRINT
 ============================================================ */
 document.addEventListener("staff-created", async (ev) => {
     const ticketId = ev.detail?.ticket_id;
     if (!ticketId) return;
 
     try {
-        const t = await api(`/bookings/detail/${ticketId}`);  // ⭐ CHUẨN STAFF-BOOKING
+        const t = await api(`/bookings/detail/${ticketId}`);
         S.lastTicketDetail = t;
         S.lastTicketId = ticketId;
 
-        console.log("⭐ Loaded staff detail:", t);
+        console.log("⭐ Loaded staff detail (direct print):", t);
 
-        const mod = await import("./features/offline.js");
-        mod.loadOfflineView();
+        // ❌ Không gọi offline
+        // const mod = await import("./features/offline.js");
+        // mod.loadOfflineView();
+
+        // ✔ Nhảy thẳng sang trang in vé
+        await loadPrintTicket(ticketId);
+        window.switchView("print");
 
     } catch (err) {
         console.error("Lỗi load detail:", err);
