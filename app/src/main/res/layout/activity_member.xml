@@ -93,6 +93,7 @@
                 android:textStyle="bold"
                 android:textSize="18sp"/>
 
+
             <TextView
                 android:id="@+id/tvLevel"
                 android:layout_width="wrap_content"
@@ -102,6 +103,38 @@
                 android:textColor="#7A7A7A"
                 android:textAllCaps="true"
                 android:textSize="13sp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/tvMembershipCardLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Thẻ thành viên"
+                    android:textColor="#7A7A7A"
+                    android:textSize="16sp"
+                    android:layout_marginLeft="18dp"/>
+
+                <TextView
+                    android:id="@+id/tvMembershipCard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0000000000"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginLeft="30dp"/>
+
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/imgBarcode"
+                android:layout_width="312dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="4dp"
+                android:contentDescription="barcode" />
+
 
             <!-- Tổng chi tiêu / điểm thưởng -->
             <LinearLayout
@@ -310,9 +343,38 @@
                     android:src="@drawable/ic_chevron_right"
                     app:tint="#BDBDBD"/>
             </LinearLayout>
+            <LinearLayout
+                android:id="@+id/row_thanhVien"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="16dp"
+                android:gravity="center_vertical"
+                android:background="?android:attr/selectableItemBackground">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_history"
+                    app:tint="#2F80ED"/>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:text="Thẻ thành viên"
+                    android:textSize="16sp"/>
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="#BDBDBD"/>
+            </LinearLayout>
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F0F0F0" android:layout_marginStart="40dp"/>
+
 
         </LinearLayout>
     </ScrollView>
+
 
     <!-- Nút Đăng xuất -->
     <com.google.android.material.button.MaterialButton

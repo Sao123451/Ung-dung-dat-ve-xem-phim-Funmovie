@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <!-- ====== APP BAR ====== -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbarOtp"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/orange"
+            app:navigationIcon="@drawable/ic_back_arrow"
+            app:title="Xác thực OTP"
+            app:titleTextColor="@android:color/white"/>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- ====== NỘI DUNG ====== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/tvEmail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nhập mã OTP"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="20dp" />
+
+        <LinearLayout
+            android:id="@+id/otpContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <EditText android:id="@+id/otp1" style="@style/otp_box"/>
+            <EditText android:id="@+id/otp2" style="@style/otp_box"/>
+            <EditText android:id="@+id/otp3" style="@style/otp_box"/>
+            <EditText android:id="@+id/otp4" style="@style/otp_box"/>
+            <EditText android:id="@+id/otp5" style="@style/otp_box"/>
+            <EditText android:id="@+id/otp6" style="@style/otp_box"/>
+
+        </LinearLayout>
+        <TextView
+            android:id="@+id/tvError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="15sp"
+            android:layout_marginTop="5dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVerify"
+            android:text="Xác nhận"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/orange"
+            android:layout_marginTop="10dp"/>
+
+        <TextView
+            android:id="@+id/tvResend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Gửi lại mã (60s)"
+            android:textColor="@color/orange"
+            android:textStyle="bold"
+            android:enabled="false"
+            android:layout_gravity="center" />
+    </LinearLayout>
+
+</LinearLayout>

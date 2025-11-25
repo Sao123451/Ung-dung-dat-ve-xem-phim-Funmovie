@@ -9,7 +9,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,7 +24,6 @@ import com.example.datn_md_13.R;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -37,6 +35,7 @@ public class Login extends AppCompatActivity {
 
     private TextInputLayout tilEmail, tilPassword;
     private TextInputEditText edtEmail, edtPassword;
+    private TextView forgotPassword;
     private Button btnLogin;
     private TextView tvRegister;
     private CircularProgressIndicator progress;
@@ -47,34 +46,36 @@ public class Login extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Nếu đã đăng nhập thì vào thẳng MainActivity
         if (AuthManager.isLoggedIn(this)) {
             startActivity(new Intent(this, MainActivity.class));
             finish();
             return;
         }
 
-        // Ánh xạ view
         tilEmail = findViewById(R.id.tilEmail);
         edtEmail = findViewById(R.id.edtEmail);
         tilPassword = findViewById(R.id.tilPassword);
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnSignUp);
         tvRegister = findViewById(R.id.tvLogin);
-        progress = findViewById(R.id.progress); // 🔹 thêm ProgressIndicator trong layout
+        forgotPassword = findViewById(R.id.tvForgotPassword);
+        progress = findViewById(R.id.progress);
 
-        btnLogin.setText("Đăng nhập");
         api = ApiClient.get().create(ApiService.class);
 
-        // Xóa lỗi khi người dùng nhập lại
         addTextWatchers();
 
         btnLogin.setOnClickListener(v -> {
             if (validateInputs()) handleLogin();
         });
 
+        forgotPassword.setOnClickListener(v ->
+                startActivity(new Intent(Login.this, ForgotPasswordEmailActivity.class))
+        );
+
         tvRegister.setOnClickListener(v ->
-                startActivity(new Intent(Login.this, Register.class)));
+                startActivity(new Intent(Login.this, Register.class))
+        );
     }
 
     private boolean validateInputs() {
@@ -85,19 +86,19 @@ public class Login extends AppCompatActivity {
 
         if (TextUtils.isEmpty(emailOrUsername)) {
             tilEmail.setError("Vui lòng nhập email hoặc tên đăng nhập");
+            tilEmail.setErrorIconDrawable(null);
             valid = false;
-        } else if (emailOrUsername.length() < 3) {
-            tilEmail.setError("Tài khoản không hợp lệ");
-            valid = false;
-        } else tilEmail.setError(null);
+        } else {
+            tilEmail.setError(null);
+        }
 
         if (TextUtils.isEmpty(password)) {
             tilPassword.setError("Vui lòng nhập mật khẩu");
+            tilPassword.setErrorIconDrawable(null);
             valid = false;
-        } else if (password.length() < 6) {
-            tilPassword.setError("Mật khẩu tối thiểu 6 ký tự");
-            valid = false;
-        } else tilPassword.setError(null);
+        } else {
+            tilPassword.setError(null);
+        }
 
         return valid;
     }
@@ -116,42 +117,50 @@ public class Login extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call<LoginResponse> call, @NonNull Response<LoginResponse> resp) {
                 showLoading(false);
+
                 try {
                     if (resp.isSuccessful() && resp.body() != null) {
+
                         LoginResponse lr = resp.body();
                         String token = lr.getToken();
                         User user = lr.getUser();
 
+                        // Admin không được login app mobile
+                        if (user != null && "admin".equalsIgnoreCase(user.getRole())) {
+                            tilEmail.setError("Tài khoản ADMIN không được phép đăng nhập ứng dụng");
+                            tilEmail.setErrorIconDrawable(null);
+                            return;
+                        }
+
                         ensureDisplayName(user, emailOrUsername);
                         AuthManager.setLoggedIn(Login.this, token, user);
 
-                        Toast.makeText(Login.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                         startActivity(new Intent(Login.this, MainActivity.class));
                         finish();
                         return;
                     }
 
-                    String msg = "Sai thông tin đăng nhập.";
-                    if (resp.errorBody() != null) {
-                        JSONObject obj = new JSONObject(resp.errorBody().string());
-                        msg = obj.optString("message", msg);
-                    }
-                    Toast.makeText(Login.this, msg, Toast.LENGTH_LONG).show();
+                    // ============= TRƯỜNG HỢP LOGIN SAI ============
+                   // tilEmail.setError("Tài khoản hoặc mật khẩu không chính xác");
+                    tilEmail.setErrorIconDrawable(null);
+
+                    tilPassword.setError("Tài khoản hoặc mật khẩu không chính xác");
+                    tilPassword.setErrorIconDrawable(null);
+
+                    return;
 
                 } catch (Exception e) {
                     Log.e("Login", "Parse error: " + e.getMessage());
-                    Toast.makeText(Login.this, "Lỗi xử lý phản hồi", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<LoginResponse> call, @NonNull Throwable t) {
                 showLoading(false);
-                Toast.makeText(Login.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
-     // Hiển thị hoặc ẩn vòng loading
+
     private void showLoading(boolean show) {
         progress.setVisibility(show ? View.VISIBLE : View.GONE);
         btnLogin.setEnabled(!show);

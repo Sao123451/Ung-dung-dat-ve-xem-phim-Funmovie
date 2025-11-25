@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+
+    android:background="@color/white">
+
+    <!-- ===== APP BAR ===== -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@drawable/bg_appbar_gradient"
+            app:title="Thẻ thành viên"
+            app:titleTextColor="@android:color/white"
+            app:navigationIcon="@drawable/ic_back_arrow" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- ===== CARD CONTAINER ===== -->
+    <LinearLayout
+        android:id="@+id/cardContainer"
+        android:layout_width="394dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_menber_card"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- ===== HEADER: LEVEL + BADGE ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvMemberLevel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Khách hàng STANDARD"
+                android:textColor="#000"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_marginTop="0dp"
+                android:id="@+id/tvActive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_active_badge"
+                android:text="Đang sử dụng"
+                android:textColor="#fff"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ===== CARD NUMBER ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_card_small" />
+
+            <TextView
+                android:id="@+id/tvCardNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Số thẻ: 0000000000"
+                android:textColor="#000"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- ===== CREATE DATE ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_calendar"
+                app:tint="#040404" />
+
+            <TextView
+                android:id="@+id/tvCreateDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Ngày đăng ký: --/--/----"
+                android:textColor="#000"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

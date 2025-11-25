@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- ===== APP BAR (Toolbar) ===== -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout2"
         android:layout_width="match_parent"
@@ -18,54 +19,45 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/fm_orange"
             android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
-            app:menu="@menu/menu_bottom_nav"
-            app:navigationIconTint="?attr/colorOnPrimary"
             app:title="Tin tức"
-            app:titleCentered="true" />
+            app:titleCentered="true"/>
 
+        <LinearLayout
+            android:id="@+id/layoutTabs"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@android:color/white">
+
+            <TextView
+                android:id="@+id/tvTabPromo"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="KHUYẾN MÃI MỚI"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#FF6F00"
+                android:paddingBottom="6dp"/>
+
+            <TextView
+                android:id="@+id/tvTabNews"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="TIN BÊN LỀ"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#9E9E9E"
+                android:paddingBottom="6dp"/>
+        </LinearLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <LinearLayout
-        android:id="@+id/layoutTabs"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="8dp"
-        app:layout_anchor="@+id/swipe"
-        app:layout_anchorGravity="top|center"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <TextView
-            android:id="@+id/tvTabPromo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingEnd="8dp"
-            android:text="Khuyến mãi mới"
-            android:textColor="#FF6F00"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="4dp"
-            android:text="|"
-            android:textColor="#BDBDBD"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/tvTabNews"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingStart="4dp"
-            android:text="Thông tin bên lề"
-            android:textColor="#9E9E9E"
-            android:textSize="16sp" />
-    </LinearLayout>
-
+    <!-- ===== LIST + SWIPE ===== -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe"
         android:layout_width="match_parent"
@@ -76,13 +68,14 @@
             android:id="@+id/rvNews"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
-            android:paddingBottom="12dp"
-            tools:listitem="@layout/item_news" />
+            android:paddingBottom="16dp"
+            android:clipToPadding="false"
+            tools:listitem="@layout/item_news"/>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+    <!-- ===== LOADING ===== -->
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progress"
         android:layout_width="48dp"
@@ -90,4 +83,5 @@
         android:layout_gravity="center"
         android:visibility="gone"
         app:indicatorSize="48dp"/>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,11 +1,8 @@
 package com.example.datn_md_13.Adapter;
 
 import android.content.Intent;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.view.*;
+import android.widget.*;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -42,7 +39,9 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.VH> {
         News n = data.get(position);
 
         holder.tvTitle.setText(n.title);
-        holder.tvDate.setText(n.publishedAt != null ? df.format(n.publishedAt) : "");
+        holder.tvDate.setText(
+                n.publishedAt != null ? df.format(n.publishedAt) : ""
+        );
 
         String url = (n.coverImage != null && n.coverImage.startsWith("http"))
                 ? n.coverImage
@@ -51,13 +50,11 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.VH> {
         Glide.with(holder.itemView.getContext())
                 .load(url)
                 .placeholder(R.drawable.bg_avatar_circle)
-                .error(R.drawable.bg_avatar_circle)
                 .into(holder.img);
 
         holder.itemView.setOnClickListener(v -> {
             Intent i = new Intent(v.getContext(), NewsDetailActivity.class);
             i.putExtra("slug", n.slug != null ? n.slug : n.id);
-            i.putExtra("title", n.title);
             v.getContext().startActivity(i);
         });
     }
@@ -70,7 +67,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.VH> {
     static class VH extends RecyclerView.ViewHolder {
         ImageView img;
         TextView tvTitle, tvDate;
-
         VH(@NonNull View v) {
             super(v);
             img = v.findViewById(R.id.imgThumb);

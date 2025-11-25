@@ -13,7 +13,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -100,7 +99,6 @@
                         android:clickable="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-
                 <Button
                     android:id="@+id/btnSave"
                     android:layout_width="match_parent"
@@ -114,7 +112,6 @@
         </ScrollView>
     </LinearLayout>
 
-    <!-- ProgressBar nằm trong CoordinatorLayout để hiển thị giữa màn hình -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="60dp"

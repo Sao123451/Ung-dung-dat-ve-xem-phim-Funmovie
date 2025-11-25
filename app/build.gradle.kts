@@ -58,4 +58,6 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-alpha01")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.5.1")
 }

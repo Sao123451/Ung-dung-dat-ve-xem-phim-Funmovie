@@ -3,6 +3,7 @@ package com.example.datn_md_13.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -13,13 +14,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
+import com.example.datn_md_13.AuthManager;
 import com.example.datn_md_13.MainActivity;
 import com.example.datn_md_13.Model.User;
 import com.example.datn_md_13.R;
-import com.example.datn_md_13.AuthManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
+import com.google.zxing.BarcodeFormat;
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -33,11 +36,14 @@ public class Activity_member extends AppCompatActivity {
 
     private TextView tvInitial, tvMemberName, tvLevel,
             tvTotalSpent, tvRewardPoints, tvVipHint,
-            tvSpentLabel, tvVipTargetLabel;
+            tvSpentLabel, tvVipTargetLabel,
+            tvMembershipCardLabel, tvMembershipCard;
+
     private LinearProgressIndicator progressVip;
-    private LinearLayout rowAccountInfor, rowChangePassword;
+    private LinearLayout rowAccountInfor, rowChangePassword, rowMembership;
     private MaterialButton btnLogout;
     private CircleImageView ivAvatar;
+    private ImageView imgBarcode;
 
     private ApiService apiService;
 
@@ -53,19 +59,23 @@ public class Activity_member extends AppCompatActivity {
         topAppBar.setNavigationOnClickListener(v -> finish());
 
         // Bind views
-        tvInitial        = findViewById(R.id.tvInitial);
-        tvMemberName     = findViewById(R.id.tvMemberName);
-        tvLevel          = findViewById(R.id.tvLevel);
-        tvTotalSpent     = findViewById(R.id.tvTotalSpent);
-        tvRewardPoints   = findViewById(R.id.tvRewardPoints);
-        tvVipHint        = findViewById(R.id.tvVipHint);
-        tvSpentLabel     = findViewById(R.id.tvSpentLabel);
-        tvVipTargetLabel = findViewById(R.id.tvVipTargetLabel);
-        progressVip      = findViewById(R.id.progressVip);
-        btnLogout        = findViewById(R.id.btnLogout);
-        rowAccountInfor  = findViewById(R.id.row_account_info);
-        rowChangePassword = findViewById(R.id.row_change_password);
-        ivAvatar         = findViewById(R.id.ivAvatar);
+        tvInitial                = findViewById(R.id.tvInitial);
+        tvMemberName             = findViewById(R.id.tvMemberName);
+        tvLevel                  = findViewById(R.id.tvLevel);
+        tvTotalSpent             = findViewById(R.id.tvTotalSpent);
+        tvRewardPoints           = findViewById(R.id.tvRewardPoints);
+        tvVipHint                = findViewById(R.id.tvVipHint);
+        tvSpentLabel             = findViewById(R.id.tvSpentLabel);
+        tvVipTargetLabel         = findViewById(R.id.tvVipTargetLabel);
+        tvMembershipCardLabel    = findViewById(R.id.tvMembershipCardLabel);
+        tvMembershipCard         = findViewById(R.id.tvMembershipCard);
+        progressVip              = findViewById(R.id.progressVip);
+        btnLogout                = findViewById(R.id.btnLogout);
+        rowAccountInfor          = findViewById(R.id.row_account_info);
+        rowChangePassword        = findViewById(R.id.row_change_password);
+        ivAvatar                 = findViewById(R.id.ivAvatar);
+        imgBarcode               = findViewById(R.id.imgBarcode);
+        rowMembership            = findViewById(R.id.row_thanhVien);
 
         apiService = ApiClient.authed(this).create(ApiService.class);
 
@@ -79,30 +89,34 @@ public class Activity_member extends AppCompatActivity {
         });
 
         // Đi tới màn thông tin tài khoản
-        rowAccountInfor.setOnClickListener(v -> {
-            startActivity(new Intent(this, User_Information.class));
-        });
+        rowAccountInfor.setOnClickListener(v ->
+                startActivity(new Intent(this, User_Information.class))
+        );
 
         // Đi tới màn đổi mật khẩu
-        rowChangePassword.setOnClickListener(v -> {
-            startActivity(new Intent(this, ChangePassword.class));
-        });
+        rowChangePassword.setOnClickListener(v ->
+                startActivity(new Intent(this, ChangePassword.class))
+        );
 
-        // Set label level tạm
+        rowMembership.setOnClickListener(v ->
+                startActivity(new Intent(this, MemberCardActivity.class))
+        );
+
+
+
         tvLevel.setText("MEMBER");
 
-        // Setup demo tiến độ VIP
+        // Chỉ demo VIP progress (có thể thay bằng dữ liệu thật)
         setupVipDemo();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Mỗi lần quay lại màn này sẽ lấy hồ sơ mới nhất từ server
         loadMemberProfile();
     }
 
-    /** Gọi /users/me để lấy tên + avatar mới nhất (giống User_Information) */
+    /** Lấy thông tin thành viên từ API /users/me */
     private void loadMemberProfile() {
         apiService.getUserProfile().enqueue(new Callback<User>() {
             @Override
@@ -115,11 +129,12 @@ public class Activity_member extends AppCompatActivity {
 
                 User user = res.body();
 
-                // Tên hiển thị
+                // ====== HIỂN THỊ TÊN ======
                 String displayName = getDisplayName(user);
                 tvMemberName.setText(displayName);
                 tvInitial.setText(getInitial(displayName));
 
+                // ====== ẢNH ĐẠI DIỆN ======
                 String avatar = user.getAvatar();
                 if (avatar != null && !avatar.trim().isEmpty()) {
                     if (!avatar.startsWith("http")) {
@@ -138,6 +153,15 @@ public class Activity_member extends AppCompatActivity {
                     tvInitial.setVisibility(View.VISIBLE);
                 }
 
+                // ====== THẺ THÀNH VIÊN ======
+                String card = user.getMembership_card();
+                if (card != null && !card.isEmpty()) {
+                    tvMembershipCard.setText(card);
+                    generateBarcode(card);
+                } else {
+                    tvMembershipCard.setText("Chưa cấp");
+                }
+
             }
 
             @Override
@@ -148,7 +172,23 @@ public class Activity_member extends AppCompatActivity {
         });
     }
 
-    /** Demo tiến độ VIP — giữ nguyên như bạn đang làm */
+    /** Tạo barcode CODE_128 */
+    private void generateBarcode(String data) {
+        try {
+            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+            android.graphics.Bitmap bitmap = barcodeEncoder.encodeBitmap(
+                    data,
+                    BarcodeFormat.CODE_128,
+                    800,
+                    180
+            );
+            imgBarcode.setImageBitmap(bitmap);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Demo tiến độ VIP — sau này thay bằng dữ liệu thật từ API */
     private void setupVipDemo() {
         int totalSpent = 1_839_000;
         int rewardPts  = 0;
@@ -163,11 +203,12 @@ public class Activity_member extends AppCompatActivity {
         tvVipHint.setText("Bạn cần tích lũy thêm " +
                 nf.format(Math.max(VIP_TARGET - totalSpent, 0)) +
                 " đ để thăng hạng VIP");
+
         tvSpentLabel.setText(nf.format(totalSpent) + " đ");
         tvVipTargetLabel.setText(nf.format(VIP_TARGET) + " đ");
     }
 
-    // Ưu tiên full_name -> username -> phần trước @ của email
+    /** Lấy tên hiển thị: full_name → username → email */
     private String getDisplayName(User u) {
         if (u == null) return "Bạn";
 
@@ -177,7 +218,7 @@ public class Activity_member extends AppCompatActivity {
         } else if (u.getUsername() != null && !u.getUsername().trim().isEmpty()) {
             name = u.getUsername().trim();
         } else if (u.getEmail() != null && !u.getEmail().trim().isEmpty()) {
-            String e = u.getEmail().trim();
+            String e = u.getEmail();
             int at = e.indexOf('@');
             name = at > 0 ? e.substring(0, at) : e;
         }
@@ -187,10 +228,11 @@ public class Activity_member extends AppCompatActivity {
         String[] parts = name.toLowerCase().split("\\s+");
         StringBuilder sb = new StringBuilder();
         for (String p : parts) {
-            if (p.isEmpty()) continue;
-            sb.append(Character.toUpperCase(p.charAt(0)))
-                    .append(p.length() > 1 ? p.substring(1) : "")
-                    .append(" ");
+            if (!p.isEmpty()) {
+                sb.append(Character.toUpperCase(p.charAt(0)))
+                        .append(p.substring(1))
+                        .append(" ");
+            }
         }
         return sb.toString().trim();
     }

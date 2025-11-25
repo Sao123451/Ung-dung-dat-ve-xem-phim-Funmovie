@@ -5,7 +5,7 @@ import java.util.Date;
 
 public class User {
 
-    // Thêm trường token
+    // Token dùng cho login
     @SerializedName("token")
     private String token;
 
@@ -57,6 +57,11 @@ public class User {
     @SerializedName("newPassword")
     private String newPassword;
 
+    // ⭐ THÊM TRƯỜNG MỚI — THẺ THÀNH VIÊN
+    @SerializedName("membership_card")
+    private String membership_card;
+
+
     public User() { }
 
     public User(String email, String password) {
@@ -69,11 +74,12 @@ public class User {
         this.password = password;
     }
 
-    // ✅ Getters và Setters
+    // ================== GETTERS / SETTERS ==================
+
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
 
-    public String getId() { return id; } // Bạn đã có getter này với tên là getId()
+    public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public String getUsername() { return username; }
@@ -121,6 +127,16 @@ public class User {
     public String getNewPassword() { return newPassword; }
     public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
 
+    // ⭐ GETTER & SETTER CHO membership_card
+    public String getMembership_card() {
+        return membership_card;
+    }
+
+    public void setMembership_card(String membership_card) {
+        this.membership_card = membership_card;
+    }
+
+
     @Override
     public String toString() {
         return "User{" +
@@ -134,6 +150,7 @@ public class User {
                 ", gender='" + gender + '\'' +
                 ", birthDate='" + birthDate + '\'' +
                 ", address='" + address + '\'' +
+                ", membership_card='" + membership_card + '\'' +
                 ", status='" + status + '\'' +
                 ", created_at=" + created_at +
                 '}';

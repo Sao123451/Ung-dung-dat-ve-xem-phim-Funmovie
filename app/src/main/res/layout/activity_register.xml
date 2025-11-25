@@ -16,6 +16,7 @@
         android:gravity="center_horizontal"
         android:padding="24dp">
 
+        <!-- Logo -->
         <ImageView
             android:id="@+id/Logo"
             android:layout_width="160dp"
@@ -27,12 +28,14 @@
             android:adjustViewBounds="true"
             android:scaleType="fitCenter" />
 
+        <!-- Họ và tên -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilFullname"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Họ và tên">
+            android:hint="Họ và tên"
+            app:errorEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtFullname"
@@ -42,12 +45,30 @@
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- ⭐ Username -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilUsername"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:errorEnabled="true"
+            android:hint="Tên đăng nhập">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Email -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilEmail"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            app:errorEnabled="true"
             android:hint="Email">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -58,23 +79,14 @@
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:id="@+id/tvPasswordStrength"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="start"
-            android:text="Độ mạnh mật khẩu:"
-            android:textColor="@android:color/darker_gray"
-            android:textSize="14sp"
-            android:visibility="gone" />
 
+        <!-- Password -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilPassword"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            app:errorEnabled="true"
             android:hint="Mật khẩu"
             app:endIconMode="password_toggle">
 
@@ -86,14 +98,15 @@
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Confirm Password -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilConfirmPassword"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:hint="Xác nhận mật khẩu"
-            app:endIconMode="password_toggle">
+            app:endIconMode="password_toggle"
+            app:errorEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtConfirmPassword"
@@ -103,6 +116,7 @@
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Button -->
         <Button
             android:id="@+id/btnSignUp"
             android:layout_width="match_parent"
@@ -114,6 +128,7 @@
             android:textColor="@android:color/white"
             android:textSize="18sp" />
 
+        <!-- Loading -->
         <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/progress"
             android:layout_width="48dp"
@@ -124,6 +139,7 @@
             app:indicatorColor="@color/orange"
             app:trackThickness="4dp" />
 
+        <!-- Login Link -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

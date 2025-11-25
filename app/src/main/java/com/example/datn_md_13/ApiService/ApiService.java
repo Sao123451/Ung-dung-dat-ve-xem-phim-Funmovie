@@ -14,6 +14,7 @@ import com.example.datn_md_13.Model.PaymentInit;
 import com.example.datn_md_13.Model.ProductDto;
 import com.example.datn_md_13.Model.ProductListRes;
 import com.example.datn_md_13.Model.PublicCinemaResponse;
+import com.example.datn_md_13.Model.RegisterResponse;
 import com.example.datn_md_13.Model.SeatRowGroup;
 import com.example.datn_md_13.Model.ShowtimeDetail;
 import com.example.datn_md_13.Model.ShowtimeSeatResponse;
@@ -23,6 +24,7 @@ import com.example.datn_md_13.Model.VoucherDto;
 import com.example.datn_md_13.Model.VoucherListRes;
 
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -41,7 +43,13 @@ public interface ApiService {
 
     /* ========== Auth ========== */
     @POST("auth/register")
-    Call<User> register(@Body User user);
+    Call<RegisterResponse> register(@Body Map<String, String> body);
+    @POST("auth/register")
+    Call<RegisterResponse> registerStep1(@Body Map<String, String> emailOnly);
+
+    @POST("auth/register")
+    Call<RegisterResponse> registerStep2(@Body Map<String, String> data);
+
 
     // Backend trả { message, token, user }
     @POST("auth/login")
@@ -59,24 +67,34 @@ public interface ApiService {
             this.new_password = new_password;
         }
     }
-
     class ChangePasswordResponse {
         public String message;
     }
+    class BasicResponse {
+        public String message;
+        public String step;
+        public int expires_in;
+    }
+
+    @POST("auth/password/forgot")
+    Call<BasicResponse> forgotSendOtp(@Body Map<String, String> body);
+
+    @POST("auth/password/forgot")
+    Call<BasicResponse> forgotVerifyOtp(@Body Map<String, String> body);
+
+    @POST("auth/password/forgot")
+    Call<BasicResponse> forgotResetPassword(@Body Map<String, String> body);
+
+
 
     /* ========== User profile ========== */
 
-    // Lấy thông tin user hiện tại (dùng với ApiClient.authed -> tự chèn Authorization)
     @GET("users/me")
     Call<User> getUserProfile();
 
-    // Cập nhật thông tin profile (full_name, phone, birth_date, email...) KHÔNG đổi avatar
-    // Backend: res.json({ message, user })
     @PUT("users/me")
     Call<UpdateUserResponse> updateMe(@Body User body);
 
-    // Cập nhật thông tin + avatar (multipart)
-    // Field "avatar" phải trùng upload.single('avatar') trên backend
     @Multipart
     @PUT("users/me")
     Call<UpdateUserResponse> updateMeWithAvatar(
@@ -110,6 +128,14 @@ public interface ApiService {
 
     @GET("news/public/{idOrSlug}")
     Call<News> getNewsDetail(@Path("idOrSlug") String idOrSlug);
+
+    @GET("news/public")
+    Call<NewsListResponse> getNewsByCategory(
+            @Query("page") Integer page,
+            @Query("limit") Integer limit,
+            @Query("category") String category
+    );
+
 
     /* ========== Movies ========== */
     @GET("movies/coming")

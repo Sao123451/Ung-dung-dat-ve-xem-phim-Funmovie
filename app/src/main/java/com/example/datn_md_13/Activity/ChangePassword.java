@@ -1,6 +1,10 @@
 package com.example.datn_md_13.Activity;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -12,6 +16,7 @@ import com.example.datn_md_13.ApiService.ApiService;
 import com.example.datn_md_13.R;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -20,8 +25,11 @@ import retrofit2.Response;
 public class ChangePassword extends AppCompatActivity {
 
     private TextInputEditText etOldPassword, etNewPassword, etConfirmPassword;
+    private TextInputLayout layoutOldPass, layoutNewPass, layoutConfirmPass;
     private MaterialButton btnChange;
     private ApiService apiAuthed;
+    private final String STRONG_PATTERN =
+            "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]).{8,}$";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,32 +43,102 @@ public class ChangePassword extends AppCompatActivity {
         etOldPassword      = findViewById(R.id.etOldPassword);
         etNewPassword      = findViewById(R.id.etNewPassword);
         etConfirmPassword  = findViewById(R.id.etConfirmPassword);
+
+        layoutOldPass      = findViewById(R.id.layoutOldPass);
+        layoutNewPass      = findViewById(R.id.layoutNewPass);
+        layoutConfirmPass  = findViewById(R.id.layoutConfirmPass);
+
         btnChange          = findViewById(R.id.btnChangePassword);
 
         apiAuthed = ApiClient.authed(this).create(ApiService.class);
 
         btnChange.setOnClickListener(v -> handleChangePassword());
+
+        etNewPassword.addTextChangedListener(passwordWatcher);
+    }
+
+    private final TextWatcher passwordWatcher = new TextWatcher() {
+        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            showPasswordStrength(editable.toString().trim());
+        }
+    };
+
+    private void showPasswordStrength(String pass) {
+        int score = 0;
+
+        if (pass.length() >= 8) score++;
+        if (pass.matches(".*[A-Z].*")) score++;
+        if (pass.matches(".*[a-z].*")) score++;
+        if (pass.matches(".*[0-9].*")) score++;
+        if (pass.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) score++;
+
+        if (pass.isEmpty()) {
+            layoutNewPass.setHelperText("Nhập mật khẩu mới");
+            layoutNewPass.setHelperTextColor(ColorStateList.valueOf(Color.GRAY));
+            return;
+        }
+
+        switch (score) {
+            case 0:
+            case 1:
+            case 2:
+                layoutNewPass.setHelperText("Độ mạnh: YẾU");
+                layoutNewPass.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                break;
+
+            case 3:
+            case 4:
+                layoutNewPass.setHelperText("Độ mạnh: TRUNG BÌNH");
+                layoutNewPass.setHelperTextColor(ColorStateList.valueOf(Color.parseColor("#FFA500")));
+                break;
+
+            case 5:
+                layoutNewPass.setHelperText("Độ mạnh: MẠNH");
+                layoutNewPass.setHelperTextColor(ColorStateList.valueOf(Color.parseColor("#008000")));
+                break;
+        }
     }
 
     private void handleChangePassword() {
+
+        layoutOldPass.setError(null);
+        layoutNewPass.setError(null);
+        layoutConfirmPass.setError(null);
+
         String oldPass = getText(etOldPassword);
         String newPass = getText(etNewPassword);
         String confirm = getText(etConfirmPassword);
 
-        if (oldPass.isEmpty() || newPass.isEmpty() || confirm.isEmpty()) {
-            toast("Vui lòng nhập đầy đủ thông tin");
-            return;
+        boolean valid = true;
+
+        if (oldPass.isEmpty()) {
+            layoutOldPass.setError("Bạn chưa nhập mật khẩu cũ");
+            layoutOldPass.setErrorIconDrawable(null);
+            valid = false;
         }
 
-        if (!newPass.equals(confirm)) {
-            toast("Mật khẩu nhập lại không khớp");
-            return;
+        if (newPass.isEmpty()) {
+            layoutNewPass.setError("Bạn chưa nhập mật khẩu mới");
+            layoutNewPass.setErrorIconDrawable(null);
+            valid = false;
+
+        } else if (!newPass.matches(STRONG_PATTERN)) {
+            layoutNewPass.setError("Mật khẩu phải ≥ 8 ký tự, gồm chữ hoa – chữ thường – số – ký tự đặc biệt");
+            layoutNewPass.setErrorIconDrawable(null);
+            valid = false;
         }
 
-        if (newPass.length() < 6) {
-            toast("Mật khẩu mới phải ít nhất 6 ký tự");
-            return;
+        if (!confirm.equals(newPass)) {
+            layoutConfirmPass.setError("Mật khẩu nhập lại không khớp");
+            layoutConfirmPass.setErrorIconDrawable(null);
+            valid = false;
         }
+
+        if (!valid) return;
 
         ApiService.ChangePasswordRequest body =
                 new ApiService.ChangePasswordRequest(oldPass, newPass);
@@ -69,11 +147,12 @@ public class ChangePassword extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call<ApiService.ChangePasswordResponse> call,
                                    @NonNull Response<ApiService.ChangePasswordResponse> response) {
+
                 if (response.isSuccessful()) {
-                    toast("Đổi mật khẩu thành công");
+                  //  toast("Đổi mật khẩu thành công");
                     finish();
                 } else {
-                    toast("Đổi mật khẩu thất bại (kiểm tra mật khẩu cũ)");
+                    layoutOldPass.setError("Mật khẩu cũ không đúng!");
                 }
             }
 

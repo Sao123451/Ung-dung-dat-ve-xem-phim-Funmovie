@@ -4,7 +4,6 @@ import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -19,6 +18,7 @@ import com.example.datn_md_13.ApiService.ApiService;
 import com.example.datn_md_13.Model.User;
 import com.example.datn_md_13.R;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -41,9 +41,11 @@ public class Edit_User_Info extends AppCompatActivity {
     private Toolbar toolbar;
     private CircleImageView ivAvatar;
 
+    // TextInputLayout cha (lấy từ editText) để setError
+    private TextInputLayout tilFullName, tilPhone, tilBirthDate;
+
     private ApiService apiService;
     private Uri selectedAvatarUri = null;
-    private long lastClickTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +57,18 @@ public class Edit_User_Info extends AppCompatActivity {
 
         apiService = ApiClient.authed(this).create(ApiService.class);
 
-        etBirthDate.setOnClickListener(v -> handleBirthDateClick());
+        // ====== FIX "KHÔNG BỊ ĐẨY LAYOUT" ======
+        // Luôn chừa sẵn 1 dòng trống cho error (helperText),
+        // Khi setError thì chỉ thay nội dung, chiều cao không đổi => UI không nhảy.
+        reserveErrorSpace(tilFullName);
+        reserveErrorSpace(tilPhone);
+        reserveErrorSpace(tilBirthDate);
+
+        // Disable keyboard – dùng DatePicker
+        etBirthDate.setFocusable(false);
+        etBirthDate.setFocusableInTouchMode(false);
+        etBirthDate.setOnClickListener(v -> showDatePicker());
+
         ivAvatar.setOnClickListener(v -> pickImage());
         btnSave.setOnClickListener(v -> updateUserInfo());
 
@@ -69,13 +82,17 @@ public class Edit_User_Info extends AppCompatActivity {
         etBirthDate= findViewById(R.id.etBirthDate);
         btnSave    = findViewById(R.id.btnSave);
         ivAvatar   = findViewById(R.id.ivAvatar);
+
+        // Lấy TextInputLayout cha của từng EditText
+        tilFullName  = (TextInputLayout) etFullName.getParent().getParent();
+        tilPhone     = (TextInputLayout) etPhone.getParent().getParent();
+        tilBirthDate = (TextInputLayout) etBirthDate.getParent().getParent();
     }
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
@@ -86,11 +103,11 @@ public class Edit_User_Info extends AppCompatActivity {
             public void onResponse(@NonNull Call<User> call,
                                    @NonNull Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    User user = response.body();
-                    etFullName.setText(user.getFull_name() != null ? user.getFull_name() : "");
-                    etPhone.setText(user.getPhone() != null ? user.getPhone() : "");
-                    etBirthDate.setText(user.getBirthDate() != null ? user.getBirthDate() : "");
-                    loadAvatar(user.getAvatar());
+                    User u = response.body();
+                    etFullName.setText(u.getFull_name() != null ? u.getFull_name() : "");
+                    etPhone.setText(u.getPhone() != null ? u.getPhone() : "");
+                    etBirthDate.setText(u.getBirthDate() != null ? u.getBirthDate() : "");
+                    loadAvatar(u.getAvatar());
                 } else {
                     Toast.makeText(Edit_User_Info.this,
                             "Không thể tải thông tin!", Toast.LENGTH_SHORT).show();
@@ -117,23 +134,72 @@ public class Edit_User_Info extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_PICK_IMAGE && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
-            if (uri != null) {
-                selectedAvatarUri = uri;
-                ivAvatar.setImageURI(uri);
-            }
+            selectedAvatarUri = uri;
+            ivAvatar.setImageURI(uri);
         }
     }
 
+    // ======================================================
+    // FIX KHÔNG ĐẨY LAYOUT: chừa sẵn 1 dòng error space
+    // ======================================================
+    private void reserveErrorSpace(TextInputLayout til) {
+        if (til == null) return;
+        til.setHelperTextEnabled(true);
+        til.setHelperText(" "); // 1 space -> không nhìn thấy nhưng giữ chiều cao cố định
+        til.setErrorIconDrawable(null);
+    }
+
+    private void showFieldError(TextInputLayout til, String msg) {
+        if (til == null) return;
+        til.setErrorEnabled(true);
+        til.setError(msg);
+        til.setErrorIconDrawable(null);
+    }
+
+    private void clearFieldError(TextInputLayout til) {
+        if (til == null) return;
+        til.setError(null);
+        til.setErrorEnabled(false);
+        // giữ helperText " " để không đổi chiều cao
+        til.setHelperTextEnabled(true);
+        til.setHelperText(" ");
+    }
+
+    // ======================================================
+    //                   UPDATE + VALIDATE
+    // ======================================================
     private void updateUserInfo() {
+
         String fullName = safeText(etFullName);
         String phone = safeText(etPhone);
         String birthDate = safeText(etBirthDate);
 
-        if (!phone.matches("^\\d{10}$")) {
-            Toast.makeText(this, "Số điện thoại không hợp lệ", Toast.LENGTH_SHORT).show();
-            return;
+        clearFieldError(tilFullName);
+        clearFieldError(tilPhone);
+        clearFieldError(tilBirthDate);
+
+        boolean hasError = false;
+
+        // FULL NAME
+        if (fullName.isEmpty()) {
+            showFieldError(tilFullName, "Họ tên không được để trống");
+            hasError = true;
+        } else if (fullName.length() < 3) {
+            showFieldError(tilFullName, "Họ tên tối thiểu 3 ký tự");
+            hasError = true;
         }
 
+        // PHONE
+        if (phone.isEmpty()) {
+            showFieldError(tilPhone, "Vui lòng nhập số điện thoại");
+            hasError = true;
+        } else if (!phone.matches("^0[3|5|7|8|9][0-9]{8}$")) {
+            showFieldError(tilPhone, "Số điện thoại không hợp lệ");
+            hasError = true;
+        }
+
+        // BIRTHDAY
+        // BIRTHDAY
         if (!birthDate.isEmpty()) {
             try {
                 String[] parts = birthDate.split("-");
@@ -142,26 +208,32 @@ public class Edit_User_Info extends AppCompatActivity {
                 int d = Integer.parseInt(parts[2]);
 
                 Calendar selected = Calendar.getInstance();
-                selected.set(y, m, d, 0, 0, 0);
+                selected.set(y, m, d);
 
                 Calendar today = Calendar.getInstance();
-                Calendar minAllowed = Calendar.getInstance();
-                minAllowed.add(Calendar.YEAR, -10);
+                Calendar min = Calendar.getInstance();
+                min.add(Calendar.YEAR, -10);
 
                 if (selected.after(today)) {
-                    Toast.makeText(this, "Ngày sinh không thể ở tương lai!", Toast.LENGTH_SHORT).show();
-                    return;
+                    showFieldError(tilBirthDate, "Ngày sinh không thể ở tương lai");
+                    hasError = true;
+                } else if (selected.after(min)) {
+                    showFieldError(tilBirthDate, "Bạn phải từ 10 tuổi trở lên");
+                    hasError = true;
                 }
-                if (selected.after(minAllowed)) {
-                    Toast.makeText(this, "Ngày sinh quá gần hiện tại (phải ít nhất 10 tuổi)!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+
             } catch (Exception e) {
-                Toast.makeText(this, "Định dạng ngày sinh không hợp lệ (yyyy-MM-dd)!", Toast.LENGTH_SHORT).show();
-                return;
+                showFieldError(tilBirthDate, "Định dạng ngày sai (yyyy-MM-dd)");
+                hasError = true;
             }
         }
 
+
+        if (hasError) return;
+
+        // ================================================
+        // UPDATE WITHOUT AVATAR
+        // ================================================
         if (selectedAvatarUri == null) {
             User body = new User();
             body.setFull_name(fullName);
@@ -171,14 +243,12 @@ public class Edit_User_Info extends AppCompatActivity {
             apiService.updateMe(body).enqueue(new Callback<ApiService.UpdateUserResponse>() {
                 @Override
                 public void onResponse(@NonNull Call<ApiService.UpdateUserResponse> call,
-                                       @NonNull Response<ApiService.UpdateUserResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        Toast.makeText(Edit_User_Info.this,
-                                "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
+                                       @NonNull Response<ApiService.UpdateUserResponse> res) {
+                    if (res.isSuccessful()) {
+                        //Toast.makeText(Edit_User_Info.this,"Cập nhật thành công", Toast.LENGTH_SHORT).show();
                         finish();
                     } else {
-                        Toast.makeText(Edit_User_Info.this,
-                                "Cập nhật thất bại!", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(Edit_User_Info.this, "Cập nhật thất bại", Toast.LENGTH_SHORT).show();
                     }
                 }
 
@@ -192,6 +262,9 @@ public class Edit_User_Info extends AppCompatActivity {
             return;
         }
 
+        // ================================================
+        // UPDATE WITH AVATAR
+        // ================================================
         try {
             MultipartBody.Part avatarPart = createAvatarPart(selectedAvatarUri);
             RequestBody fullNamePart  = RequestBody.create(fullName, MediaType.parse("text/plain"));
@@ -203,39 +276,29 @@ public class Edit_User_Info extends AppCompatActivity {
             ).enqueue(new Callback<ApiService.UpdateUserResponse>() {
                 @Override
                 public void onResponse(@NonNull Call<ApiService.UpdateUserResponse> call,
-                                       @NonNull Response<ApiService.UpdateUserResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        Toast.makeText(Edit_User_Info.this,
-                                "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
+                                       @NonNull Response<ApiService.UpdateUserResponse> res) {
+                    if (res.isSuccessful()) {
+                        //Toast.makeText(Edit_User_Info.this,
+                                //"Cập nhật thành công", Toast.LENGTH_SHORT).show();
                         finish();
                     } else {
-                        Toast.makeText(Edit_User_Info.this,
-                                "Cập nhật thất bại!", Toast.LENGTH_SHORT).show();
+                       // Toast.makeText(Edit_User_Info.this,
+                               // "Cập nhật thất bại", Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<ApiService.UpdateUserResponse> call,
                                       @NonNull Throwable t) {
-                    Toast.makeText(Edit_User_Info.this,
-                            "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
+                   // Toast.makeText(Edit_User_Info.this,
+                           // "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
                 }
             });
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Không thể đọc file ảnh!", Toast.LENGTH_SHORT).show();
-        }
-    }
 
-    private void handleBirthDateClick() {
-        long now = System.currentTimeMillis();
-        if (now - lastClickTime < 300) {
-            showDatePicker();
-        } else {
-            etBirthDate.requestFocus();
-            etBirthDate.setSelection(etBirthDate.getText().length());
+        } catch (Exception e) {
+            //Toast.makeText(this,
+                   // "Không thể đọc ảnh!", Toast.LENGTH_SHORT).show();
         }
-        lastClickTime = now;
     }
 
     private void showDatePicker() {
@@ -245,24 +308,27 @@ public class Edit_User_Info extends AppCompatActivity {
         int day   = calendar.get(Calendar.DAY_OF_MONTH);
 
         DatePickerDialog dialog = new DatePickerDialog(this, (view, y, m, d) -> {
-            Calendar selected = Calendar.getInstance();
-            selected.set(y, m, d, 0, 0, 0);
+            Calendar sel = Calendar.getInstance();
+            sel.set(y, m, d);
 
             Calendar today = Calendar.getInstance();
-            Calendar minAllowed = Calendar.getInstance();
-            minAllowed.add(Calendar.YEAR, -10);
+            Calendar min = Calendar.getInstance();
+            min.add(Calendar.YEAR, -10);
 
-            if (selected.after(today)) {
-                Toast.makeText(this, "Ngày sinh không hợp lệ!", Toast.LENGTH_SHORT).show();
+            if (sel.after(today)) {
+                showFieldError(tilBirthDate, "Ngày sinh không hợp lệ");
                 return;
             }
-            if (selected.after(minAllowed)) {
-                Toast.makeText(this, "Ngày sinh quá gần hiện tại (phải ít nhất 10 tuổi)!", Toast.LENGTH_SHORT).show();
+            if (sel.after(min)) {
+                showFieldError(tilBirthDate, "Phải từ 10 tuổi trở lên");
                 return;
             }
+
+            clearFieldError(tilBirthDate);
 
             String date = String.format("%04d-%02d-%02d", y, (m + 1), d);
             etBirthDate.setText(date);
+
         }, year, month, day);
 
         dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
@@ -277,6 +343,7 @@ public class Edit_User_Info extends AppCompatActivity {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         byte[] data = new byte[4096];
         int n;
+
         while ((n = is.read(data)) != -1) {
             buffer.write(data, 0, n);
         }

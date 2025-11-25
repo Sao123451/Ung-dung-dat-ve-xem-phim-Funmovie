@@ -4,75 +4,107 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DATN_MD13"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- Màn hình chính (Launcher) -->
+        <activity
+            android:name=".Activity.Login"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true" />
+
+        <!-- Các Activity người dùng (User & Auth) -->
+        <activity
+            android:name=".Activity.Register"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
+        <activity
+            android:name=".Activity.Edit_User_Info"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
         <activity
             android:name=".Activity.ChangePassword"
             android:exported="false" />
-        <activity
-            android:name=".Activity.Edit_User_Info"
-            android:exported="false" />
+
         <activity
             android:name=".Activity.User_Information"
             android:exported="false" />
+
         <activity
-            android:name=".Activity.NewsDetailActivity"
+            android:name=".Activity.OtpVerifyActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
+        <!-- Quên mật khẩu -->
+        <activity
+            android:name=".Activity.ForgotPasswordEmailActivity"
             android:exported="false" />
         <activity
-            android:name=".Activity.TicketDetailActivity"
+            android:name=".Activity.ForgotPasswordOtpActivity"
             android:exported="false" />
         <activity
-            android:name=".Activity.PaymentPendingActivity"
+            android:name=".Activity.ForgotPasswordNewPassActivity"
+            android:exported="false" />
+
+        <!-- Đặt vé & Thanh toán -->
+        <activity
+            android:name=".Activity.Activity_seat_selection"
             android:exported="false" />
         <activity
             android:name=".Activity.CheckoutActivity"
             android:exported="false" />
         <activity
-            android:name=".Activity.AreaPickerActivity"
+            android:name=".Activity.PaymentPendingActivity"
             android:exported="false" />
         <activity
-            android:name=".Activity.Activity_seat_selection"
+            android:name=".Activity.TicketDetailActivity"
             android:exported="false" />
+
+        <!-- Rạp & Phim -->
         <activity
             android:name=".Activity.ShowtimesByCinemaActivity"
             android:exported="false" />
         <activity
-            android:name=".Activity.Activity_member"
+            android:name=".Activity.AreaPickerActivity"
             android:exported="false" />
         <activity
-            android:name=".Activity.Register"
-            android:exported="false"
-            android:theme="@style/Theme.DATN_MD13" />
+            android:name=".Activity.NewsDetailActivity"
+            android:exported="false" />
+
+        <!-- Thành viên & Khác -->
         <activity
-            android:name=".Activity.Login"
-            android:exported="true" />
+            android:name=".Activity.MemberCardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.Activity_member"
+            android:exported="false" />
         <activity
             android:name=".BookingByMovieActivity"
             android:exported="false" />
         <activity
             android:name=".activity_movie_detail"
             android:exported="false" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+
     </application>
 
 </manifest>
