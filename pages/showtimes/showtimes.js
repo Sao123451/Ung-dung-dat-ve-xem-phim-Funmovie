@@ -86,6 +86,29 @@ window.FMPages.showtimes = async function (pageEl, ctx) {
     const data = await res.json().catch(() => null);
 
     let list = Array.isArray(data) ? data : [];
+    const now = new Date();
+
+    list = list.map(st => {
+      if (st.status === "cancelled") {
+        return st;   // giữ nguyên nếu đã bị hủy
+      }
+
+      const start = new Date(st.start_time);
+      const end = new Date(st.end_time);
+
+      if (now < start) {
+        st.status = "scheduled";   // chưa chiếu
+      } 
+      else if (now >= start && now <= end) {
+        st.status = "ongoing";     // đang chiếu
+      } 
+      else {
+        st.status = "finished";    // đã chiếu
+      }
+
+      return st;
+    });
+
 
     // ========== FILTER CLIENT-SIDE ==========
 
@@ -193,6 +216,17 @@ async function openShowtimeDetail(id) {
     // 1) GET SHOWTIME DETAIL
     const res1 = await authFetch(`showtimes/${id}`);
     const st = await res1.json().catch(() => null);
+    // ===== Cập nhật trạng thái theo thời gian thực =====
+    if (st.status !== "cancelled") {
+      const now = new Date();
+      const start = new Date(st.start_time);
+      const end = new Date(st.end_time);
+
+      if (now < start) st.status = "scheduled";
+      else if (now >= start && now <= end) st.status = "ongoing";
+      else st.status = "finished";
+    }
+
 
     if (!res1.ok || !st?._id) {
       return showToast("Không thể tải suất chiếu", "err");
@@ -200,8 +234,13 @@ async function openShowtimeDetail(id) {
 
     // 2) GET SEAT GRID (theo phòng)
     const roomId = st.room?._id;
-    const res2 = await authFetch(`seats/public?room=${roomId}&mode=grid`);
-    const grid = await res2.json().catch(() => []);
+    // ===== Lấy ghế theo suất chiếu =====
+    const res2 = await authFetch(`showtimes/${id}/seats`);
+    const seatData = await res2.json().catch(() => []);
+
+    // seatData.seats là dạng list, cần chuyển sang grid
+    const grid = toSeatGrid(seatData.seats);
+
 
     // 3) Render nội dung modal
     const htmlDetail = html`
@@ -266,6 +305,7 @@ function renderSeatMap(grid) {
               <div class="st-seat ${seat.seat_type} ${seat.seat_status}">
                 ${seat.number}
               </div>
+
             `)
             .join("")}
         </div>
@@ -323,6 +363,24 @@ function renderSeatMap(grid) {
   `;
 
     box.innerHTML = html;
+  }
+
+  function toSeatGrid(seats) {
+    const map = {};
+
+    seats.forEach(s => {
+      if (!map[s.row]) map[s.row] = [];
+      map[s.row].push({
+        number: s.number,
+        seat_type: s.seat_type,
+        seat_status: s.status  // available / holding / sold / broken
+      });
+    });
+
+    return Object.keys(map).sort().map(rowLabel => ({
+      row: rowLabel,
+      seats: map[rowLabel].sort((a,b) => a.number - b.number)
+    }));
   }
 
 

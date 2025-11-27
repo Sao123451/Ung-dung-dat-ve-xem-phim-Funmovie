@@ -435,7 +435,7 @@ window.FMPages.users = async function (pageEl, ctx) {
       cuEls.fullname.value = "";
       cuEls.phone.value = "";
       cuEls.birth.value = "";
-      cuEls.role.value = "staff";
+      cuEls.role.value = "admin";
       cuEls.cinema.value = "";
 
       loadList();
@@ -464,6 +464,8 @@ window.FMPages.users = async function (pageEl, ctx) {
   await loadCinemas();
   await loadList();
 
+  cuEls.role.value = "admin";
+  cuEls.cinemaWrap.style.display = "none";
   // Toolbar
   return {
     onToolbar: {
