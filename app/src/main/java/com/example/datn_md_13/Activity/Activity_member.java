@@ -40,7 +40,7 @@ public class Activity_member extends AppCompatActivity {
             tvMembershipCardLabel, tvMembershipCard;
 
     private LinearProgressIndicator progressVip;
-    private LinearLayout rowAccountInfor, rowChangePassword, rowMembership;
+    private LinearLayout rowAccountInfor, rowChangePassword, rowMembership, row_transaction_history;
     private MaterialButton btnLogout;
     private CircleImageView ivAvatar;
     private ImageView imgBarcode;
@@ -76,6 +76,7 @@ public class Activity_member extends AppCompatActivity {
         ivAvatar                 = findViewById(R.id.ivAvatar);
         imgBarcode               = findViewById(R.id.imgBarcode);
         rowMembership            = findViewById(R.id.row_thanhVien);
+        row_transaction_history  = findViewById(R.id.row_transaction_history);
 
         apiService = ApiClient.authed(this).create(ApiService.class);
 
@@ -102,6 +103,9 @@ public class Activity_member extends AppCompatActivity {
                 startActivity(new Intent(this, MemberCardActivity.class))
         );
 
+        row_transaction_history.setOnClickListener(v ->
+                startActivity(new Intent(this, TicketActivity.class))
+        );
 
 
         tvLevel.setText("MEMBER");

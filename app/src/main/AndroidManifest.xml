@@ -15,46 +15,42 @@
         android:theme="@style/Theme.DATN_MD13"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
-
-        <!-- Màn hình chính (Launcher) -->
+        <activity
+            android:name=".Activity.TicketDetail"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.TicketActivity"
+            android:exported="false" /> <!-- Màn hình chính (Launcher) -->
         <activity
             android:name=".Activity.Login"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".MainActivity"
-            android:exported="true" />
-
-        <!-- Các Activity người dùng (User & Auth) -->
+            android:exported="true" /> <!-- Các Activity người dùng (User & Auth) -->
         <activity
             android:name=".Activity.Register"
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
-
         <activity
             android:name=".Activity.Edit_User_Info"
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
-
         <activity
             android:name=".Activity.ChangePassword"
             android:exported="false" />
-
         <activity
             android:name=".Activity.User_Information"
             android:exported="false" />
-
         <activity
             android:name=".Activity.OtpVerifyActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustPan" />
-
-        <!-- Quên mật khẩu -->
+            android:windowSoftInputMode="adjustPan" /> <!-- Quên mật khẩu -->
         <activity
             android:name=".Activity.ForgotPasswordEmailActivity"
             android:exported="false" />
@@ -63,9 +59,7 @@
             android:exported="false" />
         <activity
             android:name=".Activity.ForgotPasswordNewPassActivity"
-            android:exported="false" />
-
-        <!-- Đặt vé & Thanh toán -->
+            android:exported="false" /> <!-- Đặt vé & Thanh toán -->
         <activity
             android:name=".Activity.Activity_seat_selection"
             android:exported="false" />
@@ -77,9 +71,7 @@
             android:exported="false" />
         <activity
             android:name=".Activity.TicketDetailActivity"
-            android:exported="false" />
-
-        <!-- Rạp & Phim -->
+            android:exported="false" /> <!-- Rạp & Phim -->
         <activity
             android:name=".Activity.ShowtimesByCinemaActivity"
             android:exported="false" />
@@ -88,9 +80,7 @@
             android:exported="false" />
         <activity
             android:name=".Activity.NewsDetailActivity"
-            android:exported="false" />
-
-        <!-- Thành viên & Khác -->
+            android:exported="false" /> <!-- Thành viên & Khác -->
         <activity
             android:name=".Activity.MemberCardActivity"
             android:exported="false" />
@@ -103,8 +93,6 @@
         <activity
             android:name=".activity_movie_detail"
             android:exported="false" />
-
-
     </application>
 
 </manifest>

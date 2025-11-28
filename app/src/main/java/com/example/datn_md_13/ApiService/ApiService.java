@@ -11,7 +11,6 @@ import com.example.datn_md_13.Model.Movie;
 import com.example.datn_md_13.Model.News;
 import com.example.datn_md_13.Model.NewsListResponse;
 import com.example.datn_md_13.Model.PaymentInit;
-import com.example.datn_md_13.Model.ProductDto;
 import com.example.datn_md_13.Model.ProductListRes;
 import com.example.datn_md_13.Model.PublicCinemaResponse;
 import com.example.datn_md_13.Model.RegisterResponse;
@@ -19,8 +18,8 @@ import com.example.datn_md_13.Model.SeatRowGroup;
 import com.example.datn_md_13.Model.ShowtimeDetail;
 import com.example.datn_md_13.Model.ShowtimeSeatResponse;
 import com.example.datn_md_13.Model.ShowtimesByCinemaResponse;
+import com.example.datn_md_13.Model.Ticket;
 import com.example.datn_md_13.Model.User;
-import com.example.datn_md_13.Model.VoucherDto;
 import com.example.datn_md_13.Model.VoucherListRes;
 
 import java.util.List;
@@ -234,4 +233,11 @@ public interface ApiService {
 
     @GET("vouchers/public")
     Call<VoucherListRes> getVouchers();
+
+    /* ========== Ticket  ========== */
+    @GET("tickets/my")
+    Call<List<Ticket>> getMyTickets();
+
+
+
 }
