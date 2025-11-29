@@ -1,10 +1,13 @@
 package com.example.datn_md_13.Activity;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,12 +19,16 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.datn_md_13.Adapter.ProductQtyAdapter;
 import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
+import com.example.datn_md_13.Model.BaseResponse;
 import com.example.datn_md_13.Model.BookingCreateResponse;
 import com.example.datn_md_13.Model.BookingQuoteResponse;
 import com.example.datn_md_13.Model.BookingRequest;
+import com.example.datn_md_13.Model.PaymentInitReq;
 import com.example.datn_md_13.Model.ProductDto;
 import com.example.datn_md_13.Model.ProductListRes;
-import com.example.datn_md_13.Model.VoucherDto;
+import com.example.datn_md_13.Model.ReleaseSeatRequest;
+import com.example.datn_md_13.Model.UserVoucherItem;
+import com.example.datn_md_13.Model.VnPayInitResponse;
 import com.example.datn_md_13.Model.VoucherListRes;
 import com.example.datn_md_13.R;
 import com.example.datn_md_13.AuthManager;
@@ -41,6 +48,7 @@ public class CheckoutActivity extends AppCompatActivity {
 
     private ApiService api;
 
+    private RadioGroup rgMethod;
     private ProgressBar progress;
     private TextView tvInfo, tvVouchers, tvSeatSubtotal, tvComboSubtotal, tvDiscount, tvTotal, tvTotalBottom;
     private RecyclerView rvProducts;
@@ -49,33 +57,74 @@ public class CheckoutActivity extends AppCompatActivity {
     private String showtimeId;
     private ArrayList<String> seatIds;
 
+    private String paymentMethod = "vnpay"; // mặc định VNPay
     private ProductQtyAdapter productAdapter;
     private final ArrayList<String> selectedVouchers = new ArrayList<>();
     private final NumberFormat nf = NumberFormat.getNumberInstance(new Locale("vi","VN"));
+
+
+
+
+    private final Gson gson = new Gson();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
 
-        // ❗ DÙNG CLIENT AUTHeD để chèn Bearer tự động
         api = ApiClient.authed(this).create(ApiService.class);
 
-        // Log kiểm tra token hiện đang lưu
-        String tk = AuthManager.getToken(this);
-        Log.d("AUTH", "Token=" + tk);
-
-        // nhận dữ liệu
+        /* ============================================================
+            NHẬN DỮ LIỆU TỪ Intent
+         ============================================================ */
         showtimeId = getIntent().getStringExtra("showtime_id");
-        seatIds    = getIntent().getStringArrayListExtra("seat_ids");
+        seatIds = getIntent().getStringArrayListExtra("seat_ids");
+
+
         if (seatIds == null) seatIds = new ArrayList<>();
 
-        // toolbar
-        findViewById(R.id.topBar).setOnClickListener(v -> onBackPressed());
-        ((androidx.appcompat.widget.Toolbar)findViewById(R.id.topBar))
-                .setNavigationOnClickListener(v -> onBackPressed());
+        Log.e("CHECKOUT", "===== CHECKOUT START =====");
+        Log.e("CHECKOUT", "Showtime: " + showtimeId);
+        Log.e("CHECKOUT", "SeatIds: " + gson.toJson(seatIds));
 
-        // bind view
+        bindViews();
+
+        rvProducts.setLayoutManager(new LinearLayoutManager(this));
+        productAdapter = new ProductQtyAdapter(() -> loadQuote(selectedVouchers));
+        rvProducts.setAdapter(productAdapter);
+
+        tryLoadProducts();
+
+        btnPickVoucher.setOnClickListener(v -> openVoucherPicker());
+
+        /* ============================================================
+           SELECT PAYMENT METHOD
+         ============================================================ */
+        rgMethod.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbMomo) paymentMethod = "momo";
+            else if (checkedId == R.id.rbZalo) paymentMethod = "zalopay";
+            else if (checkedId == R.id.rbVnpay) paymentMethod = "vnpay";
+
+            Log.e("CHECKOUT", "PaymentMethod = " + paymentMethod);
+        });
+
+        /* ============================================================
+            NÚT THANH TOÁN
+        ============================================================ */
+        btnPay.setOnClickListener(v -> {
+            Log.e("CHECKOUT", "PAY CLICKED → method=" + paymentMethod);
+
+            if (paymentMethod.equals("vnpay")) {
+                payWithVnpay();
+            } else {
+                Toast.makeText(this, "Phương thức chưa hỗ trợ", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        loadQuote(selectedVouchers);
+    }
+
+    private void bindViews() {
         progress = findViewById(R.id.progress);
         tvInfo = findViewById(R.id.tvInfo);
         tvVouchers = findViewById(R.id.tvVouchers);
@@ -84,31 +133,13 @@ public class CheckoutActivity extends AppCompatActivity {
         tvDiscount = findViewById(R.id.tvDiscount);
         tvTotal = findViewById(R.id.tvTotal);
         tvTotalBottom = findViewById(R.id.tvTotalBottom);
-
         btnPay = findViewById(R.id.btnPay);
         btnPickVoucher = findViewById(R.id.btnPickVoucher);
-
-        // info tóm tắt
-        tvInfo.setText("Ghế đã chọn: " + seatIds.size() + " ghế");
-
-        // products
         rvProducts = findViewById(R.id.rvProducts);
-        rvProducts.setLayoutManager(new LinearLayoutManager(this));
-        productAdapter = new ProductQtyAdapter(() -> loadQuote(selectedVouchers));
-        rvProducts.setAdapter(productAdapter);
+        rgMethod = findViewById(R.id.rgMethod);
 
-        tryLoadProducts();
-
-        // voucher picker
-        btnPickVoucher.setOnClickListener(v -> openVoucherPicker());
-
-        // thanh toán (giả lập)
-        btnPay.setOnClickListener(v -> pay());
-
-        // quote lần đầu
-        loadQuote(selectedVouchers);
+        tvInfo.setText("Ghế đã chọn: " + seatIds.size() + " ghế");
     }
-
     /* ===== Load sản phẩm ===== */
     private void tryLoadProducts() {
         api.getProducts().enqueue(new Callback<ProductListRes>() {
@@ -150,177 +181,324 @@ public class CheckoutActivity extends AppCompatActivity {
         return r;
     }
 
-    /* ===== Voucher Picker ===== */
+
     private void openVoucherPicker() {
-        api.getVouchers().enqueue(new Callback<VoucherListRes>() {
-            @Override public void onResponse(Call<VoucherListRes> call, Response<VoucherListRes> res) {
-                List<VoucherDto> items = (res.isSuccessful() && res.body()!=null) ? res.body().items : null;
+
+        api.getMyVouchers().enqueue(new Callback<VoucherListRes>() {
+
+            @Override
+            public void onResponse(Call<VoucherListRes> call,
+                                   Response<VoucherListRes> res) {
+
+                List<UserVoucherItem> items =
+                        (res.isSuccessful() && res.body() != null)
+                                ? res.body().items
+                                : null;
+
                 if (items == null || items.isEmpty()) {
-                    showVoucherDialog(Arrays.asList("SEAT10","COMBO20","ORDER30"));
+                    Toast.makeText(CheckoutActivity.this,
+                            "Bạn chưa có voucher nào!",
+                            Toast.LENGTH_SHORT).show();
                     return;
                 }
+
+                // ⭐ LỌC VOUCHER KHẢ DỤNG
+                List<UserVoucherItem> filtered = new ArrayList<>();
+                for (UserVoucherItem v : items) {
+
+                    boolean outOfUsage = (v.usage_limit > 0 && v.used_count >= v.usage_limit);
+
+                    if (!v.used && !outOfUsage) {
+                        filtered.add(v);
+                    }
+                }
+
+                if (filtered.isEmpty()) {
+                    Toast.makeText(CheckoutActivity.this,
+                            "Không còn voucher khả dụng!",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // ⭐ Tạo danh sách label
                 List<String> labels = new ArrayList<>();
-                for (VoucherDto v : items) {
-                    String desc = v.type!=null && v.value!=null
-                            ? ("percent".equalsIgnoreCase(v.type) ? (v.value + "%") : (formatVND(v.value)))
-                            : "";
-                    String scope = v.scope!=null ? v.scope : "order";
+
+                for (UserVoucherItem v : filtered) {
+
+                    String desc = ("percent".equalsIgnoreCase(v.type))
+                            ? (v.value + "%")
+                            : (formatVND(v.value));
+
+                    String scope = (v.scope != null) ? v.scope : "order";
+
                     labels.add(v.code + " – " + desc + " (" + scope + ")");
                 }
-                showVoucherDialogWithObjects(items, labels);
+
+                showVoucherDialogWithObjects(filtered, labels);
             }
-            @Override public void onFailure(Call<VoucherListRes> call, Throwable t) {
-                showVoucherDialog(Arrays.asList("SEAT10","COMBO20","ORDER30"));
+
+            @Override
+            public void onFailure(Call<VoucherListRes> call, Throwable t) {
+                Toast.makeText(CheckoutActivity.this,
+                        "Không tải được voucher!",
+                        Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void showVoucherDialog(List<String> codes) {
-        final boolean[] checked = new boolean[codes.size()];
-        for (int i=0;i<codes.size();i++) checked[i] = selectedVouchers.contains(codes.get(i));
 
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("Chọn voucher")
-                .setMultiChoiceItems(codes.toArray(new String[0]), checked, (d,w,isChecked) -> checked[w] = isChecked)
-                .setPositiveButton("Áp dụng", (d,w) -> {
-                    selectedVouchers.clear();
-                    for (int i=0;i<codes.size();i++) if (checked[i]) selectedVouchers.add(codes.get(i));
-                    tvVouchers.setText(selectedVouchers.isEmpty() ? "(chưa áp dụng)" : selectedVouchers.toString());
-                    loadQuote(selectedVouchers);
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
-    }
 
-    private void showVoucherDialogWithObjects(List<VoucherDto> items, List<String> labels) {
+
+
+
+    private void showVoucherDialogWithObjects(List<UserVoucherItem> items, List<String> labels) {
         final boolean[] checked = new boolean[labels.size()];
         String[] arr = labels.toArray(new String[0]);
-        for (int i=0;i<labels.size();i++) {
+
+        for (int i = 0; i < labels.size(); i++) {
             String code = items.get(i).code;
             checked[i] = selectedVouchers.contains(code);
         }
+
         new android.app.AlertDialog.Builder(this)
                 .setTitle("Chọn voucher")
-                .setMultiChoiceItems(arr, checked, (d,w,isChecked) -> checked[w] = isChecked)
-                .setPositiveButton("Áp dụng", (d,w) -> {
+                .setMultiChoiceItems(arr, checked, (d, w, isChecked) -> checked[w] = isChecked)
+                .setPositiveButton("Áp dụng", (d, w) -> {
+
                     selectedVouchers.clear();
-                    for (int i=0;i<labels.size();i++) if (checked[i]) selectedVouchers.add(items.get(i).code);
-                    tvVouchers.setText(selectedVouchers.isEmpty() ? "(chưa áp dụng)" : selectedVouchers.toString());
+                    for (int i = 0; i < labels.size(); i++)
+                        if (checked[i]) selectedVouchers.add(items.get(i).code);
+
+                    tvVouchers.setText(
+                            selectedVouchers.isEmpty()
+                                    ? "(chưa áp dụng)"
+                                    : selectedVouchers.toString()
+                    );
+
                     loadQuote(selectedVouchers);
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
+
 
     private String formatVND(int v) {
         return NumberFormat.getNumberInstance(new Locale("vi","VN")).format(v) + " đ";
     }
 
-    /* ===== Gọi quote ===== */
+    /* ============================================================
+        LOAD QUOTE
+      ============================================================ */
     private void loadQuote(ArrayList<String> vouchers) {
         showLoading(true);
 
         BookingRequest req = new BookingRequest();
         req.showtimeId = showtimeId;
         req.seatIds = seatIds;
-        req.vouchers = vouchers;
 
         List<ProductQtyAdapter.Row> sel = productAdapter.getSelected();
-        if (!sel.isEmpty()) {
-            req.combos = new ArrayList<>();
-            for (ProductQtyAdapter.Row r : sel) {
-                BookingRequest.ComboReq c = new BookingRequest.ComboReq();
-                c.productId = r.id; c.qty = r.qty; c.unit_price = r.price;
-                c.name = r.name; c.type = r.type;
-                req.combos.add(c);
-            }
+
+        req.combos = new ArrayList<>();
+        for (ProductQtyAdapter.Row r : sel) {
+            BookingRequest.ComboReq c = new BookingRequest.ComboReq();
+            c.productId = r.id;
+            c.qty = r.qty;
+            c.unit_price = r.price;
+            c.name = r.name;
+            req.combos.add(c);
         }
-        Log.d("QUOTE_REQ", new Gson().toJson(req));
+
+        req.vouchers = vouchers;
+
+        Log.e("QUOTE_REQ", gson.toJson(req));
 
         api.quote(req).enqueue(new Callback<BookingQuoteResponse>() {
             @Override public void onResponse(Call<BookingQuoteResponse> call, Response<BookingQuoteResponse> res) {
+
+                Log.e("QUOTE_RES", gson.toJson(res.body()));
                 showLoading(false);
-                if (!res.isSuccessful() || res.body()==null) { toast("Không tính được tiền!"); return; }
+
+                if (!res.isSuccessful() || res.body() == null) {
+                    toast("Không tính được tiền!");
+                    return;
+                }
+
                 BookingQuoteResponse q = res.body();
-                int disc = (q.breakdown.discount_seat + q.breakdown.discount_combo + q.breakdown.discount_order);
+                int disc = q.breakdown.discount_seat + q.breakdown.discount_combo + q.breakdown.discount_order;
+
                 tvSeatSubtotal.setText("Vé: " + nf.format(q.breakdown.seat_subtotal) + " đ");
                 tvComboSubtotal.setText("Combo: " + nf.format(q.breakdown.combo_subtotal) + " đ");
                 tvDiscount.setText("Giảm giá: -" + nf.format(disc) + " đ");
                 tvTotal.setText("Thành tiền: " + nf.format(q.breakdown.total_after) + " đ");
                 tvTotalBottom.setText(nf.format(q.breakdown.total_after) + " đ");
             }
+
             @Override public void onFailure(Call<BookingQuoteResponse> call, Throwable t) {
-                showLoading(false); toast("Lỗi kết nối khi tính tiền!");
+                showLoading(false);
+                Log.e("QUOTE_ERR", t.getMessage());
             }
         });
     }
 
-    /* ===== Thanh toán GIẢ LẬP (có Bearer) ===== */
-    private void pay() {
-        showLoading(true);
 
-        final String method = "testpay"; // luôn giả lập
+    /* ============================================================
+        TẠO VÉ + THANH TOÁN VNPay
+      ============================================================ */
+    private void payWithVnpay() {
+        showLoading(true);
 
         BookingRequest req = new BookingRequest();
         req.showtimeId = showtimeId;
         req.seatIds = seatIds;
-        req.payment_method = method;
         req.vouchers = selectedVouchers;
 
-        List<ProductQtyAdapter.Row> sel = productAdapter.getSelected();
-        if (!sel.isEmpty()) {
-            req.combos = new ArrayList<>();
-            for (ProductQtyAdapter.Row r : sel) {
-                BookingRequest.ComboReq c = new BookingRequest.ComboReq();
-                c.productId = r.id;
-                c.qty = r.qty;
-                c.unit_price = r.price;
-                c.name = r.name;
-                c.type = r.type;
-                req.combos.add(c);
-            }
+        req.combos = new ArrayList<>();
+        for (ProductQtyAdapter.Row r : productAdapter.getSelected()) {
+            BookingRequest.ComboReq c = new BookingRequest.ComboReq();
+            c.productId = r.id;
+            c.qty = r.qty;
+            c.unit_price = r.price;
+            c.name = r.name;
+            c.type = r.type;
+            req.combos.add(c);
         }
 
-        // Interceptor sẽ tự thêm Authorization; truyền null để không override
+        Log.e("BOOKING_REQ", new Gson().toJson(req));
+
         api.createBooking(null, req).enqueue(new Callback<BookingCreateResponse>() {
             @Override
             public void onResponse(Call<BookingCreateResponse> call, Response<BookingCreateResponse> res) {
                 showLoading(false);
 
+                Log.e("BOOKING_RES", new Gson().toJson(res.body()));
 
                 if (!res.isSuccessful() || res.body() == null || res.body().ticket_id == null) {
 
-                    try {
-                        Log.e("BOOKING_ERR", res.errorBody() != null ? res.errorBody().string() : "null");
-                    } catch (Exception ignore){}
+                    // === GỌI RELEASE GHẾ TRONG 1 PHÚT ===
+                    releaseHoldingSeats(seatIds);
 
-                    toast("Đặt vé thất bại!");
+                    Log.e("BOOKING_ERR", "Create booking failed: " + safeErr(res));
+                    toast("Tạo vé thất bại!");
                     return;
                 }
 
-
-                String ticketId = res.body().ticket_id;
-
-                new android.app.AlertDialog.Builder(CheckoutActivity.this)
-                        .setTitle("Đặt vé thành công!")
-                        .setMessage(
-                                "Mã vé: " + ticketId +
-                                        "\nMã đặt chỗ: " + res.body().reservation_code +
-                                        "\nGiữ ghế tới: " + res.body().expires_at +
-                                        "\n\nBạn có thể:\n• POST /api/bookings/" + ticketId + "/confirm để chốt\n" +
-                                        "• POST /api/bookings/" + ticketId + "/cancel để hủy")
-                        .setPositiveButton("OK", (d, w) -> finish())
-                        .show();
+                initVnpay(res.body().ticket_id);
             }
 
             @Override
             public void onFailure(Call<BookingCreateResponse> call, Throwable t) {
                 showLoading(false);
+
+                // === GỌI RELEASE GHẾ KHI LỖI MẠNG ===
+                releaseHoldingSeats(seatIds);
+
+                Log.e("BOOKING_ERR", t.getMessage());
                 toast("Lỗi kết nối khi tạo vé!");
+            }
+
+        });
+
+
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 1001) {
+
+            if (resultCode == RESULT_OK) {
+                Log.e("CHECKOUT", "VNPay SUCCESS → không release");
+                return;
+            }
+
+            // THẤT BẠI, BACK, VUỐT → TRẢ GHẾ
+            Log.e("CHECKOUT", "VNPay FAILED/BACK → releaseHoldingSeats()");
+            releaseHoldingSeats(seatIds);
+        }
+    }
+    /* ----------------------------------------------------
+       RELEASE SEAT
+    ---------------------------------------------------- */
+    private void releaseHoldingSeats(List<String> seatIds) {
+        if (seatIds == null || seatIds.isEmpty()) return;
+
+        // Log debug để xem gửi ghế gì
+        Log.e("RELEASE", "Request release seats: " + new Gson().toJson(seatIds));
+
+        // Tạo request body
+        ReleaseSeatRequest req = new ReleaseSeatRequest(seatIds);
+
+        // Gọi API - KHÔNG truyền token nữa, Retrofit authed() đã làm rồi
+        api.releaseHoldingSeats(req).enqueue(new Callback<BaseResponse>() {
+            @Override
+            public void onResponse(Call<BaseResponse> call, Response<BaseResponse> res) {
+                if (res.isSuccessful()) {
+                    Log.e("RELEASE", "Ghế đã được trả lại thành công!");
+                } else {
+                    Log.e("RELEASE_ERR", "Release failed: " + safeErr(res));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<BaseResponse> call, Throwable t) {
+                Log.e("RELEASE_ERR", "Network error: " + t.getMessage());
             }
         });
     }
 
+
+
+
+
+    private String safeErr(Response<?> res) {
+        try { return res.errorBody() != null ? res.errorBody().string() : "null"; }
+        catch (Exception e) { return "error reading errorBody"; }
+    }
+
+    /* ============================================================
+       GỌI INIT VNPay → LẤY URL THANH TOÁN
+     ============================================================ */
+    private void initVnpay(String ticketId) {
+
+        PaymentInitReq body = new PaymentInitReq(ticketId, "vnpay");
+
+        Log.e("VNPAY_INIT_REQ", new Gson().toJson(body));
+
+        api.initVnpayPayment("Bearer " + AuthManager.getToken(this), body)
+                .enqueue(new Callback<VnPayInitResponse>() {
+                    @Override
+                    public void onResponse(Call<VnPayInitResponse> call, Response<VnPayInitResponse> res) {
+
+                        Log.e("VNPAY_INIT_RES", new Gson().toJson(res.body()));
+
+                        if (!res.isSuccessful() || res.body() == null) {
+                            toast("Không lấy được link thanh toán!");
+                            return;
+                        }
+
+                        if (res.body().payment_url == null) {
+                            Log.e("VNPAY_ERR", "payment_url = null");
+                            toast("Không tạo được link VNPAY!");
+                            return;
+                        }
+
+                        String url = res.body().payment_url;
+                        Log.e("VNPAY_URL", url);
+
+                        Intent i = new Intent(CheckoutActivity.this, VnPayActivity.class);
+                        i.putExtra("payment_url", url);
+                        i.putExtra("ticket_id", ticketId);
+                        startActivityForResult(i, 1001);
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<VnPayInitResponse> call, Throwable t) {
+                        Log.e("VNPAY_ERR", t.getMessage());
+                        toast("Lỗi kết nối VNPAY!");
+                    }
+                });
+    }
 
     /* ===== Helpers ===== */
     private void showLoading(boolean s) { progress.setVisibility(s ? View.VISIBLE : View.GONE); }

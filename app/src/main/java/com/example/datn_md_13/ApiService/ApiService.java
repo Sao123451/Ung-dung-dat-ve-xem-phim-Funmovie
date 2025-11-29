@@ -1,6 +1,7 @@
 package com.example.datn_md_13.ApiService;
 
 import com.example.datn_md_13.Model.BannerDto;
+import com.example.datn_md_13.Model.BaseResponse;
 import com.example.datn_md_13.Model.BookingCreateResponse;
 import com.example.datn_md_13.Model.BookingQuoteResponse;
 import com.example.datn_md_13.Model.BookingRequest;
@@ -11,15 +12,23 @@ import com.example.datn_md_13.Model.Movie;
 import com.example.datn_md_13.Model.News;
 import com.example.datn_md_13.Model.NewsListResponse;
 import com.example.datn_md_13.Model.PaymentInit;
+import com.example.datn_md_13.Model.PaymentInitReq;
 import com.example.datn_md_13.Model.ProductListRes;
 import com.example.datn_md_13.Model.PublicCinemaResponse;
+import com.example.datn_md_13.Model.QRResponse;
 import com.example.datn_md_13.Model.RegisterResponse;
+import com.example.datn_md_13.Model.ReleaseSeatRequest;
 import com.example.datn_md_13.Model.SeatRowGroup;
 import com.example.datn_md_13.Model.ShowtimeDetail;
 import com.example.datn_md_13.Model.ShowtimeSeatResponse;
 import com.example.datn_md_13.Model.ShowtimesByCinemaResponse;
+import com.example.datn_md_13.Model.SimpleResponse;
 import com.example.datn_md_13.Model.Ticket;
+import com.example.datn_md_13.Model.TicketDetailResponse;
 import com.example.datn_md_13.Model.User;
+import com.example.datn_md_13.Model.VnPayInitResponse;
+import com.example.datn_md_13.Model.VoucherAdd;
+import com.example.datn_md_13.Model.VoucherListPublicRes;
 import com.example.datn_md_13.Model.VoucherListRes;
 
 import java.util.List;
@@ -228,15 +237,43 @@ public interface ApiService {
                                       @Body PaymentInit.Req req);
 
     /* ========== Products & Vouchers ========== */
+
     @GET("products/public")
     Call<ProductListRes> getProducts();
 
     @GET("vouchers/public")
-    Call<VoucherListRes> getVouchers();
+    Call<VoucherListPublicRes> getVouchers();
+
+
+    @POST("vouchers/add")
+    Call<SimpleResponse> addVoucher(@Body VoucherAdd body);
+
+    @GET("vouchers/my")
+    Call<VoucherListRes> getMyVouchers();
+
+    @PUT("vouchers/use/{id}")
+    Call<SimpleResponse> useVoucher(@Path("id") String userVoucherId);
+
 
     /* ========== Ticket  ========== */
     @GET("tickets/my")
     Call<List<Ticket>> getMyTickets();
+
+    /* ========== Payments ========== */
+    @POST("payments/vnpay/init")
+    Call<VnPayInitResponse> initVnpayPayment(
+            @Header("Authorization") String bearer,
+            @Body PaymentInitReq body
+    );
+    @GET("tickets/{id}/qr")
+    Call<QRResponse> getTicketQR(
+            @Path("id") String id
+    );
+    @GET("tickets/{id}/detailFull")
+    Call<TicketDetailResponse> getTicketDetail(@Path("id") String id);
+
+    @POST("tickets/release-holding")
+    Call<BaseResponse> releaseHoldingSeats(@Body ReleaseSeatRequest body);
 
 
 
