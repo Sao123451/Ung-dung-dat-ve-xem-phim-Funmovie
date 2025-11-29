@@ -858,3 +858,232 @@ exports.remove = async (req, res) => {
     res.status(500).json({ message: "Remove error" });
   }
 };
+// ======================================================
+// STAFF CONFIRM — OFFLINE PAYMENT
+// ======================================================
+exports.staffConfirm = async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+
+    // 1) Kiểm tra staff
+    const staff = await User.findById(req.user._id);
+    if (!staff || staff.role !== "staff")
+      return res.status(403).json({ message: "Only staff can confirm offline payments" });
+
+    // 2) Lấy ticket
+    const t = await Ticket.findById(ticketId).populate("user");
+    if (!t)
+      return res.status(404).json({ message: "Ticket not found" });
+
+    if (t.status === "paid")
+      return res.status(400).json({ message: "Ticket already paid" });
+
+    // 3) Ghế trong TicketSeat
+    const seats = await TicketSeat.find({ ticket: ticketId });
+    const combos = await TicketCombo.find({ ticket: ticketId });
+
+    // 4) Update ghế → sold
+    for (const s of seats) {
+      await ShowtimeSeat.updateOne(
+        { showtime: t.showtime, row: s.row, number: s.number },
+        { $set: { status: "sold" } }
+      );
+
+      // xoá TTL, đổi reserved → sold
+      await TicketSeat.updateOne(
+        { _id: s._id },
+        {
+          $set: {
+            status: "sold",
+            expires_at: null
+          }
+        }
+      );
+    }
+
+    // 5) Update ticket
+    t.status = "paid";
+    t.payment_status = "paid";
+    t.payment_method = "cash";
+    t.payment_time = new Date();
+    t.qr_data = `${t.reservation_code}|${t._id}`;
+    await t.save();
+
+    // 6) Cập nhật voucher usage
+    if (t.voucher_codes?.length) {
+      await Voucher.updateMany(
+        { code: { $in: t.voucher_codes } },
+        { $inc: { used_count: 1 } }
+      );
+    }
+
+    // 7) Gửi email nếu có
+    if (t.user?.email) {
+      const showtime = await Showtime.findById(t.showtime)
+        .populate("movie")
+        .populate("cinema")
+        .populate("room");
+
+      await sendTicketEmail(t.user.email, t, showtime, seats, combos);
+    }
+
+    return res.json({
+      message: "Offline payment confirmed",
+      ticket_id: t._id,
+      qr_data: t.qr_data,
+      payment_time: t.payment_time
+    });
+
+  } catch (err) {
+    console.error("staffConfirm error:", err);
+    return res.status(500).json({
+      message: "Staff confirm error",
+      error: err.message
+    });
+  }
+};
+// ============================
+// STAFF CREATE PENDING — DÙNG CHO VNPAY
+// ============================
+exports.staffCreatePending = async (req, res) => {
+  try {
+    const {
+      membership_card,
+      showtimeId,
+      seatIds = [],
+      combos = [],
+      vouchers = []
+    } = req.body;
+
+    const staff = await mongoose
+      .model("User")
+      .findById(req.user._id)
+      .populate("cinema");
+
+    if (!staff)
+      return res.status(401).json({ message: "Unauthorized staff" });
+
+    // CHECK MEMBER
+    let user = null;
+    if (membership_card) {
+      user = await mongoose.model("User").findOne({
+        membership_card,
+        role: "customer",
+        status: "active"
+      });
+
+      if (!user)
+        return res.status(404).json({ message: "Mã thành viên không tồn tại" });
+    }
+
+    // SHOWTIME
+    const showtime = await Showtime.findById(showtimeId)
+      .populate("movie")
+      .populate("room");
+
+    if (!showtime)
+      return res.status(404).json({ message: "Showtime not found" });
+
+    // VALID SEATS
+    const validSeats = [];
+    for (const seatId of seatIds) {
+      const ss = await ShowtimeSeat.findOne({
+        _id: seatId,
+        showtime: showtimeId,
+        status: "available"
+      });
+      if (!ss)
+        return res.status(400).json({ message: "Some seats not available" });
+
+      validSeats.push(ss);
+    }
+
+    const seat_subtotal = validSeats.reduce(
+      (s, x) => s + showtime.ticket_price + x.extra_price,
+      0
+    );
+
+    // COMBO
+    let combo_subtotal = 0;
+    for (const cb of combos) {
+      const p = await Product.findById(cb.productId);
+      if (p) combo_subtotal += p.price * (cb.qty || 1);
+    }
+
+    const total_before = seat_subtotal + combo_subtotal;
+    const total_after = total_before;
+
+    // RESERVATION CODE
+    const reservation_code = String(
+      Math.floor(10000000 + Math.random() * 90000000)
+    );
+
+    const expires_at = new Date(Date.now() + HOLD_MINUTES * 60000);
+    const seat_codes = validSeats.map(s => `${s.row}${s.number}`);
+
+    // CREATE PENDING TICKET
+    const ticket = await Ticket.create({
+      user: user ? user._id : null,
+      showtime: showtime._id,
+      cinema: staff.cinema?._id,
+      room: showtime.room,
+      membership_card: user ? user.membership_card : null,
+
+      status: "pending",
+      payment_status: "unpaid",
+      payment_method: "vnpay",
+
+      seat_subtotal,
+      combo_subtotal,
+      discount_seat: 0,
+      discount_combo: 0,
+      discount_order: 0,
+
+      total_before,
+      total_after,
+
+      seats: seat_codes,
+      reservation_code,
+      expires_at,
+      voucher_codes: vouchers || []
+    });
+
+    // CREATE TICKET SEATS (reserved)
+    for (const ss of validSeats) {
+      await TicketSeat.create({
+        ticket: ticket._id,
+        showtime: showtime._id,
+        seat: ss._id,
+        row: ss.row,
+        number: ss.number,
+        seat_type: ss.seat_type,
+        price_base: showtime.ticket_price,
+        price_extra: ss.extra_price,
+        price_final: showtime.ticket_price + ss.extra_price,
+        status: "reserved",
+        expires_at
+      });
+
+      ss.status = "holding"; 
+      ss.expires_at = expires_at;
+      await ss.save();
+    }
+
+    return res.json({
+      message: "Pending ticket created",
+      ticket_id: ticket._id,
+      reservation_code,
+      amount: total_after,
+      seats: seat_codes,
+      expires_at
+    });
+
+  } catch (err) {
+    console.error("staffCreatePending error:", err);
+    res.status(500).json({
+      message: "Staff create pending error",
+      error: err.message
+    });
+  }
+};
+
