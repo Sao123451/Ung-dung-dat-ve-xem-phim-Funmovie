@@ -1,11 +1,17 @@
 package com.example.datn_md_13.Activity;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -14,6 +20,7 @@ import com.example.datn_md_13.Adapter.DateAdapter;
 import com.example.datn_md_13.Adapter.MovieShowtimesAdapter;
 import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
+import com.example.datn_md_13.AuthManager;
 import com.example.datn_md_13.Model.ShowtimesByCinemaResponse;
 import com.example.datn_md_13.Model.ShowtimeSlot;
 import com.example.datn_md_13.R;
@@ -160,14 +167,34 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
     }
 
     private void onPickShowtime(ShowtimeSlot s) {
-        // Mở màn chọn ghế, truyền id suất chiếu + giá cơ bản
+
+        if (!AuthManager.isLoggedIn(this)) {
+
+            showErrorDialog(
+                    "Bạn chưa đăng nhập",
+                    "Vui lòng đăng nhập để tiếp tục đặt vé.",
+                    () -> {
+                        // 🔥 Chỉ chạy khi user bấm OK
+                        Intent i = new Intent(this, com.example.datn_md_13.Activity.Login.class);
+                        startActivity(i);
+                    }
+            );
+
+            return;
+        }
+
+        // Đã login → mở màn chọn ghế
         Intent i = new Intent(this, Activity_seat_selection.class);
         i.putExtra("showtime_id", s.id);
+
         if (s.ticket_price != null) {
             i.putExtra("ticket_price", s.ticket_price.intValue());
         }
+
         startActivity(i);
     }
+
+
 
     private static String today() {
         java.text.SimpleDateFormat f = new java.text.SimpleDateFormat(
@@ -175,6 +202,31 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
         );
         return f.format(new java.util.Date());
     }
+    private void showErrorDialog(String title, String msg, Runnable onOk) {
+        View view = getLayoutInflater().inflate(R.layout.custom_dialog_error, null);
+
+        TextView tvTitle = view.findViewById(R.id.tvTitle);
+        TextView tvMessage = view.findViewById(R.id.tvMessage);
+        Button btnOk = view.findViewById(R.id.btnOk);
+
+        tvTitle.setText(title);
+        tvMessage.setText(msg);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        if (dialog.getWindow() != null)
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        btnOk.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (onOk != null) onOk.run();
+        });
+
+        dialog.show();
+    }
+
 
     private static List<String> next7Days() {
         List<String> ds = new ArrayList<>();

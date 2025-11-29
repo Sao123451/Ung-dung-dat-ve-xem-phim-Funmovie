@@ -1,8 +1,11 @@
 package com.example.datn_md_13;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -10,6 +13,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -203,10 +207,54 @@ public class BookingByMovieActivity extends AppCompatActivity {
     }
 
     private void onPickShowtime(ShowtimeSlot s) {
+
+        //  Nếu chưa đăng nhập → hiển thị dialog
+        if (!AuthManager.isLoggedIn(this)) {
+            showErrorDialog(
+                    "Bạn chưa đăng nhập",
+                    "Vui lòng đăng nhập để tiếp tục đặt vé.",
+                    () -> {
+                        // 🔥 Chỉ chạy khi người dùng bấm OK
+                        Intent i = new Intent(this, com.example.datn_md_13.Activity.Login.class);
+                        startActivity(i);
+                    }
+            );
+            return;
+        }
+
+        // ✅ Đã đăng nhập → Mở màn chọn ghế
         Intent i = new Intent(this, Activity_seat_selection.class);
         i.putExtra("showtime_id", s.id);
         i.putExtra("ticket_price", s.ticket_price != null ? s.ticket_price.intValue() : 0);
         startActivity(i);
+    }
+
+
+    private void showErrorDialog(String title, String msg, Runnable onOk) {
+        View view = getLayoutInflater().inflate(R.layout.custom_dialog_error, null);
+
+        TextView tvTitle = view.findViewById(R.id.tvTitle);
+        TextView tvMessage = view.findViewById(R.id.tvMessage);
+        Button btnOk = view.findViewById(R.id.btnOk);
+
+        tvTitle.setText(title);
+        tvMessage.setText(msg);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        if (dialog.getWindow() != null)
+            dialog.getWindow().setBackgroundDrawable(
+                    new ColorDrawable(Color.TRANSPARENT)
+            );
+
+        btnOk.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (onOk != null) onOk.run(); // chạy hành động khi OK
+        });
+
+        dialog.show();
     }
 
     @Override
