@@ -56,18 +56,6 @@ async function createVoucher(req, res, next) {
   try {
     const v = await Voucher.create(req.body);
 
-<<<<<<< Updated upstream
-// ⭐ AUDIT LOG — tạo voucher mới
-    req.auditAction  = 'voucher.create';
-    req.auditSummary = `User ${req.user?.username || req.user?.email || 'unknown'} tạo voucher ${v.code} (scope=${v.scope}, type=${v.discount_type}, value=${v.value})`;
-    req.auditTarget  = {
-      type: 'Voucher',
-      id:   v._id,
-      name: v.code,
-    };
-
-    res.status(201).json({ message: 'Voucher created', voucher: v });
-=======
     // Tự động phân phát voucher
     if (v.distribute_type === "auto") {
       const users = await User.find().select("_id").lean();
@@ -87,7 +75,6 @@ async function createVoucher(req, res, next) {
 
     res.status(201).json({ message: "Voucher created", voucher: v });
 
->>>>>>> Stashed changes
   } catch (err) { next(err); }
 }
 
@@ -96,18 +83,7 @@ async function createVoucher(req, res, next) {
    ============================================================ */
 async function updateVoucher(req, res, next) {
   try {
-<<<<<<< Updated upstream
-    const { id } = req.params;
-    const before = await Voucher.findById(id).lean();
-    if (!before) {
-    return res.status(404).json({ message: 'Voucher not found' });
-    }
-
-
-    const updated = await Voucher.findByIdAndUpdate(id, req.body, {
-=======
     const updated = await Voucher.findByIdAndUpdate(req.params.id, req.body, {
->>>>>>> Stashed changes
       new: true,
       runValidators: true
     });
@@ -116,21 +92,6 @@ async function updateVoucher(req, res, next) {
 
     res.json({ message: "Voucher updated", voucher: updated });
 
-<<<<<<< Updated upstream
-     // ⭐ AUDIT LOG — cập nhật voucher
-    const changedFields = Object.keys(req.body || {});
-
-    req.auditAction  = 'voucher.update';
-    req.auditSummary = `User ${req.user?.username || req.user?.email || 'unknown'} cập nhật voucher ${updated.code} (trường: ${changedFields.join(', ') || 'không rõ'})`;
-    req.auditTarget  = {
-      type: 'Voucher',
-      id:   updated._id,
-      name: updated.code,
-    };
-
-    res.json({ message: 'Voucher updated', voucher: updated });
-=======
->>>>>>> Stashed changes
   } catch (err) { next(err); }
 }
 
@@ -144,19 +105,6 @@ async function removeVoucher(req, res, next) {
 
     res.json({ message: "Voucher deleted" });
 
-<<<<<<< Updated upstream
-    // ⭐ AUDIT LOG — xoá voucher
-    req.auditAction  = 'voucher.delete';
-    req.auditSummary = `User ${req.user?.username || req.user?.email || 'unknown'} xoá voucher ${deleted.code}`;
-    req.auditTarget  = {
-      type: 'Voucher',
-      id:   deleted._id,
-      name: deleted.code,
-    };
-
-    res.json({ message: 'Voucher deleted' });
-=======
->>>>>>> Stashed changes
   } catch (err) { next(err); }
 }
 
