@@ -7,6 +7,7 @@
     <button class="dash-tab active" data-tab="cinema">Theo rạp</button>
     <button class="dash-tab" data-tab="month">Theo tháng</button>
     <button class="dash-tab" data-tab="day">Theo ngày</button>
+    <button class="dash-tab" data-tab="movie">Theo phim</button>
   </div>
 
   <!-- TAB 1: THEO RẠP -->
@@ -85,4 +86,30 @@
       </table>
     </div>
   </div>
+
+  <!-- TAB 4: THEO PHIM -->
+  <div class="dash-section hidden" id="tab-movie">
+    <div class="card">
+      <h3>Top doanh thu theo phim</h3>
+      <canvas id="chartMovie"></canvas>
+    </div>
+
+    <div class="card">
+      <h3>Bảng xếp hạng phim theo doanh thu</h3>
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Hạng</th>
+            <th>Phim</th>
+            <th>Số vé bán</th>
+            <th>Doanh thu</th>
+          </tr>
+        </thead>
+        <tbody id="tblMovieRevenue"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
 </div>

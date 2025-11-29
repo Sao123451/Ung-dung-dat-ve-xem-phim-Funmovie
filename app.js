@@ -254,6 +254,7 @@
     users:     { js: "pages/users/users.js",         title: "Người dùng",     mount: "users"     },
     news:      { js: "pages/news/news.js",           title: "Tin tức",        mount: "news"      },
     tickets: { js: "pages/tickets/tickets.js", title: "Vé", mount: "tickets" },
+    activity:  { js: "pages/activity/activity.js",   title: "Lịch sử hoạt động", mount: "activity" },
 
   };
 
@@ -343,7 +344,7 @@
     const me = getUser() || {};
     // Role gate
     const adminOnly = ["users"];
-    const adminMgr  = ["dashboard", "movies", "cinemas", "rooms", "products", "showtimes", "banners", "vouchers", "news", "users"];
+    const adminMgr  = ["dashboard", "movies", "cinemas", "rooms", "products", "showtimes", "banners", "vouchers", "news", "users","activity"];
     const staffOnly = ["showtimes"];
 
     let allow = false;
@@ -386,7 +387,8 @@ window.addEventListener("hashchange", () => {
         { key: "banners",   label: "Banner" },
         { key: "vouchers",  label: "Voucher" },
         { key: "users",     label: "Người dùng", adminOnly: true },
-        { key: "news",      label: "Tin tức" }
+        { key: "news",      label: "Tin tức" },
+        { key: "activity",  label: "Lịch sử hoạt động" }
         
       );
     } else if (me.role === "staff") {

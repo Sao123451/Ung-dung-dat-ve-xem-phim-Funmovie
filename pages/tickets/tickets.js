@@ -250,7 +250,7 @@ window.FMPages.tickets = async function (pageEl, ctx) {
 
         <div style="display:flex; gap:10px; margin-top:12px;">
           <button class="btn warn" id="tk-cancel-ticket">Hủy vé</button>
-          <button class="btn" id="tk-resend-email">Gửi lại email</button>
+          
         </div>
 
       </div>

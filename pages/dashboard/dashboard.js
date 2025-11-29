@@ -15,7 +15,10 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
 
   // Load HTML
   pageEl.innerHTML = await (await fetch("pages/dashboard/dashboard.html")).text();
-    // Load all tickets 1 lần duy nhất
+
+  // ==========================
+  // LOAD TICKETS 1 LẦN
+  // ==========================
   let ALL_TICKETS = [];
 
   async function loadAllTickets() {
@@ -23,12 +26,12 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
       const res = await authFetch("tickets");
       ALL_TICKETS = await res.json();
     } catch (err) {
+      console.error(err);
       showToast("Không tải được danh sách vé", "err");
     }
   }
 
   await loadAllTickets();
-
 
   /* ============================================================
    * TAB SWITCHING (Capsule Tabs)
@@ -43,13 +46,18 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
 
       const tab = btn.dataset.tab;
       sections.forEach((s) => s.classList.add("hidden"));
-      $("#tab-" + tab, pageEl).classList.remove("hidden");
+      const sec = $("#tab-" + tab, pageEl);
+      sec.classList.remove("hidden");
+
+      // Khi mở tab 4 thì load dữ liệu
+      if (tab === "movie") {
+        loadMovieRevenue();
+      }
     };
   });
 
   /* ============================================================
    * TAB 1 — DOANH THU THEO RẠP
-   * (GIỮ NGUYÊN)
    * ============================================================ */
   const cinemaCanvas = $("#chartCinema", pageEl);
   const tblCinema = $("#tblCinemaRevenue", pageEl);
@@ -57,7 +65,9 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
 
   async function loadCinemaRevenue() {
     try {
-      const res = await authFetch("reports/revenue-by-cinema", { method: "GET" });
+      const res = await authFetch("reports/revenue-by-cinema", {
+        method: "GET",
+      });
       const data = await res.json();
 
       const labels = data.map((c) => c.cinema_name);
@@ -86,10 +96,12 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
               <td>${esc(c.cinema_name)}</td>
               <td>${c.total_tickets}</td>
               <td>${formatVND(c.total_revenue)}</td>
-            </tr>`
+            </tr>
+          `
         )
         .join("");
     } catch (e) {
+      console.error(e);
       showToast("Không tải được doanh thu theo rạp", "err");
     }
   }
@@ -103,7 +115,6 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
   let chartMonth = null;
 
   function initMonthYear() {
-
     const currentYear = new Date().getFullYear();
     selYear.innerHTML = Array.from({ length: 6 }, (_, i) => {
       const y = currentYear - 3 + i;
@@ -125,8 +136,8 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
       // Thêm mảng đếm số vé
       const ticketCounts = Array(12).fill(0);
 
-      // FE tự tính số vé bán trong tháng
-      ALL_TICKETS.forEach(t => {
+      // FE tự tính số vé bán trong tháng từ ALL_TICKETS
+      ALL_TICKETS.forEach((t) => {
         if (t.payment_status === "paid" && t.payment_time) {
           const d = new Date(t.payment_time);
           if (d.getFullYear() === year) {
@@ -135,7 +146,6 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
           }
         }
       });
-
 
       data.forEach((item) => {
         if (item.year === year) {
@@ -171,11 +181,12 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
               <td>${i + 1}/${year}</td>
               <td>${formatVND(v)}</td>
               <td>${ticketCounts[i]}</td>
-
-            </tr>`
+            </tr>
+          `
         )
         .join("");
     } catch (e) {
+      console.error(e);
       showToast("Không tải được thống kê tháng", "err");
     }
   }
@@ -191,7 +202,10 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
 
   // load dropdown tháng/năm
   (function initDayMonthYear() {
-    selDayMonth.innerHTML = Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+    selDayMonth.innerHTML = Array.from(
+      { length: 12 },
+      (_, i) => `<option value="${i + 1}">${i + 1}</option>`
+    ).join("");
     selDayYear.innerHTML = Array.from({ length: 6 }, (_, i) => {
       const y = new Date().getFullYear() - 3 + i;
       return `<option value="${y}">${y}</option>`;
@@ -211,9 +225,13 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
 
     try {
       const from = `${year}-${String(month).padStart(2, "0")}-01`;
-      const to = `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth(month, year)).padStart(2, "0")}`;
+      const to = `${year}-${String(month).padStart(2, "0")}-${String(
+        daysInMonth(month, year)
+      ).padStart(2, "0")}`;
 
-      const res = await authFetch(`reports/revenue-by-day?from=${from}&to=${to}`);
+      const res = await authFetch(
+        `reports/revenue-by-day?from=${from}&to=${to}`
+      );
       const data = await res.json();
 
       const days = daysInMonth(month, year);
@@ -224,7 +242,10 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
         values[day - 1] = d.total_revenue;
       });
 
-      const labels = Array.from({ length: days }, (_, i) => `${i + 1}/${month}`);
+      const labels = Array.from(
+        { length: days },
+        (_, i) => `${i + 1}/${month}`
+      );
 
       if (chartDay) chartDay.destroy();
       chartDay = new Chart(dayCanvas, {
@@ -246,22 +267,149 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
       });
 
       tblDay.innerHTML = values
+        .map((v, i) => {
+          const rec = data.find(
+            (d) => Number(d.date.split("-")[2]) === i + 1
+          );
+          return html`
+            <tr>
+              <td>${i + 1}/${month}/${year}</td>
+              <td>${formatVND(v)}</td>
+              <td>${rec ? rec.total_tickets : 0}</td>
+            </tr>
+          `;
+        })
+        .join("");
+    } catch (e) {
+      console.error(e);
+      showToast("Không tải được thống kê ngày", "err");
+    }
+  }
+
+  /* ============================================================
+   * TAB 4 — DOANH THU THEO PHIM (RANKING)
+   * ============================================================ */
+
+  const movieCanvas = $("#chartMovie", pageEl);
+  const tblMovie = $("#tblMovieRevenue", pageEl);
+  let chartMovie = null;
+
+  // Cache showtime giống trang Vé
+  const showtimeCache = new Map();
+
+  async function loadShowtime(id) {
+    if (!id) return null;
+    const key = String(id);
+    if (showtimeCache.has(key)) return showtimeCache.get(key);
+
+    const res = await authFetch(`/showtimes/${id}`);
+    if (!res.ok) {
+      showtimeCache.set(key, null);
+      return null;
+    }
+    const data = await res.json();
+    showtimeCache.set(key, data);
+    return data;
+  }
+
+  // Gom nhóm vé theo phim (sau khi đã có showtimeCache)
+  function buildMovieStats() {
+    const map = new Map();
+
+    ALL_TICKETS.forEach((t) => {
+      // Chỉ tính vé đã thanh toán
+      const isPaid =
+        t.status === "paid" ||
+        t.payment_status === "paid" ||
+        t.payment_status === "succeeded";
+
+      if (!isPaid) return;
+
+      const amount = t.total_after ?? t.total_before ?? 0;
+
+      const st = showtimeCache.get(String(t.showtime)) || {};
+      const mv = st.movie || {};
+
+      const movieId = mv._id || mv.id || null;
+      const movieTitle = mv.title || mv.name || "Không rõ tên phim";
+
+      // KEY gom nhóm: ưu tiên movieId, fallback theo title + id vé
+      const key = movieId || `unknown-${movieTitle}-${t._id}`;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          movieId: movieId || null,
+          movieTitle,
+          totalRevenue: 0,
+          totalTickets: 0,
+        });
+      }
+
+      const stat = map.get(key);
+      stat.totalRevenue += amount;
+      stat.totalTickets += 1;
+    });
+
+    return Array.from(map.values()).sort(
+      (a, b) => b.totalRevenue - a.totalRevenue
+    );
+  }
+
+  async function loadMovieRevenue() {
+    try {
+      // 1) Load showtime cho TẤT CẢ showtime id xuất hiện trong ALL_TICKETS
+      const ids = Array.from(
+        new Set(
+          ALL_TICKETS.map((t) => t.showtime).filter((id) => id != null)
+        )
+      );
+
+      await Promise.all(ids.map((id) => loadShowtime(id)));
+
+      // 2) Tính thống kê theo phim
+      const stats = buildMovieStats();
+
+      const topN = stats.slice(0, 10);
+      const labels = topN.map((m) => m.movieTitle);
+      const values = topN.map((m) => m.totalRevenue);
+
+      if (chartMovie) chartMovie.destroy();
+      chartMovie = new Chart(movieCanvas, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Doanh thu",
+              data: values,
+              backgroundColor: "rgba(88, 101, 242, 0.6)",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          indexAxis: "y",
+          scales: {
+            x: { beginAtZero: true },
+          },
+        },
+      });
+
+      tblMovie.innerHTML = stats
         .map(
-          (v, i) => {
-            const rec = data.find(d => Number(d.date.split("-")[2]) === i + 1);
-            return html`
-        <tr>
-          <td>${i + 1}/${month}/${year}</td>
-          <td>${formatVND(v)}</td>
-          <td>${rec ? rec.total_tickets : 0}</td>
-        </tr>
-      `;
-          }
+          (m, idx) => html`
+            <tr>
+              <td>#${idx + 1}</td>
+              <td>${esc(m.movieTitle)}</td>
+              <td>${m.totalTickets}</td>
+              <td>${formatVND(m.totalRevenue)}</td>
+            </tr>
+          `
         )
         .join("");
-
     } catch (e) {
-      showToast("Không tải được thống kê ngày", "err");
+      console.error(e);
+      showToast("Không tải được thống kê theo phim", "err");
     }
   }
 
@@ -273,12 +421,16 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
    * INIT PAGE
    * ============================================================ */
   initMonthYear();
-  loadCinemaRevenue();     // Chỉ load tab đầu tiên
-
+  loadCinemaRevenue(); // tab mặc định
 
   return {
     onToolbar: {
-      reload: () => loadCinemaRevenue(),
+      reload: async () => {
+        showtimeCache.clear();
+        await loadAllTickets();
+        await loadCinemaRevenue();
+        // nếu đang đứng ở tab movie, có thể bấm lại tab để loadMovieRevenue()
+      },
       create: null,
     },
   };

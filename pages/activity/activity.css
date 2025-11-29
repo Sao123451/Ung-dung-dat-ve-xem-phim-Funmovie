@@ -1,0 +1,123 @@
+.activity-page {
+  padding: 20px;
+  color: #fff;
+}
+
+.activity-page h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.activity-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  align-items: flex-end;
+}
+
+.activity-filters > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activity-filters label {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.activity-filters input,
+.activity-filters select {
+  background: #0f1322;
+  border: 1px solid #2c3553;
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  color: #fff;
+}
+
+/* ⭐ LÀM ICON LỊCH THÀNH MÀU TRẮNG NGAY TRONG TRANG NÀY */
+.activity-filters input[type="date"] {
+  color-scheme: dark; /* gợi ý browser dùng style dark */
+}
+
+/* Chrome / Edge / Safari */
+.activity-filters input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);          /* đảo màu → trắng */
+  opacity: 1;
+  cursor: pointer;
+}
+
+/* (Không bắt buộc) nếu có datetime-local thì thêm luôn */
+/*
+.activity-filters input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 1;
+  cursor: pointer;
+}
+*/
+
+.activity-filters .btn-wrap {
+  display: flex;
+  gap: 8px;
+}
+
+.pager {
+  margin-top: 12px;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.pager .pg-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #1f2335;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.pager .pg-btn.active {
+  background: #5865f2;
+}
+/* Cột Kết quả */
+td.audit-result {
+  text-align: center;
+  padding: 6px 8px;
+  min-width: 110px;       /* đủ rộng cho chữ "Thành công" 1 dòng */
+}
+
+/* Badge trong cột kết quả – override style cũ nếu có */
+td.audit-result .tk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;    /* ⭐ KHÔNG cho xuống dòng */
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+/* Cột Kết quả */
+th.audit-result,
+td.audit-result {
+  text-align: center;
+  padding: 6px 8px;
+  min-width: 110px;
+}
+
+/* Badge trong cột kết quả */
+td.audit-result .tk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+

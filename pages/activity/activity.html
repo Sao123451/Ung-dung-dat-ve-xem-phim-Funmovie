@@ -1,0 +1,50 @@
+<div class="activity-page">
+  <h2>Lịch sử hoạt động của tôi</h2>
+
+  <div class="activity-filters">
+    <div>
+      <label>Từ ngày</label>
+      <input type="date" id="actFrom" />
+    </div>
+    <div>
+      <label>Đến ngày</label>
+      <input type="date" id="actTo" />
+    </div>
+    <div>
+      <label>Hành động</label>
+      <input type="text" id="actAction" placeholder="vd: movie.create, ticket.cancel..." />
+    </div>
+    <div>
+      <label>Kết quả</label>
+      <select id="actSuccess">
+        <option value="">Tất cả</option>
+        <option value="true">Thành công</option>
+        <option value="false">Thất bại</option>
+      </select>
+    </div>
+
+    <div class="btn-wrap">
+      <button class="btn" id="actSearch">Lọc</button>
+      <button class="btn secondary" id="actReset">Xóa lọc</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Lịch sử hoạt động</h3>
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th>Thời gian</th>
+          <th>Hành động</th>
+          <th>Mô tả</th>
+          <th>Đối tượng</th>
+          <th class="audit-result">Kết quả</th>
+
+        </tr>
+      </thead>
+      <tbody id="actTableBody"></tbody>
+    </table>
+
+    <div id="actPager" class="pager"></div>
+  </div>
+</div>
