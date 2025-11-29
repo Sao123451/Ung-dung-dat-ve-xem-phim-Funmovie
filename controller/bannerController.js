@@ -62,6 +62,16 @@ exports.create = async (req, res, next) => {
       link_url: req.body.link_url || '',
       is_active: typeof req.body.is_active !== 'undefined' ? !!req.body.is_active : true
     });
+
+    // ⭐ AUDIT
+    req.auditAction = 'banner.create';
+    req.auditSummary = `Tạo banner mới: ${b.title || '(không tiêu đề)'}`;
+    req.auditTarget = {
+      type: 'Banner',
+      id: b._id,
+      name: b.title,
+    };
+
     res.status(201).json(b);
   } catch (e) { next(e); }
 };
@@ -73,6 +83,18 @@ exports.toggle = async (req, res, next) => {
     if (!b) return res.status(404).json({ message: 'Not found' });
     b.is_active = !b.is_active;
     await b.save();
+
+    // ⭐ AUDIT
+    req.auditAction = 'banner.toggle';
+    req.auditSummary = `${b.is_active ? 'Bật' : 'Tắt'} banner: ${
+      b.title || '(không tiêu đề)'
+    }`;
+    req.auditTarget = {
+      type: 'Banner',
+      id: b._id,
+      name: b.title,
+    };
+
     res.json(b);
   } catch (e) { next(e); }
 };
@@ -88,6 +110,16 @@ exports.update = async (req, res, next) => {
     if (typeof req.body.is_active !== 'undefined') b.is_active = !!req.body.is_active;
 
     await b.save();
+
+    // ⭐ AUDIT
+    req.auditAction = 'banner.update';
+    req.auditSummary = `Cập nhật banner: ${b.title || '(không tiêu đề)'}`;
+    req.auditTarget = {
+      type: 'Banner',
+      id: b._id,
+      name: b.title,
+    };
+
     res.json(b);
   } catch (e) { next(e); }
 };
@@ -101,6 +133,18 @@ exports.addImages = async (req, res, next) => {
 
     const docs = req.files.map(f => ({ banner_id: b._id, image_url: `/public/uploads/${f.filename}` }));
     const created = await BannerImage.insertMany(docs);
+
+    // ⭐ AUDIT
+    req.auditAction = 'banner.addImages';
+    req.auditSummary = `Thêm ${created.length} ảnh cho banner: ${
+      b.title || '(không tiêu đề)'
+    }`;
+    req.auditTarget = {
+      type: 'Banner',
+      id: b._id,
+      name: b.title,
+    };
+
     res.status(201).json({ ok: true, added: created.length });
   } catch (e) { next(e); }
 };
@@ -111,6 +155,16 @@ exports.removeImage = async (req, res, next) => {
     const img = await BannerImage.findOne({ _id: req.params.imageId, banner_id: req.params.id });
     if (!img) return res.status(404).json({ message: 'Image not found' });
     await BannerImage.deleteOne({ _id: img._id });
+
+    // ⭐ AUDIT
+    req.auditAction = 'banner.removeImage';
+    req.auditSummary = `Xóa 1 ảnh khỏi banner ${req.params.id} (imageId=${img._id})`;
+    req.auditTarget = {
+      type: 'BannerImage',
+      id: img._id,
+      name: img.image_url,
+    };
+
     res.json({ ok: true });
   } catch (e) { next(e); }
 };
@@ -122,6 +176,16 @@ exports.remove = async (req, res, next) => {
     if (!b) return res.status(404).json({ message: 'Banner not found' });
     await BannerImage.deleteMany({ banner_id: b._id });
     await Banner.deleteOne({ _id: b._id });
+
+     // ⭐ AUDIT
+    req.auditAction = 'banner.delete';
+    req.auditSummary = `Xóa banner: ${b.title || '(không tiêu đề)'}`;
+    req.auditTarget = {
+      type: 'Banner',
+      id: b._id,
+      name: b.title,
+    };
+
     res.json({ ok: true });
   } catch (e) { next(e); }
 };
@@ -162,6 +226,16 @@ exports.updateImageMeta = async (req, res, next) => {
       img.movie_id = req.body.movie_id ? new mongoose.Types.ObjectId(req.body.movie_id) : null;
     }
     await img.save();
+
+    // ⭐ AUDIT
+    req.auditAction = 'bannerImage.updateMeta';
+    req.auditSummary = `Cập nhật movie cho ảnh banner (imageId=${img._id})`;
+    req.auditTarget = {
+      type: 'BannerImage',
+      id: img._id,
+      name: img.image_url,
+    };
+
     res.json(img);
   } catch (e) { next(e); }
 };

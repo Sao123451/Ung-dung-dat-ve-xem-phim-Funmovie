@@ -127,6 +127,16 @@ exports.create = async (req, res, next) => {
     else if (req.body.cover_image) payload.cover_image = req.body.cover_image;
 
     const doc = await News.create(payload);
+
+    // ⭐ AUDIT: tạo bài viết
+    req.auditAction  = 'news.create';
+    req.auditSummary = `Tạo bài viết: ${doc.title || '(không tiêu đề)'}`;
+    req.auditTarget  = {
+      type: 'News',
+      id:   doc._id,
+      name: doc.title
+    };
+
     res.status(201).json(doc);
   } catch (e) { next(e); }
 };
@@ -163,6 +173,16 @@ exports.update = async (req, res, next) => {
     else if (req.body.cover_image) doc.cover_image = req.body.cover_image;
 
     await doc.save();
+
+    // ⭐ AUDIT: cập nhật bài viết
+    req.auditAction  = 'news.update';
+    req.auditSummary = `Cập nhật bài viết: ${doc.title || '(không tiêu đề)'}`;
+    req.auditTarget  = {
+      type: 'News',
+      id:   doc._id,
+      name: doc.title
+    };
+
     res.json(doc);
   } catch (e) { next(e); }
 };
@@ -179,6 +199,19 @@ exports.togglePublish = async (req, res, next) => {
     doc.published_at = doc.is_published ? (doc.published_at || new Date()) : null;
 
     await doc.save();
+
+    // ⭐ AUDIT: publish / unpublish
+    const action = doc.is_published ? 'news.publish' : 'news.unpublish';
+    const state  = doc.is_published ? 'đã xuất bản' : 'nháp';
+
+    req.auditAction  = action;
+    req.auditSummary = `Đổi trạng thái bài viết: ${doc.title || '(không tiêu đề)'} → ${state}`;
+    req.auditTarget  = {
+      type: 'News',
+      id:   doc._id,
+      name: doc.title
+    };
+
     res.json(doc);
   } catch (e) { next(e); }
 };
@@ -188,7 +221,19 @@ exports.togglePublish = async (req, res, next) => {
 =========================== */
 exports.remove = async (req, res, next) => {
   try {
-    await News.findByIdAndDelete(req.params.id);
+    const deleted = await News.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Not found' });
+
+
+     // ⭐ AUDIT: xóa bài viết
+    req.auditAction  = 'news.delete';
+    req.auditSummary = `Xóa bài viết: ${deleted.title || '(không tiêu đề)'}`;
+    req.auditTarget  = {
+      type: 'News',
+      id:   deleted._id,
+      name: deleted.title
+    };
+
     res.json({ ok: true });
   } catch (e) { next(e); }
 };

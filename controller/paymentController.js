@@ -1,53 +1,60 @@
-// ======================= IMPORT =========================
-const Payment = require('../models/Payment');
-const Ticket  = require('../models/Ticket');
-const TicketSeat = require('../models/TicketSeat');
-const Seat    = require('../models/Seat');
-const Voucher = require('../models/Voucher');
+// controller/paymentController.js
 
-const isId = v => /^[0-9a-fA-F]{24}$/.test(String(v||'').trim());
+// ======================= IMPORTS =========================
+const Ticket = require("../models/Ticket");
+const TicketSeat = require("../models/TicketSeat");
+const Seat = require("../models/Seat");
+const Voucher = require("../models/Voucher");
+const Payment = require("../models/Payment");
+const TicketCombo = require("../models/TicketCombo");
+const ShowtimeSeat = require("../models/ShowtimeSeat");
+const Showtime = require("../models/Showtime");
+
+const vnpayService = require("../services/vnpayService");
+const sendTicketEmail = require("../services/email.service");
+
+// Kiểm tra ObjectId
+const isId = v => /^[0-9a-fA-F]{24}$/.test(String(v || "").trim());
 
 
 // =========================================================
-// CONFIRM TICKET ATOMIC – AUTO WHEN PAYMENT SUCCEEDED
+// CONFIRM TICKET ATOMIC
 // =========================================================
 async function confirmTicketAtomic(ticketId) {
-  const t = await Ticket.findById(ticketId);
-  if (!t || t.status !== 'pending') return t;
+  // 1) Lấy ticket + user
+  const t = await Ticket.findById(ticketId).populate("user");
+  if (!t || t.status !== "pending") return t;
 
-  // ==============================================
-  // 1) TicketSeat: reserved -> sold (remove TTL)
-  // ==============================================
+  // 2) TicketSeat → SOLD
+  const ticketSeats = await TicketSeat.find({ ticket: t._id });
+
   await TicketSeat.updateMany(
-    { ticket: t._id, status: 'reserved' },
-    { $set: { status: 'sold' }, $unset: { expires_at: 1 } }
+    { ticket: t._id, status: "reserved" },
+    {
+      $set: { status: "sold" },
+      $unset: { expires_at: 1 }   
+    }
   );
 
-  // ==============================================
-  // 2) Seat thực -> sold
-  // ==============================================
-  const seatDocs = await TicketSeat.find({ ticket: t._id }).select('seat').lean();
-  const seatIds = seatDocs.map(s => s.seat);
-
-  if (seatIds.length) {
-    await Seat.updateMany(
-      { _id: { $in: seatIds } },
-      { $set: { seat_status: 'sold' } }
+  // 3) ShowtimeSeat → SOLD (CHUẨN)
+  for (const s of ticketSeats) {
+    await ShowtimeSeat.updateOne(
+      { showtime: t.showtime, row: s.row, number: s.number },
+      {
+        $set: { status: "sold" },
+        $unset: { expires_at: 1 }   
+      }
     );
   }
 
-  // ==============================================
-  // 3) Cập nhật ticket
-  // ==============================================
-  t.status = 'paid';
-  t.payment_status = 'paid';
-  t.payment_time = new Date();   // ⭐ QUAN TRỌNG: SET PAYMENT TIME
-
+  // 4) Cập nhật Ticket
+  t.status = "paid";
+  t.payment_status = "paid";
+  t.payment_time = new Date();
+  t.qr_data = `${t.reservation_code}|${t._id}`;
   await t.save();
 
-  // ==============================================
-  // 4) Voucher usage
-  // ==============================================
+  // 5) Voucher update
   if (t.voucher_codes?.length) {
     await Voucher.updateMany(
       { code: { $in: t.voucher_codes } },
@@ -55,69 +62,79 @@ async function confirmTicketAtomic(ticketId) {
     );
   }
 
+  // 6) Lấy showtime + populate
+  const showtime = await Showtime.findById(t.showtime)
+    .populate("movie cinema room")
+    .lean();
+
+  // 7) GHẾ MỚI NHẤT (CHUẨN)
+  const seats = await TicketSeat.find({ ticket: t._id })
+    .select("row number seat_type price_final status")
+    .lean();
+
+  // 8) Combo
+  const combos = await TicketCombo.find({ ticket: t._id }).lean();
+
+  // 9) Gửi email
+  if (t.user?.email) {
+    try {
+      await sendTicketEmail(t.user.email, t, showtime, seats, combos);
+    } catch (err) {
+      console.error("❌ Send email failed", err);
+    }
+  } else {
+    console.error("❌ Ticket has NO user email:", t._id);
+  }
+
   return t;
 }
 
 
+
+
 // =========================================================
-// POST /api/payments/init  (customer → tạo payment)
+// INIT PAYMENT (cash/testpay)
 // =========================================================
 exports.init = async (req, res, next) => {
   try {
-    const { ticketId, method = "cash" } = req.body || {};
+    const { ticketId, method = "cash" } = req.body;
 
     if (!isId(ticketId))
       return res.status(400).json({ message: "Invalid ticketId" });
 
     const t = await Ticket.findById(ticketId);
-    if (!t)
-      return res.status(404).json({ message: "Ticket not found" });
+    if (!t) return res.status(404).json({ message: "Ticket not found" });
 
     if (t.status !== "pending")
       return res.status(400).json({ message: "Ticket is not pending" });
 
     const m = String(method).toLowerCase();
 
-    // Tạo payment log
-    const pay = await Payment.create({
+    // Payment log
+    const p = await Payment.create({
       ticket: t._id,
       user: t.user,
       method: m,
       amount: t.total_after,
-      status: m === "cash" ? "succeeded" : "pending",
-      meta: { createdBy: "api" }
+      status: m === "cash" ? "succeeded" : "pending"
     });
 
-    // =========================================================
-    // CASH → Auto confirm ticket
-    // =========================================================
+    // CASH → auto confirm
     if (m === "cash") {
       const t2 = await confirmTicketAtomic(t._id);
-
-      // Gán payment info vào ticket
+      t2.payment_id = p._id;
       t2.payment_method = "cash";
-      t2.payment_id = pay._id;
-      t2.payment_time = new Date();   // ⭐ BẮT BUỘC CÓ
       await t2.save();
 
-      return res.status(201).json({
+      return res.json({
         message: "Payment created & ticket confirmed (cash)",
-        payment: pay
+        payment: p
       });
     }
 
-    // =========================================================
-    // ONLINE → trả deeplink mock để test app/web
-    // =========================================================
-    const mock = {
-      deeplink: `funmovie://${m}/pay?paymentId=${pay._id}`,
-      redirect_url: `/payments/${pay._id}/simulate/${m}`
-    };
-
-    return res.status(201).json({
+    return res.json({
       message: "Payment created",
-      payment: pay,
-      next: mock
+      payment: p
     });
 
   } catch (err) {
@@ -128,48 +145,126 @@ exports.init = async (req, res, next) => {
 
 
 // =========================================================
-// POST /api/payments/:id/mark  (webhook / staff confirm)
+// WEBHOOK / STAFF CONFIRM
 // =========================================================
 exports.mark = async (req, res, next) => {
   try {
-    const id = String(req.params.id || "").trim();
-    if (!isId(id))
-      return res.status(400).json({ message: "Invalid id" });
+    const id = req.params.id;
 
-    const { status, provider_txn_id, provider_message, meta } = req.body || {};
+    const { status, provider_txn_id, provider_message } = req.body;
 
-    if (!["succeeded", "failed", "refunded", "pending"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
-
-    // Cập nhật Payment
     const p = await Payment.findByIdAndUpdate(
       id,
-      { $set: { status, provider_txn_id, provider_message, meta } },
+      { status, provider_txn_id, provider_message },
       { new: true }
     ).populate("ticket");
 
-    if (!p)
-      return res.status(404).json({ message: "Payment not found" });
+    if (!p) return res.status(404).json({ message: "Payment not found" });
 
-    // =========================================================
-    // NẾU Succeeded → Auto confirm ticket
-    // =========================================================
-    if (p.status === "succeeded" && p.ticket && p.ticket.status === "pending") {
+    // Succeeded → confirm ticket
+    if (p.status === "succeeded" && p.ticket.status === "pending") {
       const t = await confirmTicketAtomic(p.ticket._id);
-
       t.payment_method = p.method;
       t.payment_id = p._id;
-      t.payment_time = new Date();   // ⭐ CỰC QUAN TRỌNG
       await t.save();
     }
 
-    res.json({
-      message: "Payment updated",
-      payment: p
+    res.json({ message: "Payment updated", payment: p });
+
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+
+
+// =========================================================
+// VNPAY INIT
+// =========================================================
+exports.initVnpay = async (req, res, next) => {
+  try {
+    const { ticketId } = req.body;
+
+    const t = await Ticket.findById(ticketId);
+    if (!t) return res.status(404).json({ message: "Ticket not found" });
+
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    console.log("Reservation code RAW =", t.reservation_code);
+    console.log("Reservation code JSON =", JSON.stringify(t.reservation_code));
+    console.log("Reservation code bytes =", Buffer.from(t.reservation_code));
+
+    let amount = Number(t.total_after);
+    if (!amount || isNaN(amount)) {
+      console.error("❌ Invalid amount:", t.total_after);
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    const url = vnpayService.createPaymentUrl(
+      t.reservation_code,
+      amount,
+      ip
+    );
+
+    return res.json({
+      payment_url: url
     });
 
   } catch (err) {
     next(err);
   }
+};
+
+
+
+
+
+// =========================================================
+// VNPAY RETURN
+// =========================================================
+exports.vnpayReturn = async (req, res) => {
+  const params = { ...req.query };
+
+  if (!vnpayService.verifyChecksum(params))
+    return res.json({ RspCode: "97", Message: "Invalid Checksum" });
+
+  res.json({
+    RspCode: "00",
+    Message: "Success",
+    reservation_code: params["vnp_TxnRef"],
+    code: params["vnp_ResponseCode"]
+  });
+};
+
+
+
+
+// =========================================================
+// VNPAY IPN (SERVER CALLBACK)
+// =========================================================
+exports.vnpayIpn = async (req, res) => {
+  const params = { ...req.query };
+  console.log("🔥 IPN:", params);
+
+  if (!vnpayService.verifyChecksum(params))
+    return res.json({ RspCode: "97", Message: "Invalid Checksum" });
+
+  const code = params["vnp_TxnRef"];
+  const rsp = params["vnp_ResponseCode"];
+
+  const ticket = await Ticket.findOne({ reservation_code: code });
+  if (!ticket)
+    return res.json({ RspCode: "01", Message: "Ticket Not Found" });
+
+  // Thành công
+  if (rsp === "00") {
+    const t = await confirmTicketAtomic(ticket._id);
+
+    t.payment_method = "vnpay";
+    t.payment_id = params["vnp_TransactionNo"];
+    await t.save();
+  }
+
+  return res.json({ RspCode: "00", Message: "Confirm Success" });
 };

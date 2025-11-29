@@ -107,6 +107,15 @@ exports.create = async (req, res, next) => {
       seat_status: seat_status || 'available',
     });
 
+    // ⭐ AUDIT: tạo 1 ghế
+    req.auditAction  = 'seat.create';
+    req.auditSummary = `Tạo ghế ${doc.row}${doc.number} (${doc.seat_type}, trạng thái: ${doc.seat_status}) trong phòng ${roomDoc.name}`;
+    req.auditTarget  = {
+      type: 'Seat',
+      id:   doc._id,
+      name: `${doc.row}${doc.number}`,
+    };
+
     res.status(201).json(doc);
   } catch (err) {
     if (err?.code === 11000) {
@@ -156,10 +165,26 @@ exports.bulkCreate = async (req, res, next) => {
     }
 
     const created = await Seat.insertMany(docs, { ordered: false });
+
+    // ⭐ AUDIT: tạo nhiều ghế
+    req.auditAction  = 'seat.bulkCreate';
+    req.auditSummary = `Tạo ${created.length} ghế thủ công trong phòng ${roomDoc.name}`;
+    req.auditTarget  = {
+      type: 'Room',
+      id:   roomDoc._id,
+      name: roomDoc.name,
+    };
+
     res.status(201).json({ inserted: created.length });
   } catch (err) {
     if (err?.name === 'BulkWriteError') {
       const inserted = err.result?.nInserted ?? 0;
+
+      // ⭐ AUDIT vẫn log, nhưng ghi chú có bỏ qua trùng
+      req.auditAction  = 'seat.bulkCreate';
+      req.auditSummary = `Tạo ${inserted} ghế (một số ghế trùng bị bỏ qua)`;
+      req.auditTarget  = { type: 'Room', id: req.body.room, name: `room:${req.body.room}` };
+
       return res.status(201).json({ inserted, warning: 'Some duplicates were skipped' });
     }
     next(err);
@@ -202,6 +227,16 @@ exports.update = async (req, res, next) => {
     }
 
     await seat.save();
+
+    // ⭐ AUDIT: cập nhật ghế
+    req.auditAction  = 'seat.update';
+    req.auditSummary = `Cập nhật ghế ${seat.row}${seat.number} (${seat.seat_type}, trạng thái: ${seat.seat_status}) trong phòng ${seat.room?.name || seat.room}`;
+    req.auditTarget  = {
+      type: 'Seat',
+      id:   seat._id,
+      name: `${seat.row}${seat.number}`,
+    };
+
     res.json(seat);
   } catch (err) {
     if (err?.code === 11000) {
@@ -229,6 +264,16 @@ exports.updateStatus = async (req, res, next) => {
       { new: true, runValidators: true }
     );
     if (!seat) return res.status(404).json({ message: 'Not found' });
+
+    // ⭐ AUDIT: đổi trạng thái ghế
+    req.auditAction  = 'seat.updateStatus';
+    req.auditSummary = `Đổi trạng thái ghế ${seat.row}${seat.number} trong phòng ${seat.room?.name || seat.room}: ${oldStatus} → ${status}`;
+    req.auditTarget  = {
+      type: 'Seat',
+      id:   seat._id,
+      name: `${seat.row}${seat.number}`,
+    };
+
     res.json(seat);
   } catch (err) { next(err); }
 };
@@ -240,6 +285,16 @@ exports.remove = async (req, res, next) => {
     if (!isId(id)) return res.status(400).json({ message: 'Invalid id' });
     const del = await Seat.findByIdAndDelete(id);
     if (!del) return res.status(404).json({ message: 'Not found' });
+
+    // ⭐ AUDIT: xóa 1 ghế
+    req.auditAction  = 'seat.delete';
+    req.auditSummary = `Xóa ghế ${seat.row}${seat.number} trong phòng ${seat.room?.name || seat.room}`;
+    req.auditTarget  = {
+      type: 'Seat',
+      id:   seat._id,
+      name: `${seat.row}${seat.number}`,
+    };
+
     res.json({ ok: true });
   } catch (err) { next(err); }
 };
@@ -255,6 +310,16 @@ exports.clearByRoom = async (req, res, next) => {
       return res.status(400).json({ message: 'Room seats are locked by preset (enforce_layout=true). Use /rooms/:id/regenerate-seats instead.' });
     }
     const result = await Seat.deleteMany({ room });
+
+     // ⭐ AUDIT: xóa toàn bộ ghế trong phòng
+    req.auditAction  = 'seat.clearByRoom';
+    req.auditSummary = `Xóa toàn bộ ${result.deletedCount || 0} ghế trong phòng ${roomDoc.name}`;
+    req.auditTarget  = {
+      type: 'Room',
+      id:   roomDoc._id,
+      name: roomDoc.name,
+    };
+
     res.json({ ok: true, deleted: result.deletedCount });
   } catch (err) { next(err); }
 };

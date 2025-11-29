@@ -48,6 +48,16 @@ async function publicList(req, res, next) {
 async function createVoucher(req, res, next) {
   try {
     const v = await Voucher.create(req.body);
+
+// ⭐ AUDIT LOG — tạo voucher mới
+    req.auditAction  = 'voucher.create';
+    req.auditSummary = `User ${req.user?.username || req.user?.email || 'unknown'} tạo voucher ${v.code} (scope=${v.scope}, type=${v.discount_type}, value=${v.value})`;
+    req.auditTarget  = {
+      type: 'Voucher',
+      id:   v._id,
+      name: v.code,
+    };
+
     res.status(201).json({ message: 'Voucher created', voucher: v });
   } catch (err) { next(err); }
 }
@@ -56,6 +66,11 @@ async function createVoucher(req, res, next) {
 async function updateVoucher(req, res, next) {
   try {
     const { id } = req.params;
+    const before = await Voucher.findById(id).lean();
+    if (!before) {
+    return res.status(404).json({ message: 'Voucher not found' });
+    }
+
 
     const updated = await Voucher.findByIdAndUpdate(id, req.body, {
       new: true,
@@ -64,6 +79,17 @@ async function updateVoucher(req, res, next) {
 
     if (!updated)
       return res.status(404).json({ message: 'Voucher not found' });
+
+     // ⭐ AUDIT LOG — cập nhật voucher
+    const changedFields = Object.keys(req.body || {});
+
+    req.auditAction  = 'voucher.update';
+    req.auditSummary = `User ${req.user?.username || req.user?.email || 'unknown'} cập nhật voucher ${updated.code} (trường: ${changedFields.join(', ') || 'không rõ'})`;
+    req.auditTarget  = {
+      type: 'Voucher',
+      id:   updated._id,
+      name: updated.code,
+    };
 
     res.json({ message: 'Voucher updated', voucher: updated });
   } catch (err) { next(err); }
@@ -77,6 +103,15 @@ async function removeVoucher(req, res, next) {
     const deleted = await Voucher.findByIdAndDelete(id);
     if (!deleted)
       return res.status(404).json({ message: 'Voucher not found' });
+
+    // ⭐ AUDIT LOG — xoá voucher
+    req.auditAction  = 'voucher.delete';
+    req.auditSummary = `User ${req.user?.username || req.user?.email || 'unknown'} xoá voucher ${deleted.code}`;
+    req.auditTarget  = {
+      type: 'Voucher',
+      id:   deleted._id,
+      name: deleted.code,
+    };
 
     res.json({ message: 'Voucher deleted' });
   } catch (err) { next(err); }

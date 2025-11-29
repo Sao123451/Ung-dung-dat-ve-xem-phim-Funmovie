@@ -6,30 +6,62 @@ const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const auditLogger = require('./middlewares/auditLogger');
 
 const app = express();
 connectDB();
-app.use('/public', express.static(path.join(__dirname, 'public'), {
-  etag: false,
-  lastModified: false,
-  cacheControl: true,
-  maxAge: 0
-}));
 
-// Middleware
+/* ============================================================
+   ⚙ STATIC FILES
+============================================================ */
+app.use(
+  '/public',
+  express.static(path.join(__dirname, 'public'), {
+    etag: false,
+    lastModified: false,
+    cacheControl: true,
+    maxAge: 0,
+  })
+);
+
+/* ============================================================
+   ⚙ GLOBAL MIDDLEWARE
+============================================================ */
+// Body parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Security headers
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: false, // vì bạn đang dùng Bearer token, không cần cookie
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+
+// Logger
 app.use(morgan('dev'));
-//app.use('/public', express.static(path.join(__dirname, 'public')));
 
+// Cookies
+app.use(cookieParser());
 
-// Routes (API only)
+// Audit log middleware
+app.use(auditLogger);
+
+/* ============================================================
+   ⚙ CORS CHUẨN — CHO WEB ADMIN + WEB STAFF
+============================================================ */
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN
+      ? [process.env.CORS_ORIGIN]
+      : [
+          'http://localhost:5173', // Web Admin
+          'http://localhost:5500', // Web Staff
+        ],
+    credentials: false,
+    allowedHeaders: ['Authorization', 'Content-Type'],
+  })
+);
+
+/* ============================================================
+   📌 ROUTES
+============================================================ */
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/movies', require('./routes/movies'));
@@ -45,23 +77,16 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/banners', require('./routes/banners'));
 app.use('/api/ticket-seats', require('./routes/ticketSeats'));
-// app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/audit-logs', require('./routes/auditLogs'));
 app.use('/api/news', require('./routes/news'));
-// app.use('/api/memberships', require('./routes/memberships'));
 app.use('/api/wishlist', require('./routes/wishlist'));
-
 app.use('/api/products', require('./routes/products'));
-//app.use('/api/bookings', require('./routes/bookings'));
 
-
-
-// Health check
+/* ============================================================
+   🔍 HEALTH CHECK
+============================================================ */
 app.get('/', (req, res) => {
   res.json({ message: '🎬 FunMovie API is running!' });
 });
-
-// Error handler
-const errorHandler = require('./middlewares/errorHandler');
-// app.use(errorHandler);
 
 module.exports = app;

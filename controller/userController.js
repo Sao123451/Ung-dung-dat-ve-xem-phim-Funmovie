@@ -95,6 +95,20 @@ exports.updateUser = async (req, res, next) => {
       .select('-password')
       .populate('cinema');
 
+       // ⭐ AUDIT LOG — admin hoặc user cập nhật user theo id
+    if (updated) {
+      const changedFields = Object.keys(payload);
+      req.auditAction  = 'user.update';
+      req.auditSummary = isAdmin
+        ? `Admin ${req.user.username || req.user.email} cập nhật user ${updated.username || updated.email} (trường: ${changedFields.join(', ') || 'không rõ'})`
+        : `User ${updated.username || updated.email} tự cập nhật thông tin của mình qua /users/:id (trường: ${changedFields.join(', ') || 'không rõ'})`;
+      req.auditTarget  = {
+        type: 'User',
+        id:   updated._id,
+        name: updated.username || updated.email
+      };
+    }
+
     res.json({ message: 'Updated', user: updated });
   } catch (err) { next(err); }
 };
@@ -139,6 +153,15 @@ exports.adminCreateUser = async (req, res, next) => {
 
     // ⭐ Populate cinema để trả về đầy đủ
     created = await created.populate('cinema');
+
+     // ⭐ AUDIT LOG — admin tạo user mới
+    req.auditAction  = 'user.admin_create';
+    req.auditSummary = `Admin ${req.user.username || req.user.email} tạo user mới ${created.username || created.email} với role ${created.role}`;
+    req.auditTarget  = {
+      type: 'User',
+      id:   created._id,
+      name: created.username || created.email
+    };
 
     res.status(201).json({
       message: 'User created',

@@ -37,6 +37,10 @@ exports.register = async (req, res, next) => {
       if (usedEmail)
         return res.status(400).json({ message: "Email đã được sử dụng" });
 
+      const existsUser = await User.findOne({ username });
+      if (existsUser)
+        return res.status(400).json({ message: "Username đã được sử dụng" });
+      
       // Kiểm tra OTP cũ còn hiệu lực
       const oldOtp = await Otp.findOne({ email }).sort({ createdAt: -1 });
       if (oldOtp && oldOtp.expires_at > Date.now()) {
@@ -316,14 +320,14 @@ exports.forgotPassword = async (req, res, next) => {
 
       // Tạo OTP mới
       const code = String(Math.floor(100000 + Math.random() * 900000));
-      const expires = new Date(Date.now() + 2 * 60 * 1000); // 2 phút
+      const expires = new Date(Date.now() + 1 * 60 * 1000); // 1 phút
 
       await Otp.create({ email, code, expires_at: expires });
       await sendOTP(email, code);
 
       return res.json({
         step: "verify_otp",
-        expires_in: 120,
+        expires_in: 60,
         message: "OTP đã được gửi vào email"
       });
     }

@@ -19,6 +19,16 @@ exports.getById = async (req, res, next) => {
 exports.create = async (req, res, next) => {
   try {
     const movie = await Movie.create(req.body);
+
+    // ⭐ AUDIT LOG: tạo phim
+    req.auditAction  = 'movie.create';
+    req.auditSummary = `Tạo phim mới: ${movie.title || '(không tên)'}`;
+    req.auditTarget  = {
+      type: 'Movie',
+      id:   movie._id,
+      name: movie.title
+    };
+
     res.status(201).json({ message: 'Created', movie });
   } catch (err) { next(err); }
 };
@@ -26,13 +36,34 @@ exports.create = async (req, res, next) => {
 exports.update = async (req, res, next) => {
   try {
     const movie = await Movie.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+    // ⭐ AUDIT LOG: cập nhật phim
+    req.auditAction  = 'movie.update';
+    req.auditSummary = `Cập nhật phim: ${movie.title || '(không tên)'}`;
+    req.auditTarget  = {
+      type: 'Movie',
+      id:   movie._id,
+      name: movie.title
+    };
+
     res.json({ message: 'Updated', movie });
   } catch (err) { next(err); }
 };
 
 exports.delete = async (req, res, next) => {
   try {
-    await Movie.findByIdAndDelete(req.params.id);
+    const deleted = await Movie.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Not found' });
+
+    // ⭐ AUDIT LOG: xóa phim
+    req.auditAction  = 'movie.delete';
+    req.auditSummary = `Xóa phim: ${deleted.title || '(không tên)'}`;
+    req.auditTarget  = {
+      type: 'Movie',
+      id:   deleted._id,
+      name: deleted.title
+    };
+
     res.json({ message: 'Deleted' });
   } catch (err) { next(err); }
 };
