@@ -29,7 +29,7 @@ app.use(
 ============================================================ */
 // Body parser
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.urlencoded({ limit: '10mb', extended: true })); 
 
 // Security headers
 app.use(helmet());
@@ -81,12 +81,12 @@ app.use('/api/audit-logs', require('./routes/auditLogs'));
 app.use('/api/news', require('./routes/news'));
 app.use('/api/wishlist', require('./routes/wishlist'));
 app.use('/api/products', require('./routes/products'));
+app.use('/api/ticketSeats', require('./routes/ticketSeats'));
+
 
 /* ============================================================
    🔍 HEALTH CHECK
 ============================================================ */
-app.get('/', (req, res) => {
-  res.json({ message: '🎬 FunMovie API is running!' });
-});
+
 
 module.exports = app;

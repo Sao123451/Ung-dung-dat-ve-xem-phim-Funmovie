@@ -50,6 +50,7 @@ async function confirmTicketAtomic(ticketId) {
   // 4) Cập nhật Ticket
   t.status = "paid";
   t.payment_status = "paid";
+  t.payment_method = "vnpay";   
   t.payment_time = new Date();
   t.qr_data = `${t.reservation_code}|${t._id}`;
   await t.save();

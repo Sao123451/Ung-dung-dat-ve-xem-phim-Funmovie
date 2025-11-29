@@ -99,9 +99,7 @@ exports.quote = async (req, res) => {
 };
 
 
-// =========================================================
-// CUSTOMER CREATE (UNPAID)
-// =========================================================
+
 // =====================
 // CUSTOMER CREATE (UNPAID)
 // =====================
@@ -186,41 +184,57 @@ exports.create = async (req, res) => {
     const total_after =
       total_before - (discount_seat + discount_combo + discount_order);
 
-    // ⭐ SỬA TẠI ĐÂY — ÉP STRING
+    //  SỬA TẠI ĐÂY — ÉP STRING
     const reservation_code = String(Math.floor(10000000 + Math.random() * 90000000));
 
     const expires_at = new Date(Date.now() + HOLD_MINUTES * 60000);
 
     const seat_codes = validSeats.map(s => `${s.row}${s.number}`);
 
-    const ticket = await Ticket.create({
-      user: user._id,
-      showtime: showtimeId,
-      cinema: showtime.cinema,
-      room: showtime.room,
-      membership_card: user.membership_card || null,
+    // 1) Tạo ticket
+const ticket = await Ticket.create({
+  user: user._id,
+  showtime: showtimeId,
+  cinema: showtime.cinema,
+  room: showtime.room,
+  membership_card: user.membership_card || null,
 
-      status: "pending",
-      payment_status: "unpaid",
-      payment_method: payment_method || "unknown",
+  status: "pending",
+  payment_status: "unpaid",
+  payment_method: payment_method || "unknown",
 
-      seat_subtotal,
-      combo_subtotal,
-      discount_seat,
-      discount_combo,
-      discount_order,
-      total_before,
-      total_after,
+  seat_subtotal,
+  combo_subtotal,
+  discount_seat,
+  discount_combo,
+  discount_order,
+  total_before,
+  total_after,
 
-      seats: seat_codes,
+  seats: seat_codes,
+  reservation_code,
 
-      // ⭐ LƯU STRING
-      reservation_code,
+  qr_data: "",
+  expires_at,
+  voucher_codes,
+});
 
-      qr_data: "",
-      expires_at,
-      voucher_codes,
-    });
+// 2) LƯU COMBO (BẠN CHÈN ĐÚNG ĐOẠN NÀY)
+for (const c of combos) {
+  const prod = await Product.findById(c.productId);
+  if (!prod) continue;
+
+  await TicketCombo.create({
+    ticket: ticket._id,
+    product: prod._id,
+    name: prod.name,
+    type: prod.type,
+    qty: c.qty,
+    unit_price: prod.price,
+    line_total: prod.price * c.qty
+  });
+}
+
 
     for (const ss of validSeats) {
       await TicketSeat.create({

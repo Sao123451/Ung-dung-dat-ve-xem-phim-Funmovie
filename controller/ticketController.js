@@ -3,6 +3,8 @@ const Ticket = require('../models/Ticket');
 const TicketSeat = require('../models/TicketSeat');
 const ShowtimeSeat = require('../models/ShowtimeSeat');
 const Showtime = require('../models/Showtime');
+const TicketCombo = require("../models/TicketCombo");
+
 
 /* ======================================================
    CUSTOMER — LẤY DANH SÁCH VÉ CỦA TÔI
@@ -73,15 +75,6 @@ exports.cancelMy = async (req, res) => {
       );
     }
 
-    // ⭐ AUDIT LOG — khách tự hủy vé
-    req.auditAction  = 'ticket.cancel_my';
-    req.auditSummary = `Khách hàng tự hủy vé ${t._id} (mã ${t.reservation_code || ''}) — trạng thái: ${oldStatus} → cancelled`;
-    req.auditTarget  = {
-      type: 'Ticket',
-      id:   t._id,
-      name: t.reservation_code || t._id.toString(),
-    };
-
     res.json({ message: "Ticket cancelled" });
 
   } catch (e) {
@@ -103,15 +96,6 @@ exports.updateStatus = async (req, res) => {
     t.status = status;
     await t.save();
 
-    // ⭐ AUDIT LOG — admin/staff đổi trạng thái vé
-    req.auditAction  = 'ticket.update_status';
-    req.auditSummary = `Cập nhật trạng thái vé ${t._id} (mã ${t.reservation_code || ''}): ${oldStatus} → ${status}`;
-    req.auditTarget  = {
-      type: 'Ticket',
-      id:   t._id,
-      name: t.reservation_code || t._id.toString(),
-    };
-
     res.json({ message: "Updated", ticket: t });
   } catch (e) {
     res.status(500).json({ message: "Update error" });
@@ -127,15 +111,6 @@ exports.remove = async (req, res) => {
 
     await Ticket.deleteOne({ _id: id });
     await TicketSeat.deleteMany({ ticket: id });
-
-     // ⭐ AUDIT LOG — xóa vé
-    req.auditAction  = 'ticket.delete';
-    req.auditSummary = `Xóa vé ${t._id} (mã ${t.reservation_code || ''})`;
-    req.auditTarget  = {
-      type: 'Ticket',
-      id:   t._id,
-      name: t.reservation_code || t._id.toString(),
-    };
 
     res.json({ message: "Deleted ticket" });
   } catch (e) {
@@ -176,6 +151,37 @@ exports.findByCode = async (req, res) => {
 };
 
 /* ======================================================
+   RELEASE HOLDING SEATS — trả ghế về available ngay lập tức
+====================================================== */
+  exports.releaseHoldingSeats = async (req, res) => {
+    try {
+      const { seatIds = [] } = req.body;
+
+      if (!seatIds.length)
+        return res.status(400).json({ message: "seatIds required" });
+
+      // 1) SHOWTIMESEAT holding -> available
+      await ShowtimeSeat.updateMany(
+        { _id: { $in: seatIds }, status: "holding" },
+        { $set: { status: "available", expires_at: null } }
+      );
+
+      // 2) TicketSeat reserved -> cancelled
+      await TicketSeat.updateMany(
+        { seat: { $in: seatIds }, status: "reserved" },
+        { $set: { status: "cancelled" } }
+      );
+
+      return res.json({ message: "Released holding seats" });
+
+    } catch (err) {
+      console.error("releaseHoldingSeats error:", err);
+      res.status(500).json({ message: "Release failed" });
+    }
+  };
+
+
+/* ======================================================
    FIND TICKET BY QR (qr_data)
 ====================================================== */
 exports.findByQR = async (req, res) => {
@@ -195,5 +201,84 @@ exports.findByQR = async (req, res) => {
     res.json(ticket);
   } catch (err) {
     res.status(500).json({ message: "Find QR error", error: err.message });
+  }
+};
+
+exports.detailFull = async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+
+    // 1) Lấy ticket populate đầy đủ
+    const t = await Ticket.findById(ticketId)
+      .populate({
+        path: "showtime",
+        populate: [
+          { path: "movie" },
+          { path: "cinema" },
+          { path: "room" }
+        ]
+      })
+      .populate("user", "full_name email")
+      .lean();
+
+    if (!t)
+      return res.status(404).json({ message: "Ticket not found" });
+
+    // 2) Lấy ghế
+    const seats = await TicketSeat.find({ ticket: ticketId })
+      .populate("seat")
+      .lean();
+
+    // 3) Lấy combos
+    const combos = await TicketCombo.find({ ticket: ticketId })
+      .populate("product")
+      .lean();
+
+    // 4) Chuẩn hoá output
+    const result = {
+      _id: t._id,
+      reservation_code: t.reservation_code,
+      status: t.status,
+      payment_method: t.payment_method,
+      payment_status: t.payment_status,
+      total_after: t.total_after,
+
+      showtime: {
+        _id: t.showtime._id,
+        start_time: t.showtime.start_time,
+        movie: {
+          title: t.showtime.movie.title,
+          poster: t.showtime.movie.poster,
+          duration: t.showtime.movie.duration
+        },
+        cinema: {
+          name: t.showtime.cinema.name
+        },
+        room: {
+          name: t.showtime.room.name
+        }
+      },
+
+      seats: seats.map(s => ({
+        row: s.row,
+        number: s.number,
+        seat_type: s.seat_type,
+        price_final: s.price_final
+      })),
+
+      combos: combos.map(c => ({
+        name: c.product.name,
+        qty: c.qty,
+        line_total: c.line_total
+      })),
+
+      user: t.user
+    };
+
+    res.json(result);
+
+  } catch (err) {
+    console.error("detailFull error:", err);
+    res.status(500).json({ message: "Detail error" });
   }
 };

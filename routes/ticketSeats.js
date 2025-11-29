@@ -18,4 +18,5 @@ r.patch('/:id/status', verifyToken, requireRoles('admin','manager','staff'), c.u
 // OWNER hoặc ADMIN xoá ghế khỏi ticket
 r.delete('/:id', verifyToken, c.remove);
 
+
 module.exports = r;

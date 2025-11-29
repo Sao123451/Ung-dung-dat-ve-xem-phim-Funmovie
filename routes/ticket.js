@@ -20,5 +20,7 @@ r.get('/find/by-qr/:qr', verifyToken, t.findByQR);
 r.get('/', verifyToken, requireRoles('admin','manager','staff'), t.list);
 r.patch('/:id/status', verifyToken, requireRoles('admin','manager','staff'), t.updateStatus);
 r.delete('/:id', verifyToken, requireRoles('admin','manager'), t.remove);
+r.get('/:id/detailFull', verifyToken, t.detailFull);
+r.post("/release-holding", verifyToken, t.releaseHoldingSeats);
 
 module.exports = r;
