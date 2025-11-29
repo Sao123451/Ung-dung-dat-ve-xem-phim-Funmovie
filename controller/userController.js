@@ -153,3 +153,29 @@ exports.adminCreateUser = async (req, res, next) => {
 
   } catch (err) { next(err); }
 };
+exports.findByCard = async (req, res) => {
+  try {
+    const card = req.params.card;
+
+    if (!card)
+      return res.status(400).json({ message: "membership_card required" });
+
+    const user = await User.findOne({
+      membership_card: card,
+      role: "customer",
+      status: "active"
+    }).select("full_name email membership_card");
+
+    if (!user)
+      return res.status(404).json({ message: "Member not found" });
+
+    res.json({
+      full_name: user.full_name,
+      membership_card: user.membership_card,
+      email: user.email
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Find member error", error: err.message });
+  }
+};

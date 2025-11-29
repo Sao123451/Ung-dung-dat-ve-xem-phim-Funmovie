@@ -262,226 +262,134 @@ exports.create = async (req, res) => {
 
 
 
-// ============================
-// STAFF CREATE — PAID (VOUCHER SUPPORTED)
-// ============================
 exports.staffCreate = async (req, res) => {
   try {
-    const {
-      membership_card,
-      showtimeId,
-      seatIds = [],
-      combos = [],
-      payment_method,
-      email_override,
-      vouchers = []    // ⭐ Voucher list from FE
-    } = req.body;
+    const { membership_card, showtimeId, seatIds = [], combos = [], payment_method } = req.body;
 
-    const staff = await mongoose
-      .model("User")
-      .findById(req.user._id)
-      .populate("cinema");
-
-    if (!staff)
-      return res.status(401).json({ message: "Unauthorized staff" });
-
-    // ============================
-    // MEMBER CHECK
-    // ============================
-    let user = null;
-
-    if (membership_card) {
-      user = await mongoose.model("User").findOne({
-        membership_card,
-        role: "customer",
-        status: "active",
-      });
-
-      if (!user)
-        return res.status(404).json({ message: "Mã thành viên không tồn tại" });
+    if (!showtimeId || !seatIds.length) {
+      return res.status(400).json({ message: "Thiếu dữ liệu" });
     }
 
     // ============================
-    // SHOWTIME
+    // 1) KIỂM TRA SUẤT CHIẾU
     // ============================
     const showtime = await Showtime.findById(showtimeId)
-      .populate("movie")
-      .populate("room");
+      .populate("cinema")
+      .populate("room")
+      .populate("movie");
 
-    if (!showtime)
-      return res.status(404).json({ message: "Showtime not found" });
-
-    // ============================
-    // GHẾ VALID
-    // ============================
-    const validSeats = [];
-    for (const seatId of seatIds) {
-      const ss = await ShowtimeSeat.findOne({
-        _id: seatId,
-        showtime: showtimeId,
-        status: "available",
-      });
-
-      if (!ss)
-        return res.status(400).json({ message: "Some seats not available" });
-
-      validSeats.push(ss);
+    if (!showtime) {
+      return res.status(404).json({ message: "Showtime không tồn tại" });
     }
 
-    const seat_subtotal = validSeats.reduce(
-      (s, x) => s + showtime.ticket_price + x.extra_price,
-      0
-    );
+    // ============================
+    // 2) LẤY GHẾ TRONG SUẤT CHIẾU
+    // ============================
+    const stSeats = await ShowtimeSeat.find({
+      _id: { $in: seatIds },
+      showtime: showtimeId
+    });
+
+    if (stSeats.length !== seatIds.length) {
+      return res.status(400).json({ message: "Có ghế không hợp lệ hoặc đã bị giữ" });
+    }
+
+    // CHECK GHẾ SOLD
+    for (const s of stSeats) {
+      if (s.status === "sold") {
+        return res.status(400).json({ message: `Ghế ${s.row}${s.number} đã bán` });
+      }
+    }
 
     // ============================
-    // COMBO
+    // 3) TÍNH TIỀN GHẾ
+    // ============================
+    let seat_subtotal = 0;
+    stSeats.forEach(s => {
+      seat_subtotal += Number(showtime.ticket_price) + Number(s.extra_price || 0);
+
+    });
+
+    // ============================
+    // 4) TÍNH TIỀN COMBO
     // ============================
     let combo_subtotal = 0;
-    const comboDocs = [];
+    let comboDocs = [];
 
     for (const cb of combos) {
-      const p = await mongoose.model("Product").findById(cb.productId);
-      if (!p) continue;
+      const prod = await Product.findById(cb.productId);
+      if (!prod) continue;
 
-      const qty = cb.qty || 1;
-      const unit_price = p.price;
-      const line_total = qty * unit_price;
+      const line = Number(cb.qty) * Number(prod.price);
 
-      combo_subtotal += line_total;
+      combo_subtotal += line;
 
       comboDocs.push({
-        product: p._id,
-        name: p.name,
-        type: p.type,
-        qty,
-        unit_price,
-        line_total
+        product: prod._id,
+        name: prod.name,
+        type: prod.type,
+        qty: cb.qty,
+        unit_price: prod.price,
+        line_total: line
       });
     }
 
     const total_before = seat_subtotal + combo_subtotal;
+    const total_after = total_before; // staff không áp dụng voucher
 
     // ============================
-    // ⭐ VOUCHER APPLY LOGIC
-    // ============================
-    let discount_seat = 0;
-    let discount_combo = 0;
-    let discount_order = 0;
-    let voucher_codes = [];
-
-    for (const code of vouchers) {
-      const v = await Voucher.findOne({ code: code.toUpperCase(), active: true });
-
-      if (!v) continue;
-      if (v.usage_limit > 0 && v.used_count >= v.usage_limit) continue;
-
-      const now = new Date();
-      if (v.start_date && now < v.start_date) continue;
-      if (v.end_date && now > v.end_date) continue;
-
-      let original = 0;
-      let discount = 0;
-
-      if (v.scope === "seat") {
-        original = seat_subtotal;
-      } else if (v.scope === "combo") {
-        original = combo_subtotal;
-      } else {
-        original = total_before;
-      }
-
-      if (original < v.min_order) continue;
-
-      // % or amount
-      if (v.discount_type === "percent") {
-        discount = Math.floor((original * v.value) / 100);
-        if (v.max_discount) discount = Math.min(discount, v.max_discount);
-      } else {
-        discount = v.value;
-      }
-
-      // Assign to correct bucket
-      if (v.scope === "seat") discount_seat += discount;
-      else if (v.scope === "combo") discount_combo += discount;
-      else discount_order += discount;
-
-      voucher_codes.push(v.code);
-    }
-
-    const total_after =
-      total_before - discount_seat - discount_combo - discount_order;
-
-    // ============================
-    // RESERVATION CODE
+    // 5) TẠO RESERVATION CODE
     // ============================
     const reservation_code = String(
       Math.floor(10000000 + Math.random() * 90000000)
     );
 
-    const seat_codes = validSeats.map(s => `${s.row}${s.number}`);
-    const qr_data = `${reservation_code}|${user ? user._id : "guest"}`;
-
-    const cinema_snapshot = {
-      name: staff.cinema?.name || "",
-      address: staff.cinema?.address || "",
-      city: staff.cinema?.city || ""
-    };
-
     // ============================
-    // CREATE TICKET
+    // 6) TẠO TICKET
     // ============================
     const ticket = await Ticket.create({
-      user: user ? user._id : null,
+      user: null, // staff bán không có user
       showtime: showtime._id,
-      cinema: staff.cinema?._id,
-      room: showtime.room,
-      cinema_snapshot,
-
-      membership_card: user ? user.membership_card : null,
-      status: "paid",
-      payment_status: "paid",
-      payment_method: payment_method || "cash",
-      payment_time: new Date(),
-
+      cinema: showtime.cinema._id,
+      room: showtime.room._id,
+      membership_card,
+      reservation_code,
       seat_subtotal,
       combo_subtotal,
-      discount_seat,
-      discount_combo,
-      discount_order,
-
       total_before,
       total_after,
-
-      seats: seat_codes,
-
-      reservation_code,
-      qr_data,
-      voucher_codes,
+      payment_method,
+      payment_status: "paid",
+      status: "paid"
     });
 
     // ============================
-    // CREATE TICKET SEAT
+    // 7) LƯU GHẾ ĐÃ MUA
     // ============================
-    for (const ss of validSeats) {
+    for (const s of stSeats) {
       await TicketSeat.create({
         ticket: ticket._id,
         showtime: showtime._id,
-        seat: ss._id,
-        row: ss.row,
-        number: ss.number,
-        seat_type: ss.seat_type,
+        seat: s.seat,
+        row: s.row,
+        number: s.number,
+        seat_type: s.seat_type,
         price_base: showtime.ticket_price,
-        price_extra: ss.extra_price,
-        price_final: showtime.ticket_price + ss.extra_price,
+        price_extra: s.extra_price,
+        price_final: Number(showtime.ticket_price) + Number(s.extra_price || 0),
+
         status: "sold"
       });
 
-      ss.status = "sold";
-      await ss.save();
+      // update trạng thái ghế
+      await ShowtimeSeat.updateOne(
+        { _id: s._id },
+        { status: "sold" }
+      );
     }
 
     // ============================
-    // SAVE COMBOS
+    // 8) LƯU COMBO
     // ============================
     for (const cb of comboDocs) {
       await TicketCombo.create({
@@ -490,33 +398,17 @@ exports.staffCreate = async (req, res) => {
       });
     }
 
-    // ============================
-    // DONE
-    // ============================
-    res.json({
-      message: "Staff created ticket successfully",
+    return res.json({
+      message: "OK",
       ticket_id: ticket._id,
-      reservation_code,
-      seats: seat_codes,
-      total_before,
-      total_after,
-      discount_seat,
-      discount_combo,
-      discount_order,
-      voucher_codes,
-      user_type: user ? "member" : "guest",
+      reservation_code
     });
 
   } catch (err) {
-    console.error("staffCreate error:", err);
-    res.status(500).json({
-      message: "Staff create error",
-      error: err.message,
-    });
+    console.error("❌ STAFF CREATE ERROR:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 
 // ======================================================
@@ -620,35 +512,54 @@ exports.sendEmail = async (req, res) => {
 
 
 // ======================================================
-// CANCEL
+// CANCEL TICKET (SAFE VERSION)
 // ======================================================
 exports.cancel = async (req, res) => {
   try {
     const id = req.params.id;
-    const ticket = await Ticket.findById(id);
 
+    // 1) Lấy ticket
+    const ticket = await Ticket.findById(id);
     if (!ticket)
       return res.status(404).json({ message: "Ticket not found" });
 
+    // 2) Update trạng thái ticket
     ticket.status = "cancelled";
     ticket.payment_status = "failed";
     await ticket.save();
 
+    // 3) Lấy đúng danh sách ghế của vé
+    const seats = await TicketSeat.find({ ticket: id });
+
+    // 4) Đánh dấu TicketSeat → cancelled
     await TicketSeat.updateMany(
       { ticket: id },
       { $set: { status: "cancelled" } }
     );
 
-    await ShowtimeSeat.updateMany(
-      { showtime: ticket.showtime },
-      { $set: { status: "available" } }
-    );
+    // 5) Trả lại trạng thái available cho đúng ghế trong ShowtimeSeat
+    for (const s of seats) {
+      await ShowtimeSeat.updateOne(
+        {
+          showtime: ticket.showtime,
+          row: s.row,
+          number: s.number
+        },
+        { $set: { status: "available" } }
+      );
+    }
 
-    res.json({ message: "Ticket cancelled" });
+    return res.json({
+      message: "Ticket cancelled successfully",
+      restored_seats: seats.map(s => `${s.row}${s.number}`)
+    });
+
   } catch (err) {
-    res.status(500).json({ message: "Cancel error" });
+    console.error("Cancel error:", err);
+    res.status(500).json({ message: "Cancel error", error: err.message });
   }
 };
+
 
 
 
@@ -693,9 +604,11 @@ exports.detail = async (req, res) => {
     // =============================
     return res.json({
       ticket: t,
+      membership_card: t.membership_card || null,
       seats,
       combos
     });
+
 
   } catch (err) {
     console.error("DETAIL ERROR:", err);
@@ -747,6 +660,11 @@ exports.detailBooking = async (req, res) => {
       room_name: t.showtime?.room?.name || "",
       showtime_start: t.showtime?.start_time || null,
 
+      // ------- THẺ THÀNH VIÊN (ĐÃ THÊM) -------
+      membership_card: t.membership_card || null,
+      // Nếu sau này muốn hiện cả tên user thì dùng:
+      // member_name: t.member_name || null,
+
       // Seats
       seats: seats.map(s => `${s.row}${s.number}`),
 
@@ -778,9 +696,6 @@ exports.detailBooking = async (req, res) => {
     res.status(500).json({ message: "Detail booking error", error: err.message });
   }
 };
-
-
-
 
 
 // ======================================================

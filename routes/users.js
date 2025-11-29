@@ -20,5 +20,7 @@ router.post('/admin-create', verifyToken, isAdmin, userCtrl.adminCreateUser);
 
 router.put('/me/change-password', verifyToken, userCtrl.changeMyPassword);
 
+// Tìm theo mã thẻ thành viên (không cần đăng nhập)
+router.get('/find-by-card/:card', userCtrl.findByCard);
 
 module.exports = router;
