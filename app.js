@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const helmet = require('helmet');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const auditLogger = require('./middlewares/auditLogger');
 
 const app = express();
 connectDB();
@@ -17,10 +18,13 @@ app.use('/public', express.static(path.join(__dirname, 'public'), {
 }));
 
 // Middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: false, // vì bạn đang dùng Bearer token, không cần cookie
+  credentials: false,
+  allowedHeaders: ["Authorization", "Content-Type"]
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -28,6 +32,7 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 //app.use('/public', express.static(path.join(__dirname, 'public')));
 
+app.use(auditLogger);
 
 // Routes (API only)
 app.use('/api/auth', require('./routes/auth'));
@@ -45,6 +50,7 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/banners', require('./routes/banners'));
 app.use('/api/ticket-seats', require('./routes/ticketSeats'));
+app.use("/api/audit-logs", require("./routes/auditLogs"));
 // app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/news', require('./routes/news'));
 // app.use('/api/memberships', require('./routes/memberships'));

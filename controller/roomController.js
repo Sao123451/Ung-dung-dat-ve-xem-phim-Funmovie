@@ -98,6 +98,16 @@ exports.create = async (req, res, next) => {
       const inserted = await regenerateSeatsForRoom(room, presetKey);
       room.capacity = inserted;
       room = await room.save();
+
+      // ⭐ AUDIT: tạo phòng + sinh ghế
+      req.auditAction  = 'room.create';
+      req.auditSummary = `Tạo phòng "${room.name}" tại rạp ${cin.name} (layout: ${presetKey}, ghế: ${inserted})`;
+      req.auditTarget  = {
+        type: 'Room',
+        id:   room._id,
+        name: room.name,
+      };
+
       return res.status(201).json({ ...room.toObject(), capacity: inserted });
     } catch (e) {
       // rollback thủ công nếu sinh ghế lỗi
@@ -135,6 +145,16 @@ exports.update = async (req, res, next) => {
     if (dup) return res.status(400).json({ message: 'Room name already exists in this cinema' });
 
     await room.save();
+
+    // ⭐ AUDIT: cập nhật phòng
+    req.auditAction  = 'room.update';
+    req.auditSummary = `Cập nhật phòng "${room.name}" (rạp: ${room.cinema?.name || room.cinema})`;
+    req.auditTarget  = {
+      type: 'Room',
+      id:   room._id,
+      name: room.name,
+    };
+
     res.json(room);
   } catch (err) { next(err); }
 };
@@ -162,6 +182,15 @@ exports.regenerateSeats = async (req, res, next) => {
     room.capacity = inserted;
     await room.save();
 
+    // ⭐ AUDIT: regenerate sơ đồ ghế
+    req.auditAction  = 'room.regenerateSeats';
+    req.auditSummary = `Regenerate ghế phòng "${room.name}" (rạp: ${room.cinema?.name || room.cinema}, layout: ${key}, ghế: ${inserted})`;
+    req.auditTarget  = {
+      type: 'Room',
+      id:   room._id,
+      name: room.name,
+    };
+
     res.json({ ok: true, capacity: inserted, layout_key: key, enforce_layout: room.enforce_layout });
   } catch (err) { next(err); }
 };
@@ -171,7 +200,21 @@ exports.remove = async (req, res, next) => {
   try {
     const rawId = String(req.params.id || '').trim();
     if (!mongoose.isValidObjectId(rawId)) return res.status(400).json({ message: 'Invalid id' });
-    await Room.findByIdAndDelete(rawId);
+    const deleted = await Room.findByIdAndDelete(rawId);
+    if (!deleted) return res.status(404).json({ message: 'Not found' });
+
+
+     // ⭐ AUDIT: xóa phòng
+    req.auditAction  = 'room.delete';
+    req.auditSummary = `Xóa phòng "${deleted.name}" (rạp: ${deleted.cinema})`;
+    req.auditTarget  = {
+      type: 'Room',
+      id:   deleted._id,
+      name: deleted.name,
+    };
+
+
+
     res.json({ ok: true });
   } catch (err) { next(err); }
 };

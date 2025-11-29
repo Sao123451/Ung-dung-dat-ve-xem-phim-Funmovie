@@ -73,6 +73,15 @@ exports.cancelMy = async (req, res) => {
       );
     }
 
+    // ⭐ AUDIT LOG — khách tự hủy vé
+    req.auditAction  = 'ticket.cancel_my';
+    req.auditSummary = `Khách hàng tự hủy vé ${t._id} (mã ${t.reservation_code || ''}) — trạng thái: ${oldStatus} → cancelled`;
+    req.auditTarget  = {
+      type: 'Ticket',
+      id:   t._id,
+      name: t.reservation_code || t._id.toString(),
+    };
+
     res.json({ message: "Ticket cancelled" });
 
   } catch (e) {
@@ -94,6 +103,15 @@ exports.updateStatus = async (req, res) => {
     t.status = status;
     await t.save();
 
+    // ⭐ AUDIT LOG — admin/staff đổi trạng thái vé
+    req.auditAction  = 'ticket.update_status';
+    req.auditSummary = `Cập nhật trạng thái vé ${t._id} (mã ${t.reservation_code || ''}): ${oldStatus} → ${status}`;
+    req.auditTarget  = {
+      type: 'Ticket',
+      id:   t._id,
+      name: t.reservation_code || t._id.toString(),
+    };
+
     res.json({ message: "Updated", ticket: t });
   } catch (e) {
     res.status(500).json({ message: "Update error" });
@@ -109,6 +127,15 @@ exports.remove = async (req, res) => {
 
     await Ticket.deleteOne({ _id: id });
     await TicketSeat.deleteMany({ ticket: id });
+
+     // ⭐ AUDIT LOG — xóa vé
+    req.auditAction  = 'ticket.delete';
+    req.auditSummary = `Xóa vé ${t._id} (mã ${t.reservation_code || ''})`;
+    req.auditTarget  = {
+      type: 'Ticket',
+      id:   t._id,
+      name: t.reservation_code || t._id.toString(),
+    };
 
     res.json({ message: "Deleted ticket" });
   } catch (e) {

@@ -88,6 +88,15 @@ exports.create = async (req, res, next) => {
       longitude: longitude !== undefined && longitude !== '' ? Number(longitude) : undefined
     });
 
+    // ⭐ AUDIT: tạo rạp
+    req.auditAction  = 'cinema.create';
+    req.auditSummary = `Tạo rạp mới: ${doc.name || '(không tên)'}`;
+    req.auditTarget  = {
+      type: 'Cinema',
+      id:   doc._id,
+      name: doc.name
+    };
+
     res.status(201).json(doc);
   } catch (err) { next(err); }
 };
@@ -115,6 +124,16 @@ exports.update = async (req, res, next) => {
 
     const doc = await Cinema.findByIdAndUpdate(id, payload, { new: true });
     if (!doc) return res.status(404).json({ message: 'Not found' });
+
+    // ⭐ AUDIT: cập nhật rạp
+    req.auditAction  = 'cinema.update';
+    req.auditSummary = `Cập nhật rạp: ${doc.name || '(không tên)'}`;
+    req.auditTarget  = {
+      type: 'Cinema',
+      id:   doc._id,
+      name: doc.name
+    };
+
     res.json(doc);
   } catch (err) { next(err); }
 };
@@ -128,6 +147,16 @@ exports.remove = async (req, res, next) => {
     }
     const del = await Cinema.findByIdAndDelete(id);
     if (!del) return res.status(404).json({ message: 'Not found' });
+
+     // ⭐ AUDIT: xóa rạp
+    req.auditAction  = 'cinema.delete';
+    req.auditSummary = `Xóa rạp: ${del.name || '(không tên)'}`;
+    req.auditTarget  = {
+      type: 'Cinema',
+      id:   del._id,
+      name: del.name
+    };
+
     res.json({ ok: true });
   } catch (err) { next(err); }
 };

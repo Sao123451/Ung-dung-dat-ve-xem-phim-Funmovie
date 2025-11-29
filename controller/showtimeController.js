@@ -230,6 +230,15 @@ exports.create = async (req, res, next) => {
 
     await ShowtimeSeat.insertMany(clones);
 
+     // ⭐ AUDIT: tạo suất chiếu
+    req.auditAction  = 'showtime.create';
+    req.auditSummary = `Tạo suất chiếu phim "${movieDoc.title}" tại phòng ${roomDoc.name} (${roomDoc.type}) lúc ${startTime.toLocaleString('vi-VN')}`;
+    req.auditTarget  = {
+      type: 'Showtime',
+      id:   showtime._id,
+      name: movieDoc.title,
+    };
+
     res.status(201).json({
       message: 'Created',
       showtime,
@@ -273,6 +282,16 @@ exports.update = async (req, res, next) => {
 
     await s.save();
 
+    const changedFields = Object.keys(req.body || {});
+    // ⭐ AUDIT: cập nhật suất chiếu
+    req.auditAction  = 'showtime.update';
+    req.auditSummary = `Cập nhật suất chiếu phim "${s.movie?.title || s.movie}" tại phòng ${s.room?.name || s.room} (${s.room?.type || ''}): ${changedFields.join(', ') || 'không thay đổi trường nào'}`;
+    req.auditTarget  = {
+      type: 'Showtime',
+      id:   s._id,
+      name: s.movie?.title || s._id.toString(),
+    };
+
     res.json({
       message: 'Updated',
       showtime: s,
@@ -284,9 +303,21 @@ exports.update = async (req, res, next) => {
 exports.delete = async (req, res, next) => {
   try {
     const id = req.params.id;
+    const s = await Showtime.findById(id).populate('movie').populate('room').lean();
+    if (!s) return res.status(404).json({ message: 'Not found' });
+
 
     await ShowtimeSeat.deleteMany({ showtime: id }); // ⭐ xoá ghế của suất
     await Showtime.findByIdAndDelete(id);
+
+    // ⭐ AUDIT: xóa suất chiếu
+    req.auditAction  = 'showtime.delete';
+    req.auditSummary = `Xóa suất chiếu phim "${s.movie?.title || s.movie}" tại phòng ${s.room?.name || s.room} lúc ${s.start_time.toLocaleString('vi-VN')}`;
+    req.auditTarget  = {
+      type: 'Showtime',
+      id:   s._id,
+      name: s.movie?.title || s._id.toString(),
+    };
 
     res.json({ message: 'Deleted' });
   } catch (err) { next(err); }
