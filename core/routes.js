@@ -1,16 +1,18 @@
 import { S } from "./state.js";
 
 export function switchView(view, from = null) {
-    // Lưu view trước để BACK hoạt động đúng
+    // Lưu view trước phục vụ nút BACK
     if (from) S.prevView = from;
 
+    // Ẩn tất cả view
     document.querySelectorAll("section[id^='view-']")
         .forEach(sec => sec.classList.add("d-none"));
 
+    // Hiện view được chọn
     const target = document.getElementById(`view-${view}`);
     if (target) target.classList.remove("d-none");
 
-    // ❌ ĐÃ XOÁ OFFLINE KHỎI TITLE MAP
+    // TITLE VIEW MAP
     const titleMap = {
         home: "Chọn phim",
         schedule: "Chọn suất",
@@ -24,7 +26,7 @@ export function switchView(view, from = null) {
     const pageTitle = document.getElementById("pageTitle");
     if (titleMap[view]) pageTitle.textContent = titleMap[view];
 
-    // Active sidebar
+    // Active trên sidebar
     document.querySelectorAll(".nav-linkx")
         .forEach(x => {
             x.classList.toggle("active", x.dataset.view === view);

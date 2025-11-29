@@ -5,13 +5,13 @@
 import { hardGuard } from "./core/auth.js";
 import { loadStaffCinema } from "./features/cinema.js";
 import { fetchMovies, renderHome } from "./features/movies.js";
-import { bindApplyVoucher, loadVoucherOptions } from "./features/pay.js";
 import { bindGoPay } from "./features/seats.js";
 import { bindConfirmPay } from "./features/booking.js";
 import { bindSidebar, switchView } from "./core/routes.js";
 import { loadPrintTicket } from "./features/print.js";
 import { S } from "./core/state.js";
 import { api } from "./core/api.js";
+import pay from "./features/pay.js";   // ⭐ THÊM IMPORT NÀY
 
 /* ============================================================
    GLOBAL POPUP
@@ -53,14 +53,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await fetchMovies();
 
-    // PAYMENT + VOUCHER
-    bindApplyVoucher();
-    bindConfirmPay();        
+    // PAYMENT
+    bindConfirmPay();
     bindPayMethodButtons();
-    setupVoucherListButton();
-
-    // ❌ ĐÃ XOÁ HOÀN TOÀN OFFLINE — KHÔNG import, KHÔNG auto load
-    // bindOfflineViewAutoLoad();
+    pay.bindMemberSearch();  // ⭐⭐ SỬA QUAN TRỌNG — GẮN SỰ KIỆN NÚT TÌM THẺ
 
     // BACK BUTTONS
     bindBackFromPay();
@@ -83,11 +79,6 @@ document.addEventListener("staff-created", async (ev) => {
 
         console.log("⭐ Loaded staff detail (direct print):", t);
 
-        // ❌ Không gọi offline
-        // const mod = await import("./features/offline.js");
-        // mod.loadOfflineView();
-
-        // ✔ Nhảy thẳng sang trang in vé
         await loadPrintTicket(ticketId);
         window.switchView("print");
 
@@ -172,9 +163,6 @@ function bindMovieTabs() {
     S.movieTab = "now";
 }
 
-/* ============================================================
-   DISABLE ALL WHEN STAFF HAS NO CINEMA
-============================================================ */
 function disableAllFeatures() {
     document.querySelectorAll("section[id^='view-']")
         .forEach(sec => sec.classList.add("d-none"));
@@ -218,22 +206,5 @@ function bindBackFromSeats() {
 
     btn.onclick = () => {
         window.switchView("schedule");
-    };
-}
-
-/* ============================================================
-   VOUCHER LIST BUTTON
-============================================================ */
-function setupVoucherListButton() {
-    const btn = document.getElementById("btnShowVoucher");
-    const box = document.getElementById("voucherOptions");
-
-    if (!btn || !box) return;
-
-    btn.onclick = async () => {
-        if (!S.voucherOptions.length) {
-            await loadVoucherOptions();
-        }
-        box.classList.toggle("d-none");
     };
 }

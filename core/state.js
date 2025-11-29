@@ -30,12 +30,9 @@ export const S = {
     seatsSelected: new Set(),
 
     /* ======================================
-       VOUCHER
+       MEMBERSHIP (TÍCH ĐIỂM)
     ====================================== */
-    voucherCode: "",
-    voucherInfo: null,
-    voucherOptions: [],
-    voucherPay: null,
+    memberCard: null,            // ⭐ MÃ THẺ THÀNH VIÊN (NEW)
 
     /* ======================================
        COMBOS
@@ -50,11 +47,11 @@ export const S = {
     payMethod: "Tiền mặt",
 
     /* ======================================
-       BOOKING / OFFLINE / PRINT
+       BOOKING / PRINT
     ====================================== */
-    lastTicketId: null,          // ID vé vừa tạo
-    lastTicketDetail: null,      // ⭐ CHÚ Ý — thêm để chứa dữ liệu vé đầy đủ
-    lastTicketTotal: 0           // tổng tiền (tự động tính từ detail)
+    lastTicketId: null,
+    lastTicketDetail: null,
+    lastTicketTotal: 0
 };
 
 /* ==========================================
@@ -62,7 +59,7 @@ export const S = {
 ========================================== */
 export const SEAT_HOLD_SECONDS = 2 * 60;
 
-// Ghế đang thật sự bị khóa (sold/broken) — không click được
+// Ghế thật sự bị khóa (sold/broken)
 export const BAD_STATUSES = new Set([
     "sold",
     "broken"

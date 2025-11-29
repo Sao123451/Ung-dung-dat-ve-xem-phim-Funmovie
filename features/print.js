@@ -1,104 +1,81 @@
+// features/print.js
 import { api } from "../core/api.js";
 import { esc } from "../core/helper.js";
 import { S } from "../core/state.js";
 
 /* ============================================================
-   LOAD PRINT TICKET (STAFF)
+   GIỮ NGUYÊN GIỜ BACKEND — KHÔNG BỊ +7H
 ============================================================ */
+function formatTimeFromUTC(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const hh = d.getUTCHours().toString().padStart(2, "0");
+    const mm = d.getUTCMinutes().toString().padStart(2, "0");
+    return `${hh}:${mm}`;
+}
+
 export async function loadPrintTicket(ticketId = null) {
+
     const wrap = document.getElementById("printWrap");
     wrap.innerHTML = `<div class="text-center muted">Đang tải vé...</div>`;
 
     try {
         if (!ticketId) ticketId = S.lastTicketId;
-        if (!ticketId) {
-            wrap.innerHTML = `<div class="text-danger">Chưa có vé để in.</div>`;
-            return;
-        }
 
-        // 🔥 LẤY TOÀN BỘ CHI TIẾT TỪ API STAFF
-        const t = await api(`/bookings/detail/${ticketId}`);
+        // ⭐ STAFF DETAIL API
+        const t = await api(`/bookings/detailBooking/${ticketId}`);
 
         if (!t || t.status !== "paid") {
             wrap.innerHTML = `<div class="text-danger">Vé chưa thanh toán — không thể in.</div>`;
             return;
         }
 
-        /* ======================================================
-           CHUẨN HÓA DỮ LIỆU
-        ====================================================== */
-        const movieTitle = t.movie_title || "Không rõ phim";
-        const cinemaName = t.cinema_name || t.cinema_snapshot?.name || "Không rõ rạp";
-        const roomName = t.room_name || "Không rõ phòng";
+        const movieTitle = esc(t.movie_title || "Không rõ phim");
+        const cinemaName = esc(t.cinema_name || "");
+        const roomName = esc(t.room_name || "");
 
+        // ⭐⭐⭐ FIX LỆCH GIỜ +7 — DÙNG UTC GỐC ⭐⭐⭐
+        const time = formatTimeFromUTC(t.showtime_start);
+
+        // ⭐ Ngày vẫn dùng Việt Nam (chỉ lệch giờ, không lệch ngày)
         const start = t.showtime_start ? new Date(t.showtime_start) : null;
-
         const date = start ? start.toLocaleDateString("vi-VN") : "—";
-        const time = start
-            ? start.toLocaleTimeString("vi-VN", {
-                hour: "2-digit",
-                minute: "2-digit",
-            })
-            : "—";
 
-        const seats = Array.isArray(t.seats) ? t.seats.join(", ") : "—";
+        const seats = t.seats?.length ? t.seats.join(", ") : "—";
 
         const comboList = t.combos?.length
-            ? t.combos
-                  .map(
-                      (cb) => `
+            ? t.combos.map(cb => `
                 <div class="ticket-row">
                     <span class="ticket-label">${esc(cb.name)}</span>
-                    <span class="ticket-value">${cb.qty} × ${cb.unit_price.toLocaleString(
-                        "vi-VN"
-                    )}đ</span>
+                    <span class="ticket-value">${cb.qty} × ${cb.unit_price.toLocaleString("vi-VN")}đ</span>
                 </div>
-            `
-                  )
-                  .join("")
+              `).join("")
             : `
-            <div class="ticket-row">
+              <div class="ticket-row">
                 <span class="ticket-label">Combo</span>
                 <span class="ticket-value">Không có</span>
-            </div>`;
+              </div>`;
 
-        const voucherList = t.vouchers?.length
-            ? t.vouchers
-                  .map(
-                      (code) => `
-                <div class="ticket-row">
-                    <span class="ticket-label">Voucher</span>
-                    <span class="ticket-value">${esc(code)}</span>
-                </div>
-            `
-                  )
-                  .join("")
-            : `
-            <div class="ticket-row">
-                <span class="ticket-label">Voucher</span>
-                <span class="ticket-value">Không áp dụng</span>
-            </div>`;
+        const memberCard = t.membership_card || "Không có";
 
-        const total = Number(t.total || 0);
-
-        /* ======================================================
-           HTML TEMPLATE — 2 CỘT, GIỮA TRANG, BO GÓC
-        ====================================================== */
+        // ⭐ TÍNH TỔNG CHUẨN
+        const total =
+            (t.total_after ?? t.total_before ??
+            (t.seat_subtotal + t.combo_subtotal)) || 0;
 
         wrap.innerHTML = `
             <div class="print-ticket-card">
 
                 <div class="ticket-header">
-                    ${esc(cinemaName)}<br>
-                    <strong>${esc(movieTitle)}</strong>
+                    ${cinemaName}<br><strong>${movieTitle}</strong>
                 </div>
 
                 <div class="ticket-line"></div>
 
-                <div class="ticket-row"><span class="ticket-label">Phòng</span><span class="ticket-value">${esc(roomName)}</span></div>
-                <div class="ticket-row"><span class="ticket-label">Ngày</span><span class="ticket-value">${date}</span></div>
-                <div class="ticket-row"><span class="ticket-label">Giờ</span><span class="ticket-value">${time}</span></div>
-                <div class="ticket-row"><span class="ticket-label">Ghế</span><span class="ticket-value">${seats}</span></div>
+                <div class="ticket-row"><span class="ticket-label">Phòng</span><span>${roomName}</span></div>
+                <div class="ticket-row"><span class="ticket-label">Ngày</span><span>${date}</span></div>
+                <div class="ticket-row"><span class="ticket-label">Giờ</span><span>${time}</span></div>
+                <div class="ticket-row"><span class="ticket-label">Ghế</span><span>${seats}</span></div>
 
                 <div class="ticket-line"></div>
 
@@ -106,28 +83,19 @@ export async function loadPrintTicket(ticketId = null) {
 
                 <div class="ticket-line"></div>
 
-                ${voucherList}
+                <div class="ticket-row"><span>Thẻ thành viên</span><span>${memberCard}</span></div>
 
                 <div class="ticket-line"></div>
 
-                <div class="ticket-row">
-                    <span class="ticket-label">Tổng tiền</span>
-                    <span class="ticket-value">${total.toLocaleString("vi-VN")}đ</span>
-                </div>
+                <div class="ticket-row"><span>Tổng tiền</span>
+                <span>${total.toLocaleString("vi-VN")}đ</span></div>
 
-                <div class="print-ticket-qr">
-                    <div id="printTicketQRCode"></div>
-                </div>
+                <div id="printTicketQRCode"></div>
 
-                <button class="print-ticket-btn" onclick="window.print()">
-                    In vé
-                </button>
+                <button class="print-ticket-btn" onclick="window.print()">In vé</button>
             </div>
         `;
 
-        /* ======================================================
-           QR CODE
-        ====================================================== */
         new QRCode(document.getElementById("printTicketQRCode"), {
             width: 170,
             height: 170,

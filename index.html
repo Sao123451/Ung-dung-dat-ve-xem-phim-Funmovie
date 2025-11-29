@@ -14,24 +14,24 @@
   <div class="app">
 
     <!-- ================= SIDEBAR ================= -->
-<aside class="sidebar">
-  <div class="brand">HD Movie Staff</div>
+    <aside class="sidebar">
+      <div class="brand">HD Movie Staff</div>
 
-  <nav class="pt-2">
-    <a href="#" class="nav-linkx active" data-view="home">Bán vé tại quầy</a>
-    <a href="#" class="nav-linkx" data-view="online">Quét mã vé online</a>
-    <a href="#" class="nav-linkx" data-view="loyalty">Tích điểm thành viên</a>
-    <!-- ❌ XÓA hoàn toàn mục "Xác nhận vé offline" -->
-    <!-- <a href="#" class="nav-linkx" data-view="offline">Xác nhận vé offline</a> -->
+      <nav class="pt-2">
+        <a href="#" class="nav-linkx active" data-view="home">Bán vé tại quầy</a>
+        <a href="#" class="nav-linkx" data-view="online">Quét mã vé online</a>
+        <a href="#" class="nav-linkx" data-view="loyalty">Tích điểm thành viên</a>
 
-    <!-- ✔ GIỮ lại In vé -->
-    <a href="#" class="nav-linkx" data-view="print">In vé</a>
-  </nav>
+        <!-- ❌ OFFLINE đã xóa hoàn toàn -->
+        <!-- <a href="#" class="nav-linkx" data-view="offline">Xác nhận vé offline</a> -->
 
-  <div class="logout-wrap">
-    <button class="btn btn-logout btn-sm" id="btnLogout">Đăng xuất</button>
-  </div>
-</aside>
+        <a href="#" class="nav-linkx" data-view="print">In vé</a>
+      </nav>
+
+      <div class="logout-wrap">
+        <button class="btn btn-logout btn-sm" id="btnLogout">Đăng xuất</button>
+      </div>
+    </aside>
 
 
     <!-- ================= MAIN ================= -->
@@ -57,6 +57,7 @@
       <section id="view-home" class="cardx">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <div class="page-title m-0">Phim</div>
+
           <div id="movieTabs">
             <div id="tab-now" class="tab-pill active">Đang chiếu</div>
             <div id="tab-coming" class="tab-pill">Sắp chiếu</div>
@@ -135,6 +136,7 @@
 
       <!-- ================= PAY ================= -->
       <section id="view-pay" class="cardx d-none">
+
         <div class="d-flex justify-content-between align-items-center mb-2">
           <div class="page-title m-0">Thanh toán</div>
 
@@ -146,23 +148,27 @@
         <div class="row g-3">
           <div class="col-lg-8">
 
+            <!-- COMBO -->
             <div class="cardx mb-3">
               <div class="fw-bold mb-2">Combo bắp nước</div>
               <div id="comboList"></div>
             </div>
 
+            <!-- MEMBERSHIP -->
             <div class="cardx">
-              <div class="fw-bold mb-2">Voucher</div>
+              <div class="fw-bold mb-2">Thẻ thành viên</div>
+
               <div class="d-flex gap-2 align-items-center">
-                <input class="form-control" id="voucherPay" placeholder="NHAPVOUCHER">
-                <button class="btn btn-secondary btn-sm" id="btnShowVoucher">Danh sách</button>
-                <button class="btn btn-brand btn-sm" id="btnApplyVoucherPay">Áp dụng</button>
+                <input class="form-control" id="memberCardInput" placeholder="Nhập mã thẻ thành viên...">
+                <button class="btn btn-brand btn-sm" id="btnCheckMember">Tìm</button>
               </div>
 
-              <div id="voucherOptions" class="voucher-list mt-2 d-none"></div>
+              <div id="memberResult" class="mt-2 small muted"></div>
             </div>
+
           </div>
 
+          <!-- SUMMARY -->
           <div class="col-lg-4">
             <div class="cardx">
               <div class="d-flex justify-content-between">
@@ -182,27 +188,29 @@
                 <div class="pay-pill">Thẻ ngân hàng</div>
               </div>
 
-              <button class="btn btn-success w-100 mt-2" id="btnConfirmPay">Xác nhận thanh toán</button>
+              <button class="btn btn-success w-100 mt-2" id="btnConfirmPay">
+                Xác nhận thanh toán
+              </button>
             </div>
           </div>
         </div>
+
       </section>
 
-      <!-- ================= PRINT — NEW TICKET LAYOUT ================= -->
+      <!-- ================= PRINT ================= -->
       <section id="view-print" class="cardx d-none">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="m-0">Vé đã đặt</h5>
           <button class="btn btn-secondary btn-sm" onclick="switchView('home')">Quay lại bán vé</button>
         </div>
 
-        <div id="printWrap" class="print-ticket-container">
-          <!-- JS sẽ dựng nội dung vé vào đây -->
-        </div>
+        <div id="printWrap" class="print-ticket-container"></div>
       </section>
 
     </main>
   </div>
 
+  <!-- MID ALERT -->
   <div id="midAlert" class="mid-alert d-none">
     <div class="mid-alert-box">
       <div id="midAlertMsg">Thông báo</div>
@@ -210,12 +218,12 @@
     </div>
   </div>
 
-  <!-- QR CODE LIB -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- QR LIB -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<!-- MAIN -->
-<script type="module" src="main.js"></script>
-
+  <!-- MAIN -->
+  <script type="module" src="main.js"></script>
 
 </body>
+
 </html>

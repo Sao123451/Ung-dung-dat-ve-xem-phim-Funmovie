@@ -1,18 +1,16 @@
-import { api, apiPublic, API_ORIGIN, resolveAsset } from "../core/api.js";
+// features/pay.js — MEMBERSHIP ONLY, NO VOUCHER
+
+import { api, API_ORIGIN } from "../core/api.js";
 import { $, $$, esc, showToast } from "../core/helper.js";
 import { S } from "../core/state.js";
 import { switchView } from "../core/routes.js";
 
 /* ============================================================
-   FIX ẢNH COMBO — CHUẨN 100%
+   FIX ẢNH COMBO
 ============================================================ */
 function comboImg(path) {
     if (!path) return "";
-
-    // Normalize path
     if (!path.startsWith("/")) path = "/" + path;
-
-    // Dùng API_ORIGIN để KHÔNG BAO GIỜ sai domain
     return `${API_ORIGIN}/public${path}`;
 }
 
@@ -36,10 +34,11 @@ export async function loadCombos() {
         ? res
         : res.products || res.items || res.data || [];
 
-    S.combos = list.filter((p) =>
-        ["combo", "popcorn", "drink", "food", "beverage"].includes(
-            String(p.type)
-        ) && p.active !== false
+    S.combos = list.filter(
+        (p) =>
+            ["combo", "popcorn", "drink", "food", "beverage"].includes(
+                String(p.type)
+            ) && p.active !== false
     );
 
     S.comboPick = [];
@@ -47,10 +46,12 @@ export async function loadCombos() {
 }
 
 /* ============================================================
-   RENDER COMBO
+   RENDER COMBO LIST
 ============================================================ */
 function renderComboList() {
     const wrap = $("#comboList");
+    if (!wrap) return;
+
     wrap.innerHTML = "";
 
     if (!S.combos.length) {
@@ -64,9 +65,7 @@ function renderComboList() {
         const row = document.createElement("div");
         row.className = "combo-row";
         row.innerHTML = `
-            <img class="combo-img" 
-                 src="${esc(comboImg(p.image || ""))}" 
-                 onerror="this.src='data:image/svg+xml;base64,PHN2Zy8+'"/>
+            <img class="combo-img" src="${esc(comboImg(p.image || ""))}" />
 
             <div class="combo-info">
                 <div class="name">${esc(p.name)}</div>
@@ -84,27 +83,24 @@ function renderComboList() {
         wrap.appendChild(row);
 
         const numBox = row.querySelector(".cc-num");
-        const dec = row.querySelector('[data-act="dec"]');
-        const inc = row.querySelector('[data-act="inc"]');
+        const dec = row.querySelector("[data-act='dec']");
+        const inc = row.querySelector("[data-act='inc']");
 
-        inc.onclick = () => {
-            let v = Number(numBox.textContent) + 1;
-            numBox.textContent = v;
-            numBox.classList.add("bump");
-            setTimeout(() => numBox.classList.remove("bump"), 180);
-            syncComboPick();
-            renderPaySummary();
-        };
-
-        dec.onclick = () => {
-            let v = Math.max(0, Number(numBox.textContent) - 1);
-            numBox.textContent = v;
-            numBox.classList.add("bump");
-            setTimeout(() => numBox.classList.remove("bump"), 180);
-            syncComboPick();
-            renderPaySummary();
-        };
+        inc.onclick = () => updateCombo(numBox, 1);
+        dec.onclick = () => updateCombo(numBox, -1);
     });
+}
+
+function updateCombo(numBox, delta) {
+    let v = Number(numBox.textContent) + delta;
+    v = Math.max(0, v);
+
+    numBox.textContent = v;
+    numBox.classList.add("bump");
+    setTimeout(() => numBox.classList.remove("bump"), 180);
+
+    syncComboPick();
+    renderPaySummary();
 }
 
 function syncComboPick() {
@@ -121,103 +117,32 @@ function syncComboPick() {
         .filter(Boolean);
 }
 
-/* ============================================================
-   VOUCHER LOAD
-============================================================ */
-export async function loadVoucherOptions() {
-    let res;
+export function computeSeatSubtotal() {
+    let total = 0;
 
-    try {
-        res = await apiPublic("/vouchers/public?ts=" + Date.now());
-        console.log("📌 API voucher trả về:", res);
-    } catch (err) {
-        console.error("❌ Lỗi gọi API voucher:", err);
-        S.voucherOptions = [];
-        return renderVoucherOptions();
+    const base = Number(S.pickedShowtime?.ticket_price || 0);
+
+    for (const key of S.seatsSelected) {
+        const se = S.seatByKey.get(key);
+        if (!se) continue;
+
+        total += base + Number(se.extra_price || 0);
     }
 
-    if (res && Array.isArray(res.items)) S.voucherOptions = res.items;
-    else if (Array.isArray(res)) S.voucherOptions = res;
-    else S.voucherOptions = [];
-
-    renderVoucherOptions();
-}
-
-function renderVoucherOptions() {
-    const wrap = $("#voucherOptions");
-    wrap.innerHTML = "";
-
-    if (!S.voucherOptions.length) {
-        wrap.innerHTML = `<div class="small muted">Không có voucher</div>`;
-        return;
-    }
-
-    S.voucherOptions.forEach((v) => {
-        const btn = document.createElement("button");
-        btn.className = "voucher-pill";
-
-        const discountType = v.discount_type || v.type;
-
-        const valText =
-            discountType === "percent"
-                ? `${v.value}%`
-                : `${Number(v.value).toLocaleString()}đ`;
-
-        btn.innerHTML = `
-            <div class="voucher-code">${esc(v.code)}</div>
-            <div class="voucher-meta small">
-                ${v.scope === "seat"
-                ? "Giảm vé"
-                : v.scope === "combo"
-                    ? "Giảm combo"
-                    : "Giảm toàn bộ"
-            }
-                • ${valText}
-                ${v.min_order ? ` • Min: ${v.min_order}` : ""}
-            </div>
-        `;
-
-        btn.onclick = () => {
-            $("#voucherPay").value = v.code;
-            $("#voucherOptions").classList.add("d-none");
-            $("#btnApplyVoucherPay").click();
-        };
-
-        wrap.appendChild(btn);
-    });
-}
-
-export function calcVoucherDiscount(seatSubtotal, comboTotal) {
-    const v = S.voucherInfo;
-    if (!v) return 0;
-
-    const orderTotal = seatSubtotal + comboTotal;
-    if (orderTotal < (v.min_order || 0)) return 0;
-
-    let base = 0;
-    if (v.scope === "seat") base = seatSubtotal;
-    else if (v.scope === "combo") base = comboTotal;
-    else base = orderTotal;
-
-    let discount = 0;
-
-    if (v.discount_type === "amount") discount = v.value;
-    else if (v.discount_type === "percent")
-        discount = Math.floor(base * (v.value / 100));
-
-    if (v.max_discount) discount = Math.min(discount, v.max_discount);
-
-    return Math.max(0, discount);
+    return total;
 }
 
 /* ============================================================
-   PAYMENT SUMMARY
+   SUMMARY (NO VOUCHER)
 ============================================================ */
 export function renderPaySummary() {
     const seatSubtotal = computeSeatSubtotal();
-    const comboTotal = S.comboPick.reduce((s, c) => s + c.unit_price * c.qty, 0);
-    const discount = calcVoucherDiscount(seatSubtotal, comboTotal);
-    const total = Math.max(0, seatSubtotal + comboTotal - discount);
+    const comboTotal = S.comboPick.reduce(
+        (sum, c) => sum + c.unit_price * c.qty,
+        0
+    );
+
+    const total = seatSubtotal + comboTotal;
 
     const el = $("#paySummary");
     el.innerHTML = `
@@ -229,7 +154,6 @@ export function renderPaySummary() {
 
         <div>Vé: ${seatSubtotal.toLocaleString()}đ</div>
         <div>Combo: ${comboTotal.toLocaleString()}đ</div>
-        <div>Giảm giá: -${discount.toLocaleString()}đ</div>
 
         <div class="divider"></div>
         <div><b>Tổng cộng: ${total.toLocaleString()}đ</b></div>
@@ -237,92 +161,64 @@ export function renderPaySummary() {
 }
 
 /* ============================================================
-   ÁP DỤNG VOUCHER
+   TÌM KIẾM THẺ THÀNH VIÊN (ĐÃ SỬA LỖI)
 ============================================================ */
-export function bindApplyVoucher() {
-    $("#btnApplyVoucherPay").onclick = async () => {
-        const code = $("#voucherPay").value.trim();
-        if (!code) return alert("Vui lòng nhập mã!");
+export function bindMemberSearch() {
+    const input = $("#memberCardInput");
+    const btn = $("#btnCheckMember");
+    const box = $("#memberResult");
 
-        try {
-            const res = await apiPublic(`/vouchers/${code}/validate`);
-            const v = res?.voucher;
+    if (!input || !btn || !box) return;
 
-            if (!res.valid || !v) {
-                S.voucherCode = "";
-                S.voucherInfo = null;
-                showToast("Voucher không hợp lệ");
-                renderPaySummary();
-                return;
-            }
-
-            const seatSubtotal = computeSeatSubtotal();
-            const comboTotal = S.comboPick.reduce(
-                (s, c) => s + c.unit_price * c.qty,
-                0
-            );
-
-            const orderTotal = seatSubtotal + comboTotal;
-
-            if (orderTotal < (v.min_order || 0)) {
-                showToast(
-                    `Đơn hàng chưa đạt tối thiểu ${v.min_order.toLocaleString()}đ để dùng voucher này.`
-                );
-                S.voucherCode = "";
-                S.voucherInfo = null;
-                renderPaySummary();
-                return;
-            }
-
-            S.voucherCode = code;
-            S.voucherInfo = v;
-
-            showToast("Áp dụng thành công!");
-        } catch {
-            S.voucherCode = "";
-            S.voucherInfo = null;
-            showToast("Lỗi áp dụng voucher");
+    btn.onclick = async () => {
+        const card = input.value.trim();
+        if (!card) {
+            showToast("Vui lòng nhập mã thẻ!");
+            return;
         }
 
-        renderPaySummary();
+        try {
+            // ⭐⭐ ĐÃ SỬA LỖI: THÊM BACKTICK ĐÚNG CÚ PHÁP
+            const res = await api(`/users/find-by-card/${card}`);
+
+            S.memberCard = res.membership_card;
+
+            box.innerHTML = `
+                <div class="member-box">
+                    <div><b>Tên:</b> ${esc(res.full_name)}</div>
+                    <div><b>Mã thẻ:</b> ${esc(res.membership_card)}</div>
+                </div>
+            `;
+
+            showToast("✔ Đã áp dụng thẻ thành viên");
+
+        } catch (err) {
+            S.memberCard = null;
+
+            box.innerHTML = `
+                <div class="text-danger small">Không tìm thấy thẻ thành viên</div>
+            `;
+            showToast("Không tìm thấy mã thẻ");
+        }
     };
 }
 
 /* ============================================================
-   CHUYỂN SANG TRANG THANH TOÁN
+   CHUYỂN SANG TRANG PAY
 ============================================================ */
 export async function switchToPay() {
     switchView("pay");
     await loadCombos();
-    await loadVoucherOptions();
     renderPaySummary();
 }
 
 /* ============================================================
-   TÍNH TIỀN GHẾ
-============================================================ */
-export function computeSeatSubtotal() {
-    let total = 0;
-    const base = Number(S.pickedShowtime.ticket_price || 0);
-
-    for (const key of S.seatsSelected) {
-        const se = S.seatByKey.get(key);
-        if (!se) continue;
-        const extra = Number(se.extra_price || 0);
-        total += base + extra;
-    }
-
-    return total;
-}
-
-/* ============================================================
-   EXPORT CHUẨN
+   EXPORT
 ============================================================ */
 export default {
     loadCombos,
-    loadVoucherOptions,
-    bindApplyVoucher,
     renderPaySummary,
+    computeSeatSubtotal,
     switchToPay,
-    computeSeatSubtotal
+    bindMemberSearch,
 };

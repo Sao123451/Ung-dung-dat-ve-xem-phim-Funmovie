@@ -397,19 +397,6 @@ body {
   margin-top: 10px;
 }
 
-.slot-btn {
-  background: #eef1f6;
-  border-radius: 12px;
-  padding: 14px 18px;
-  text-align: center;
-  cursor: pointer;
-  transition: .2s ease;
-  width: 180px;
-  border: 1px solid #d4d9e3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 
 .slot-btn:hover {
   background: #ffffff;
@@ -930,12 +917,7 @@ select option {
   font-size: 12px;
 }
 
-.ticket-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
-}
+
 
 .ticket-qr {
   margin-top: 20px;
@@ -1041,11 +1023,6 @@ select option {
   margin: 10px 0;
 }
 
-.ticket-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-}
 
 .ticket-row .label {
   opacity: 0.7;
@@ -1095,163 +1072,165 @@ select option {
     box-shadow: none;
   }
 }
+
 /* ========================
    OFFLINE TICKET SMALL 80MM
 ======================== */
 .offline-ticket-container {
-    width: 320px;
-    margin: 0 auto;
-    padding: 10px 0;
+  width: 320px;
+  margin: 0 auto;
+  padding: 10px 0;
 }
 
 .offline-ticket-card {
-    background: #ffffff;
-    color: #000;
-    padding: 18px;
-    border-radius: 10px;
-    border: 1px solid #ccc;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
+  background: #ffffff;
+  color: #000;
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
 }
 
 .offline-ticket-title {
-    text-align: center;
-    font-weight: 700;
-    font-size: 18px;
-    margin-bottom: 10px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 10px;
 }
 
 .offline-ticket-line {
-    border-bottom: 1px dashed #999;
-    margin: 10px 0;
+  border-bottom: 1px dashed #999;
+  margin: 10px 0;
 }
 
 .offline-ticket-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
 }
 
 .offline-ticket-row .label {
-    opacity: 0.6;
+  opacity: 0.6;
 }
 
 .offline-ticket-row .value {
-    font-weight: 700;
+  font-weight: 700;
 }
 
 /* nút xác nhận */
 #btnOfflineConfirm {
-    width: 100%;
-    margin-top: 14px;
-    padding: 12px;
-    background: #22c55e;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 #btnOfflineConfirm:hover {
-    background: #16a34a;
+  background: #16a34a;
 }
+
 /* =========================================================
    PRINT TICKET — CARD CHÍNH
 ========================================================= */
 
 .print-ticket-card {
-    background: #ffffff;
-    color: #000;
-    padding: 20px;
-    border-radius: 14px;
-    width: 100%;
-    max-width: 380px;
-    margin: 0 auto;
-    border: 1px solid #ccc;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
+  background: #ffffff;
+  color: #000;
+  padding: 20px;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
 }
 
 /* =========================================================
    HEADER
 ========================================================= */
 .ticket-header {
-    text-align: center;
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 12px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 12px;
 }
 
 /* =========================================================
    DASH LINE
 ========================================================= */
 .ticket-line {
-    border-bottom: 1px dashed #999;
-    margin: 10px 0;
+  border-bottom: 1px dashed #999;
+  margin: 10px 0;
 }
 
 /* =========================================================
    ROW CHUẨN HÓA (BẢN DUY NHẤT)
 ========================================================= */
 .ticket-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    font-size: 15px;
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 15px;
 }
 
 .ticket-label {
-    font-weight: 500;
-    color: #444;
+  font-weight: 500;
+  color: #444;
 }
 
 .ticket-value {
-    font-weight: 600;
-    text-align: right;
-    color: #000;
+  font-weight: 600;
+  text-align: right;
+  color: #000;
 }
 
 /* Dòng tổng tiền nổi bật */
 .ticket-row.total .ticket-value {
-    font-size: 17px;
-    font-weight: 800;
-    color: #16a34a;
+  font-size: 17px;
+  font-weight: 800;
+  color: #16a34a;
 }
 
 /* =========================================================
    QR CODE
 ========================================================= */
 .print-ticket-qr {
-    margin-top: 16px;
-    text-align: center;
+  margin-top: 16px;
+  text-align: center;
 }
 
 #printTicketQRCode {
-    margin: auto;
-    width: 160px !important;
-    height: 160px !important;
+  margin: auto;
+  width: 160px !important;
+  height: 160px !important;
 }
 
 /* =========================================================
    NÚT IN
 ========================================================= */
 .print-ticket-btn {
-    width: 100%;
-    margin-top: 16px;
-    padding: 12px;
-    background: #22c55e;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    color: #fff;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  background: #22c55e;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
 }
 
 .print-ticket-btn:hover {
-    background: #16a34a;
+  background: #16a34a;
 }
 
 /* =========================================================
@@ -1259,76 +1238,78 @@ select option {
 ========================================================= */
 @media print {
 
-    /* Ẩn UI bên ngoài */
-    body * {
-        visibility: hidden !important;
-    }
+  /* Ẩn UI bên ngoài */
+  body * {
+    visibility: hidden !important;
+  }
 
-    /* Chỉ hiện vùng vé */
-    #printWrap, #printWrap * {
-        visibility: visible !important;
-    }
+  /* Chỉ hiện vùng vé */
+  #printWrap,
+  #printWrap * {
+    visibility: visible !important;
+  }
 
-    /* Đưa vé ra giữa trang */
-    #printWrap {
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
+  /* Đưa vé ra giữa trang */
+  #printWrap {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
 
-        width: 380px !important;
-        background: #fff !important;
+    width: 380px !important;
+    background: #fff !important;
 
-        border: 1px solid #ccc !important;
-        border-radius: 14px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 14px !important;
 
-        padding: 20px !important;
-        box-shadow: none !important;
-    }
+    padding: 20px !important;
+    box-shadow: none !important;
+  }
 
-    /* Ẩn nút */
-    .print-ticket-btn {
-        display: none !important;
-    }
+  /* Ẩn nút */
+  .print-ticket-btn {
+    display: none !important;
+  }
 
-    /* Bỏ nền */
-    body {
-        background: #fff !important;
-    }
+  /* Bỏ nền */
+  body {
+    background: #fff !important;
+  }
 }
+
 /* ===================== TICKET LABEL STYLE – PRO ===================== */
 .print-ticket-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 15px;
-    border-bottom: 1px dashed #ddd;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 15px;
+  border-bottom: 1px dashed #ddd;
 }
 
 /* Label bên trái – rõ, sang trọng */
 .print-ticket-row .label {
-    font-weight: 600;
-    color: #222;
-    letter-spacing: 0.2px;
+  font-weight: 600;
+  color: #222;
+  letter-spacing: 0.2px;
 }
 
 /* Value bên phải – đậm, dễ đọc */
 .print-ticket-row .value {
-    font-weight: 700;
-    color: #000;
-    text-align: right;
+  font-weight: 700;
+  color: #000;
+  text-align: right;
 }
 
 /* Tên trường quan trọng như “Tổng tiền” */
 .print-ticket-row.total .value {
-    font-size: 17px;
-    font-weight: 800;
-    color: #0a8f3c;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0a8f3c;
 }
 
 /* QR căn giữa đẹp */
 .print-ticket-qr {
-    margin-top: 16px;
-    display: flex;
-    justify-content: center;
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
 }
