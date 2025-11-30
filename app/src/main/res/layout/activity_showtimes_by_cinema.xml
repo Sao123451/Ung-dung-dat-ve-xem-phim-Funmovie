@@ -7,7 +7,7 @@
         android:id="@+id/topAppBar"
         android:layout_width="0dp" android:layout_height="wrap_content"
         app:navigationIcon="@drawable/ic_arrow_back_24"
-        android:backgroundTint="?attr/colorPrimary"
+        android:background="@color/orange"
         app:title="ĐẶT VÉ THEO RẠP"
         app:titleTextColor="@android:color/white"
         app:layout_constraintTop_toTopOf="parent"

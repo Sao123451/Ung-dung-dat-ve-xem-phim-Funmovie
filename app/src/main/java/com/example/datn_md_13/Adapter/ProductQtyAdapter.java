@@ -37,12 +37,12 @@ public class ProductQtyAdapter extends RecyclerView.Adapter<ProductQtyAdapter.VH
         data.clear();
         if (rows != null) data.addAll(rows);
         notifyDataSetChanged();
-        if (cb != null) cb.onChanged(); // ⚠️ load lại quote ngay khi danh sách đổi
+        if (cb != null) cb.onChanged(); // load lại quote ngay khi danh sách đổi
     }
 
     public List<Row> getSelected() {
         List<Row> out = new ArrayList<>();
-        for (Row r : data) if (r.qty > 0) out.add(r);   // ⚠️ chỉ lấy item qty>0
+        for (Row r : data) if (r.qty > 0) out.add(r);   // chỉ lấy item qty>0
         return out;
     }
 
@@ -60,13 +60,13 @@ public class ProductQtyAdapter extends RecyclerView.Adapter<ProductQtyAdapter.VH
         h.btnPlus.setOnClickListener(v -> {
             r.qty++;
             h.tvQty.setText(String.valueOf(r.qty));
-            if (cb != null) cb.onChanged();             // ⚠️ gọi callback
+            if (cb != null) cb.onChanged();             // gọi callback
         });
         h.btnMinus.setOnClickListener(v -> {
             if (r.qty > 0) {
                 r.qty--;
                 h.tvQty.setText(String.valueOf(r.qty));
-                if (cb != null) cb.onChanged();         // ⚠️ gọi callback
+                if (cb != null) cb.onChanged();         // gọi callback
             }
         });
     }

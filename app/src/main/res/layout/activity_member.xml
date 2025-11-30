@@ -19,12 +19,12 @@
         android:paddingStart="4dp"
         android:paddingEnd="4dp"
         app:navigationIcon="@drawable/ic_arrow_back"
-    app:title="Thành viên FunMovie"
-    app:titleCentered="true"
-    android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
-    app:layout_constraintTop_toTopOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"/>
+        app:title="Thành viên FunMovie"
+        app:titleCentered="true"
+        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- Header nền xanh (gradient) -->
     <FrameLayout

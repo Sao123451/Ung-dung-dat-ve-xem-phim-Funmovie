@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -29,6 +30,19 @@ public class TicketActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ticket);
 
+        // ========== Toolbar ==========
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        // Hiện nút back trên toolbar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
+        // Xử lý khi bấm nút ⬅
+        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+
+        // ========== RecyclerView ==========
         rvHistory = findViewById(R.id.rvHistory);
         rvHistory.setLayoutManager(new LinearLayoutManager(this));
 
@@ -47,8 +61,8 @@ public class TicketActivity extends AppCompatActivity {
                     TicketAdapter adapter = new TicketAdapter(
                             TicketActivity.this,
                             list,
-                            ticket -> {
-                            });
+                            ticket -> {}
+                    );
 
                     rvHistory.setAdapter(adapter);
 

@@ -104,7 +104,7 @@ public class MovieShowtimesAdapter extends RecyclerView.Adapter<MovieShowtimesAd
                         if (!"sold".equalsIgnoreCase(st)
                                 && !"broken".equalsIgnoreCase(st)
                                 && !"holding".equalsIgnoreCase(st)) {
-                            available++;   // ✅ chỉ đếm available
+                                available++;   // chỉ đếm available
                         }
                     }
 

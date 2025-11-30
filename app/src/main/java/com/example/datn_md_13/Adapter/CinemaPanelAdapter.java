@@ -68,7 +68,7 @@ public class CinemaPanelAdapter extends RecyclerView.Adapter<CinemaPanelAdapter.
         Cinema c = data.get(pos);
         h.tvCinemaName.setText(c.getName());
 
-        // ✅ hiển thị khoảng cách
+        // hiển thị khoảng cách
         String dist = formatDistance(c);
         if (dist != null) {
             h.tvDistance.setText(dist);
@@ -107,7 +107,7 @@ public class CinemaPanelAdapter extends RecyclerView.Adapter<CinemaPanelAdapter.
         h.ivToggle.setOnClickListener(toggle);
     }
 
-    // ✅ tính khoảng cách từ vị trí user -> rạp
+    // tính khoảng cách từ vị trí user -> rạp
     private String formatDistance(Cinema c) {
         Double uLat = MainActivity.USER_LAT;
         Double uLng = MainActivity.USER_LNG;
@@ -138,7 +138,7 @@ public class CinemaPanelAdapter extends RecyclerView.Adapter<CinemaPanelAdapter.
                         }
                         tAdapter.submit(all);
 
-                        // 🔥 Đếm ghế còn trống theo từng suất
+                        // Đếm ghế còn trống theo từng suất
                         ApiService api2 = ApiClient.get().create(ApiService.class);
                         for (int i = 0; i < all.size(); i++) {
                             final int idx = i;
@@ -180,7 +180,7 @@ public class CinemaPanelAdapter extends RecyclerView.Adapter<CinemaPanelAdapter.
 
     static class VH extends RecyclerView.ViewHolder {
         TextView tvCinemaName;
-        TextView tvDistance;   // ✅
+        TextView tvDistance;
         ImageView ivToggle;
         RecyclerView rvTimes;
         ChipGroup chipTypeInCard;

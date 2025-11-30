@@ -40,6 +40,10 @@ public class Register extends AppCompatActivity {
 
     private Handler otpHandler = new Handler();
 
+    // REGEX mật khẩu mạnh
+    private static final String PASSWORD_REGEX =
+            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -192,47 +196,85 @@ public class Register extends AppCompatActivity {
         String pw = edtPassword.getText().toString().trim();
         String cpw = edtConfirmPassword.getText().toString().trim();
 
+
+        // FULLNAME
         if (fullname.isEmpty()) {
             tilFullname.setError("Vui lòng nhập họ tên");
             tilFullname.setErrorIconDrawable(null);
             isValid = false;
+        } else if (fullname.length() < 3) {
+            tilFullname.setError("Họ tên quá ngắn");
+            tilFullname.setErrorIconDrawable(null);
+            isValid = false;
         }
 
+
+        // USERNAME
         if (username.isEmpty()) {
             tilUsername.setError("Vui lòng nhập tên đăng nhập");
             tilUsername.setErrorIconDrawable(null);
             isValid = false;
+
         } else if (username.contains(" ")) {
             tilUsername.setError("Không được chứa khoảng trắng");
             tilUsername.setErrorIconDrawable(null);
             isValid = false;
+
         } else if (username.length() < 4) {
             tilUsername.setError("Tên đăng nhập tối thiểu 4 ký tự");
             tilUsername.setErrorIconDrawable(null);
             isValid = false;
         }
 
+
+        // EMAIL (có yêu cầu @gmail.com)
         if (email.isEmpty()) {
             tilEmail.setError("Vui lòng nhập email");
             tilEmail.setErrorIconDrawable(null);
             isValid = false;
+
         } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             tilEmail.setError("Email không hợp lệ");
             tilEmail.setErrorIconDrawable(null);
             isValid = false;
+
+        } else if (!email.toLowerCase().endsWith("@gmail.com")) {
+            tilEmail.setError("Email không đúng định dạng");
+            tilEmail.setErrorIconDrawable(null);
+            isValid = false;
         }
 
+
+        // PASSWORD mạnh
         if (pw.isEmpty()) {
             tilPassword.setError("Vui lòng nhập mật khẩu");
             tilPassword.setErrorIconDrawable(null);
             isValid = false;
+
         } else if (pw.length() < 8) {
-            tilPassword.setError("Mật khẩu tối thiểu 8 ký tự");
+            tilPassword.setError("Mật khẩu phải có ít nhất 8 ký tự");
+            tilPassword.setErrorIconDrawable(null);
+            isValid = false;
+
+        } else if (
+                !pw.matches(".*[A-Z].*") ||     // thiếu chữ hoa
+                        !pw.matches(".*[a-z].*") ||     // thiếu chữ thường
+                        !pw.matches(".*\\d.*") ||       // thiếu số
+                        !pw.matches(".*[@$!%*?&].*")    // thiếu ký tự đặc biệt
+        ) {
+            tilPassword.setError("Mật khẩu phải gồm chữ hoa, chữ thường, số và ký tự đặc biệt");
             tilPassword.setErrorIconDrawable(null);
             isValid = false;
         }
 
-        if (!cpw.equals(pw)) {
+
+        // CONFIRM PASSWORD
+        if (cpw.isEmpty()) {
+            tilConfirmPassword.setError("Vui lòng nhập lại mật khẩu");
+            tilConfirmPassword.setErrorIconDrawable(null);
+            isValid = false;
+
+        } else if (!cpw.equals(pw)) {
             tilConfirmPassword.setError("Mật khẩu không khớp");
             tilConfirmPassword.setErrorIconDrawable(null);
             isValid = false;
@@ -240,6 +282,7 @@ public class Register extends AppCompatActivity {
 
         return isValid;
     }
+
 
     private void attemptRegister() {
 
@@ -272,21 +315,17 @@ public class Register extends AppCompatActivity {
                     try {
                         String err = res.errorBody().string();
 
-                        // ⭐ TRÙNG EMAIL
                         if (err.contains("Email đã được sử dụng") || err.contains("email")) {
                             tilEmail.setError("Email đã được sử dụng");
                             tilEmail.setErrorIconDrawable(null);
                         }
 
-                        // ⭐ TRÙNG USERNAME
                         if (err.contains("Username đã được sử dụng") || err.contains("username")) {
                             tilUsername.setError("Tên đăng nhập đã tồn tại");
                             tilUsername.setErrorIconDrawable(null);
                         }
 
-                    } catch (Exception e) {
-                        //Toast.makeText(Register.this, "Lỗi API", Toast.LENGTH_SHORT).show();
-                    }
+                    } catch (Exception e) {}
 
                     return;
                 }

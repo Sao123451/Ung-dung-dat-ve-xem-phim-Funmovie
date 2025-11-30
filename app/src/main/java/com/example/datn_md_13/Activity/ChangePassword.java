@@ -126,8 +126,13 @@ public class ChangePassword extends AppCompatActivity {
             layoutNewPass.setErrorIconDrawable(null);
             valid = false;
 
-        } else if (!newPass.matches(STRONG_PATTERN)) {
-            layoutNewPass.setError("Mật khẩu phải ≥ 8 ký tự, gồm chữ hoa – chữ thường – số – ký tự đặc biệt");
+        } else if (newPass.length() < 8) {  // 👈 BƯỚC 1: kiểm tra độ dài
+            layoutNewPass.setError("Mật khẩu phải dài ít nhất 8 ký tự");
+            layoutNewPass.setErrorIconDrawable(null);
+            valid = false;
+
+        } else if (!newPass.matches(STRONG_PATTERN)) {  // 👈 BƯỚC 2: kiểm tra mạnh
+            layoutNewPass.setError("Mật khẩu phải gồm chữ hoa – chữ thường – số – ký tự đặc biệt");
             layoutNewPass.setErrorIconDrawable(null);
             valid = false;
         }
@@ -135,6 +140,10 @@ public class ChangePassword extends AppCompatActivity {
         if (!confirm.equals(newPass)) {
             layoutConfirmPass.setError("Mật khẩu nhập lại không khớp");
             layoutConfirmPass.setErrorIconDrawable(null);
+            valid = false;
+        } else if (confirm.isEmpty()) {
+            layoutOldPass.setError("Bạn chưa nhập mật khẩu mới");
+            layoutOldPass.setErrorIconDrawable(null);
             valid = false;
         }
 

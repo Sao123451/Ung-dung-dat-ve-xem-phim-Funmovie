@@ -40,7 +40,7 @@ public class TimesAdapter extends RecyclerView.Adapter<TimesAdapter.VH> {
         notifyItemChanged(index);
     }
 
-    /** ✅ Cập nhật theo id suất chiếu (an toàn khi RV recycle/di chuyển) */
+    /** Cập nhật theo id suất chiếu (an toàn khi RV recycle/di chuyển) */
     public void updateAvailableById(String slotId, int available) {
         if (slotId == null) return;
         for (int i = 0; i < data.size(); i++) {

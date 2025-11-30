@@ -108,7 +108,7 @@ public class CityCinemaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             String addr = r.cinema.getAddress();
             vh.tvAddress.setText((addr == null || addr.isEmpty()) ? "—" : addr);
 
-            // ✅ hiển thị khoảng cách
+            // hiển thị khoảng cách
             String dist = formatDistance(r.cinema);
             if (dist != null) {
                 vh.tvDistance.setText(dist);

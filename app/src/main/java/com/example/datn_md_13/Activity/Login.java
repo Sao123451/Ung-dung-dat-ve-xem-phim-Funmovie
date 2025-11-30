@@ -45,6 +45,13 @@ public class Login extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        // ====================== APP BAR BACK ======================
+        // ====================== APP BAR BACK ======================
+        com.google.android.material.appbar.MaterialToolbar toolbar = findViewById(R.id.topAppBar);
+        toolbar.setNavigationOnClickListener(v -> {
+            finish();
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        });
 
         if (AuthManager.isLoggedIn(this)) {
             startActivity(new Intent(this, MainActivity.class));
@@ -141,7 +148,7 @@ public class Login extends AppCompatActivity {
                     }
 
                     // ============= TRƯỜNG HỢP LOGIN SAI ============
-                   // tilEmail.setError("Tài khoản hoặc mật khẩu không chính xác");
+                    tilEmail.setError("");
                     tilEmail.setErrorIconDrawable(null);
 
                     tilPassword.setError("Tài khoản hoặc mật khẩu không chính xác");
