@@ -1,12 +1,20 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- BASE THEME -->
     <style name="Base.Theme.DATN_MD13" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/fm_orange</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <item name="toolbarStyle">@style/Widget.Material3.Toolbar</item>
     </style>
 
-    <style name="ThemeOverlay.DATN_MD13.FullscreenContainer" parent="">
-        <item name="fullscreenBackgroundColor">@color/light_blue_900</item>
-        <item name="fullscreenTextColor">@color/light_blue_A400</item>
+    <!-- APP THEME -->
+    <style name="Theme.DATN_MD13" parent="Base.Theme.DATN_MD13">
+        <item name="android:statusBarColor">@color/fm_orange</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
+
 </resources>

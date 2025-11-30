@@ -1,13 +1,18 @@
 package com.example.datn_md_13.Activity;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -50,6 +55,10 @@ public class Activity_seat_selection extends AppCompatActivity {
     private String showtimeId;
     private int basePrice = 0;
 
+    private CountDownTimer seatTimer;
+    private long timeLeftMs = 1 * 60 * 1000; // 10 phút mặc định
+
+
     // tránh gọi API 2 lần
     private Call<ShowtimeSeatResponse> inFlight;
 
@@ -58,6 +67,8 @@ public class Activity_seat_selection extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_seat_selection);
+
+        startSeatCountdown();
 
         // Nếu layout không có @id/main, dùng decorView để set insets
         View root = findViewById(R.id.main);
@@ -73,7 +84,7 @@ public class Activity_seat_selection extends AppCompatActivity {
         showtimeId = getIntent().getStringExtra("showtime_id");
         basePrice  = getIntent().getIntExtra("ticket_price", 0);
 
-        MaterialToolbar bar = findViewById(R.id.topAppBar);
+        MaterialToolbar bar = findViewById(R.id.topBar);
         bar.setNavigationOnClickListener(v -> onBackPressed());
 
         progress   = findViewById(R.id.progress);
@@ -94,22 +105,115 @@ public class Activity_seat_selection extends AppCompatActivity {
 
         findViewById(R.id.btnContinue).setOnClickListener(v -> {
             List<SeatVM> selected = seatAdapter.getSelected();
+            List<SeatVM> allSeats = seatAdapter.getAll();
+
             if (selected.isEmpty()) {
-                Toast.makeText(this, "Chưa chọn ghế!", Toast.LENGTH_SHORT).show();
+                showErrorDialog("Chưa chọn ghế",
+                        "Bạn cần chọn ít nhất 1 ghế để tiếp tục!",
+                        null);
                 return;
             }
+
+            String error = validateSeatRules(selected, allSeats);
+            if (error != null) {
+                showErrorDialog("Ghế không hợp lệ", error, null);
+                return;
+            }
+
+
             ArrayList<String> seatIds = new ArrayList<>();
             for (SeatVM s : selected) {
                 seatIds.add(s._id);
-                if (s._id2 != null) seatIds.add(s._id2); // ghế đôi
+                if (s._id2 != null) seatIds.add(s._id2);
             }
+
+
+            ArrayList<String> seatLabels = new ArrayList<>();
+            for (SeatVM s : selected) {
+                seatLabels.add(s.label());
+            }
+
             Intent i = new Intent(this, CheckoutActivity.class);
             i.putExtra("showtime_id", showtimeId);
             i.putExtra("ticket_price", basePrice);
             i.putStringArrayListExtra("seat_ids", seatIds);
+            i.putStringArrayListExtra("seat_labels", seatLabels);
+
             startActivity(i);
         });
+
     }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (seatTimer != null) {
+            seatTimer.cancel();
+            seatTimer = null;
+        }
+    }
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // Nếu còn thời gian → chạy tiếp
+        if (timeLeftMs > 0 && seatTimer == null) {
+            startSeatCountdown();
+        }
+    }
+
+
+
+    private void startSeatCountdown() {
+        seatTimer = new CountDownTimer(timeLeftMs, 1000) {
+            @Override
+            public void onTick(long ms) {
+                timeLeftMs = ms; // ⭐ LƯU THỜI GIAN CÒN LẠI
+
+                long sec = ms / 1000;
+                long m = sec / 60;
+                long s = sec % 60;
+
+                TextView tv = findViewById(R.id.tvCountdown);
+                tv.setText(String.format("%02d:%02d", m, s));
+            }
+
+
+            @Override
+            public void onFinish() {
+                timeLeftMs = 0; // hết giờ
+
+                // Inflate layout dialog custom
+                View view = getLayoutInflater().inflate(R.layout.custom_dialog_error, null);
+
+                TextView tvTitle = view.findViewById(R.id.tvTitle);
+                TextView tvMessage = view.findViewById(R.id.tvMessage);
+                Button btnOk = view.findViewById(R.id.btnOk);
+
+                tvTitle.setText("Hết thời gian chọn ghế");
+                tvMessage.setText("Bạn đã hết 10 phút chọn ghế. Vui lòng chọn lại!");
+
+                AlertDialog dialog = new AlertDialog.Builder(Activity_seat_selection.this)
+                        .setView(view)
+                        .setCancelable(false)
+                        .create();
+
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setBackgroundDrawable(
+                            new ColorDrawable(Color.TRANSPARENT)
+                    );
+                }
+
+                btnOk.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    finish();   // đóng màn hình
+                });
+
+                dialog.show();
+            }
+
+        }.start();
+    }
+
 
     // -------------------- FIXED: KHÔNG LỌC TRÙNG SAI --------------------
 
@@ -133,15 +237,13 @@ public class Activity_seat_selection extends AppCompatActivity {
 
                 List<Seat> seats = res.body().seats;
 
-                // -------------------
-                // ❌ BỎ TOÀN BỘ FILTER TRÙNG
-                // -------------------
+
                 // ShowtimeSeat luôn trả 1 seat = 1 id nên KHÔNG ĐƯỢC lọc theo (row,number)
                 // Chỉ cần dùng nguyên danh sách trả về
                 List<Seat> cleaned = new ArrayList<>(seats);
 
                 // -------------------
-                // 🟢 GOM GHẾ THEO HÀNG
+                // GOM GHẾ THEO HÀNG
                 // -------------------
                 Map<String, List<Seat>> byRow = new LinkedHashMap<>();
                 for (Seat s : cleaned) {
@@ -163,7 +265,7 @@ public class Activity_seat_selection extends AppCompatActivity {
                         boolean merged = false;
 
                         // -------------------
-                        // 🟢 GHẾ ĐÔI
+                        // GHẾ ĐÔI
                         // -------------------
                         if ("couple".equalsIgnoreCase(s.seat_type) && i+1 < rowSeats.size()) {
                             Seat s2 = rowSeats.get(i+1);
@@ -266,17 +368,125 @@ public class Activity_seat_selection extends AppCompatActivity {
 
     private int dp(int dp) { return Math.round(getResources().getDisplayMetrics().density * dp); }
 
+
+    //  updateSelectedUI — CHỈ cập nhật UI, KHÔNG validate tại đây
     private void updateSelectedUI() {
+        List<SeatVM> selected = seatAdapter.getSelected();
+
         long total = 0;
-        for (SeatVM s : seatAdapter.getSelected()) {
-            total += (long) basePrice * s.qty() + (long) s.priceExtra;
+        for (SeatVM s : selected) {
+            total += (long) basePrice * s.qty() + s.priceExtra;
         }
+
         tvSelected.setText("Ghế: " + seatAdapter.getSelectedLabels());
         tvTotal.setText(total + " đ");
     }
+
+
+    //  PHẦN THÊM — validate rule chống để trống ghế
+    private String validateSeatRules(List<SeatVM> selected, List<SeatVM> all) {
+
+        // Gom ghế theo hàng
+        Map<String, List<SeatVM>> rows = new LinkedHashMap<>();
+        for (SeatVM s : all) {
+            rows.computeIfAbsent(s.row, k -> new ArrayList<>()).add(s);
+        }
+
+        for (String row : rows.keySet()) {
+
+            List<SeatVM> rowSeats = rows.get(row);
+            rowSeats.sort((a, b) -> Integer.compare(a.number, b.number));
+
+            // Tập ghế chọn (bao gồm ghế đôi)
+            Set<Integer> chosen = new LinkedHashSet<>();
+            for (SeatVM s : selected) {
+                if (s.row.equals(row)) {
+                    chosen.add(s.number);
+                    if ("couple".equals(s.type)) chosen.add(s.number + 1);
+                }
+            }
+
+            if (chosen.isEmpty()) continue;
+
+            // ============ RULE 1: CẤM GHẾ MỒ CÔI NGOÀI ===============
+
+            SeatVM first = rowSeats.get(0);
+            SeatVM second = rowSeats.get(1);
+
+            if (chosen.contains(second.number)) {
+                if (first.isAvailable() && !chosen.contains(first.number)) {
+                    return "Không được để trống " + first.label() + " khi chọn " + second.label();
+                }
+            }
+
+            SeatVM last = rowSeats.get(rowSeats.size() - 1);
+            SeatVM beforeLast = rowSeats.get(rowSeats.size() - 2);
+
+            if (chosen.contains(beforeLast.number)) {
+                if (last.isAvailable() && !chosen.contains(last.number)) {
+                    return "Không được để trống " + last.label() + " khi chọn " + beforeLast.label();
+                }
+            }
+
+            // ============ RULE 2: GHẾ MỒ CÔI Ở GIỮA ===============
+            // Ví dụ: A1 chọn, A2 trống, A3 chọn → A2 bị kẹt → CẤM
+
+            for (int i = 1; i < rowSeats.size() - 1; i++) {
+                SeatVM mid = rowSeats.get(i);
+                SeatVM left = rowSeats.get(i - 1);
+                SeatVM right = rowSeats.get(i + 1);
+
+                // GHẾ MID phải là available & không chọn
+                boolean midTrống = mid.isAvailable() && !chosen.contains(mid.number);
+
+                // Left & Right đều được chọn → => mid bị kẹt
+                boolean bịKẹt = chosen.contains(left.number) && chosen.contains(right.number);
+
+                if (midTrống && bịKẹt) {
+                    return "Không được để trống " + mid.label() +
+                            " giữa " + left.label() + " và " + right.label();
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    // PHẦN THÊM — popup thông báo lỗi
+    private void showErrorDialog(String title, String msg, Runnable onOk) {
+        View view = getLayoutInflater().inflate(R.layout.custom_dialog_error, null);
+
+        TextView tvTitle = view.findViewById(R.id.tvTitle);
+        TextView tvMessage = view.findViewById(R.id.tvMessage);
+        Button btnOk = view.findViewById(R.id.btnOk);
+
+        tvTitle.setText(title);
+        tvMessage.setText(msg);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        if (dialog.getWindow() != null)
+            dialog.getWindow().setBackgroundDrawable(
+                    new ColorDrawable(Color.TRANSPARENT)
+            );
+
+        btnOk.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (onOk != null) onOk.run();
+        });
+
+        dialog.show();
+    }
+
 
     @Override protected void onDestroy() {
         super.onDestroy();
         if (inFlight != null) inFlight.cancel();
     }
+
+
+
 }

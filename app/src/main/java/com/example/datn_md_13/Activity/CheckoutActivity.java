@@ -2,7 +2,10 @@ package com.example.datn_md_13.Activity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -12,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -32,6 +36,7 @@ import com.example.datn_md_13.Model.VnPayInitResponse;
 import com.example.datn_md_13.Model.VoucherListRes;
 import com.example.datn_md_13.R;
 import com.example.datn_md_13.AuthManager;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.gson.Gson;
 
 import java.text.NumberFormat;
@@ -62,6 +67,10 @@ public class CheckoutActivity extends AppCompatActivity {
     private final ArrayList<String> selectedVouchers = new ArrayList<>();
     private final NumberFormat nf = NumberFormat.getNumberInstance(new Locale("vi","VN"));
 
+    private CountDownTimer payTimer;
+
+    private TextView tvCountdownPay;
+    private ArrayList<String> seatLabels;
 
 
 
@@ -69,6 +78,7 @@ public class CheckoutActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
 
@@ -80,6 +90,10 @@ public class CheckoutActivity extends AppCompatActivity {
         showtimeId = getIntent().getStringExtra("showtime_id");
         seatIds = getIntent().getStringArrayListExtra("seat_ids");
 
+        seatLabels = getIntent().getStringArrayListExtra("seat_labels");
+
+        if (seatLabels == null) seatLabels = new ArrayList<>();
+
 
         if (seatIds == null) seatIds = new ArrayList<>();
 
@@ -88,9 +102,11 @@ public class CheckoutActivity extends AppCompatActivity {
         Log.e("CHECKOUT", "SeatIds: " + gson.toJson(seatIds));
 
         bindViews();
+        startPayCountdown();
 
         rvProducts.setLayoutManager(new LinearLayoutManager(this));
         productAdapter = new ProductQtyAdapter(() -> loadQuote(selectedVouchers));
+        rvProducts.setAdapter(productAdapter);
         rvProducts.setAdapter(productAdapter);
 
         tryLoadProducts();
@@ -100,13 +116,13 @@ public class CheckoutActivity extends AppCompatActivity {
         /* ============================================================
            SELECT PAYMENT METHOD
          ============================================================ */
-        rgMethod.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.rbMomo) paymentMethod = "momo";
-            else if (checkedId == R.id.rbZalo) paymentMethod = "zalopay";
-            else if (checkedId == R.id.rbVnpay) paymentMethod = "vnpay";
-
-            Log.e("CHECKOUT", "PaymentMethod = " + paymentMethod);
-        });
+//        rgMethod.setOnCheckedChangeListener((group, checkedId) -> {
+//            if (checkedId == R.id.rbMomo) paymentMethod = "momo";
+//            else if (checkedId == R.id.rbZalo) paymentMethod = "zalopay";
+//            else if (checkedId == R.id.rbVnpay) paymentMethod = "vnpay";
+//
+//            Log.e("CHECKOUT", "PaymentMethod = " + paymentMethod);
+//        });
 
         /* ============================================================
             NÚT THANH TOÁN
@@ -122,6 +138,11 @@ public class CheckoutActivity extends AppCompatActivity {
         });
 
         loadQuote(selectedVouchers);
+
+
+        MaterialToolbar toolbar = findViewById(R.id.topBar);
+        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+
     }
 
     private void bindViews() {
@@ -136,9 +157,16 @@ public class CheckoutActivity extends AppCompatActivity {
         btnPay = findViewById(R.id.btnPay);
         btnPickVoucher = findViewById(R.id.btnPickVoucher);
         rvProducts = findViewById(R.id.rvProducts);
-        rgMethod = findViewById(R.id.rgMethod);
+//        rgMethod = findViewById(R.id.rgMethod);
+        tvCountdownPay = findViewById(R.id.tvCountdownPay);
 
-        tvInfo.setText("Ghế đã chọn: " + seatIds.size() + " ghế");
+
+        if (!seatLabels.isEmpty()) {
+            tvInfo.setText("Ghế đã chọn: " + String.join(", ", seatLabels));
+        } else {
+            tvInfo.setText("Ghế đã chọn: " + seatIds.size() + " ghế");
+        }
+
     }
     /* ===== Load sản phẩm ===== */
     private void tryLoadProducts() {
@@ -180,6 +208,65 @@ public class CheckoutActivity extends AppCompatActivity {
         r.name = name; r.type = type; r.price = price; r.qty = 0;
         return r;
     }
+    private void startPayCountdown() {
+        payTimer = new CountDownTimer(1 * 60 * 1000, 1000) {
+            @Override
+            public void onTick(long ms) {
+                long sec = ms / 1000;
+                long m = sec / 60;
+                long s = sec % 60;
+
+                tvCountdownPay.setText(String.format("%02d:%02d", m, s));
+            }
+
+            @Override
+            public void onFinish() {
+                handlePayTimeout();
+            }
+        };
+        payTimer.start();
+    }
+    private void handlePayTimeout() {
+
+        // ⭐ Trả ghế ngay
+        releaseHoldingSeats(seatIds);
+
+        // ⭐ Dùng dialog custom
+        View view = getLayoutInflater().inflate(R.layout.custom_dialog_error, null);
+
+        TextView tvTitle = view.findViewById(R.id.tvTitle);
+        TextView tvMessage = view.findViewById(R.id.tvMessage);
+        Button btnOk = view.findViewById(R.id.btnOk);
+
+        tvTitle.setText("Hết thời gian thanh toán");
+        tvMessage.setText("Bạn đã hết 10 phút thanh toán. Vui lòng đặt lại vé.");
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .setCancelable(false)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(
+                    new ColorDrawable(Color.TRANSPARENT)
+            );
+        }
+
+        btnOk.setOnClickListener(v -> {
+            dialog.dismiss();
+            finish(); // đóng màn checkout
+        });
+
+        dialog.show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (payTimer != null) payTimer.cancel();
+        super.onDestroy();
+    }
+
+
 
 
     private void openVoucherPicker() {
@@ -245,11 +332,6 @@ public class CheckoutActivity extends AppCompatActivity {
             }
         });
     }
-
-
-
-
-
 
     private void showVoucherDialogWithObjects(List<UserVoucherItem> items, List<String> labels) {
         final boolean[] checked = new boolean[labels.size()];
@@ -374,14 +456,22 @@ public class CheckoutActivity extends AppCompatActivity {
 
                 if (!res.isSuccessful() || res.body() == null || res.body().ticket_id == null) {
 
-                    // === GỌI RELEASE GHẾ TRONG 1 PHÚT ===
+                    // ⭐ Trả ghế ngay khi lỗi
                     releaseHoldingSeats(seatIds);
 
-                    Log.e("BOOKING_ERR", "Create booking failed: " + safeErr(res));
-                    toast("Tạo vé thất bại!");
+                    // ⭐ Lấy lỗi JSON → rồi dịch tiếng Việt
+                    String rawErr = extractError(res);
+                    String err = translateError(rawErr);
+
+                    showErrorDialog(
+                            "Tạo vé thất bại",
+                            err,
+                            () -> finish()
+                    );
                     return;
                 }
 
+                // ⭐ Thành công → sang VNPay
                 initVnpay(res.body().ticket_id);
             }
 
@@ -389,14 +479,20 @@ public class CheckoutActivity extends AppCompatActivity {
             public void onFailure(Call<BookingCreateResponse> call, Throwable t) {
                 showLoading(false);
 
-                // === GỌI RELEASE GHẾ KHI LỖI MẠNG ===
+                // ⭐ Trả ghế khi lỗi mạng
                 releaseHoldingSeats(seatIds);
 
-                Log.e("BOOKING_ERR", t.getMessage());
-                toast("Lỗi kết nối khi tạo vé!");
-            }
+                Log.e("BOOKING_ERR", "Network error: " + t.getMessage());
 
+                showErrorDialog(
+                        "Lỗi kết nối",
+                        "Không thể kết nối máy chủ. Vui lòng thử lại.",
+                        null
+                );
+            }
         });
+
+
 
 
     }
@@ -446,6 +542,70 @@ public class CheckoutActivity extends AppCompatActivity {
         });
     }
 
+    private void showErrorDialog(String title, String msg, Runnable onOk) {
+        View view = getLayoutInflater().inflate(R.layout.custom_dialog_error, null);
+
+        TextView tvTitle = view.findViewById(R.id.tvTitle);
+        TextView tvMessage = view.findViewById(R.id.tvMessage);
+        Button btnOk = view.findViewById(R.id.btnOk);
+
+        tvTitle.setText(title);
+        tvMessage.setText(msg);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .setCancelable(false)
+                .create();
+
+        if (dialog.getWindow() != null)
+            dialog.getWindow().setBackgroundDrawable(
+                    new ColorDrawable(Color.TRANSPARENT)
+            );
+
+        btnOk.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (onOk != null) onOk.run();
+        });
+
+        dialog.show();
+    }
+    private String extractError(Response<?> res) {
+        try {
+            if (res.errorBody() != null)
+                return res.errorBody().string();
+        } catch (Exception ignored) {}
+        return "";
+    }
+
+    private String translateError(String raw) {
+        if (raw == null) return "Đã xảy ra lỗi không xác định";
+
+        raw = raw.toLowerCase();
+
+        if (raw.contains("some seats not available"))
+            return "Ghế bạn chọn không còn khả dụng. Vui lòng chọn ghế khác.";
+
+        if (raw.contains("seat already sold"))
+            return "Một trong các ghế bạn chọn đã được bán.";
+
+        if (raw.contains("seat holding by another"))
+            return "Ghế đang được người khác giữ.";
+
+        if (raw.contains("showtime not found"))
+            return "Suất chiếu không tồn tại.";
+
+        if (raw.contains("expired"))
+            return "Phiên giữ ghế đã hết hạn.";
+
+        if (raw.contains("invalid voucher"))
+            return "Voucher không hợp lệ.";
+
+        if (raw.contains("voucher out of usage"))
+            return "Voucher đã hết lượt sử dụng.";
+
+        // fallback
+        return "Không thể tạo vé. Vui lòng thử lại.";
+    }
 
 
 

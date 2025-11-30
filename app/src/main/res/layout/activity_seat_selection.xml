@@ -4,106 +4,151 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/fm_grey_bg">
 
-    <com.google.android.material.appbar.MaterialToolbar
+    <!-- TOP BAR -->
+    <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/topAppBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:navigationIcon="@drawable/ic_arrow_back_24"
-        android:backgroundTint="?attr/colorPrimary"
-        app:title="Chọn ghế"
-        app:titleTextColor="@android:color/white"
+        android:background="@color/camdep"
+        android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <TextView
-        android:id="@+id/tvInfo"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Màn hình ở phía trên"
-        android:padding="12dp"
-        app:layout_constraintTop_toBottomOf="@id/topAppBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <!-- Legend màu -->
-    <LinearLayout
-        android:id="@+id/legend"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:gravity="center_vertical"
-        app:layout_constraintTop_toBottomOf="@id/tvInfo"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Đã bán -->
-        <TextView
-            android:layout_width="10dp"
-            android:layout_height="10dp"
-            android:background="#EF5350"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="  Đã bán   " />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/camdep"
+            android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
+            app:title="Chọn ghế"
+            app:titleTextColor="@android:color/white"
+            app:navigationIcon="@drawable/ic_arrow_back_24" />
 
-        <!-- [NEW] Đang giữ -->
-        <TextView
-            android:layout_width="10dp"
-            android:layout_height="10dp"
-            android:background="#FFA726"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="  Đang giữ   " />
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- Trống -->
-        <TextView
-            android:layout_width="10dp"
-            android:layout_height="10dp"
-            android:background="#E0E0E0"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="  Trống   " />
 
-        <!-- Đang chọn -->
-        <TextView
-            android:layout_width="10dp"
-            android:layout_height="10dp"
-            android:background="#A5D6A7"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="  Đang chọn   " />
 
-        <!-- Hỏng -->
+    <!-- INFO ZONE (CARD) -->
+    <LinearLayout
+        android:id="@+id/infoCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/fm_card"
+        android:elevation="4dp"
+        android:padding="16dp"
+        android:orientation="vertical"
+        android:layout_margin="12dp"
+        android:clipToOutline="true"
+        android:backgroundTint="@color/fm_card"
+        app:layout_constraintTop_toBottomOf="@id/topAppBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
         <TextView
-            android:layout_width="10dp"
-            android:layout_height="10dp"
-            android:background="#212121"/>
-        <TextView
+            android:id="@+id/tvInfo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="  Hỏng" />
+            android:text="Màn hình"
+            android:textColor="#333333"
+            android:textSize="15sp"
+            android:layout_gravity="center"
+            android:paddingBottom="6dp"
+            android:textStyle="bold"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#EEEEEE" />
+
+        <!-- Legend -->
+        <LinearLayout
+            android:id="@+id/legend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:gravity="center_vertical">
+
+            <!-- SOLD -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginEnd="12dp">
+                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#EF5350"/>
+                <TextView android:text=" Đã bán"  android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#444"/>
+            </LinearLayout>
+
+            <!-- HOLDING -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginEnd="12dp">
+                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#FFA726"/>
+                <TextView android:text=" Đang giữ"  android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#444"/>
+            </LinearLayout>
+
+            <!-- EMPTY -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginEnd="12dp">
+                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#BDBDBD"/>
+                <TextView android:text=" Trống"  android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#444"/>
+            </LinearLayout>
+
+            <!-- SELECTED -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginEnd="12dp">
+                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#81C784"/>
+                <TextView android:text=" Đang chọn"  android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#444"/>
+            </LinearLayout>
+
+            <!-- BROKEN -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#212121"/>
+                <TextView android:text=" Hỏng"  android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#444"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
     </LinearLayout>
 
+    <!-- SEAT LIST -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSeats"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="0dp"
+        android:padding="12dp"
         android:clipToPadding="false"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        app:layout_constraintTop_toBottomOf="@id/legend"
+        app:layout_constraintTop_toBottomOf="@id/infoCard"
         app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- LOADING -->
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progress"
         android:layout_width="48dp"
@@ -114,35 +159,66 @@
         app:layout_constraintStart_toStartOf="@id/rvSeats"
         app:layout_constraintEnd_toEndOf="@id/rvSeats"/>
 
+    <!-- BOTTOM BAR (COUNTDOWN + TOTAL + BUTTON) -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
+        android:background="@color/fm_card"
+        android:elevation="6dp"
         android:padding="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- GHẾ -->
         <TextView
             android:id="@+id/tvSelected"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Ghế: —" />
+            android:text="Ghế: —"
+            android:textColor="#444444"
+            android:textSize="15sp"
+            android:paddingBottom="4dp"/>
 
-        <TextView
-            android:id="@+id/tvTotal"
-            android:layout_width="wrap_content"
+        <!-- COUNTDOWN + TOTAL -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="0 đ"
-            android:textStyle="bold"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
 
-        <Button
+            <TextView
+                android:id="@+id/tvCountdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10:00"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="#D32F2F"
+                android:layout_marginEnd="20dp"/>
+
+            <TextView
+                android:id="@+id/tvTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thành tiền: 0 đ"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#222"/>
+        </LinearLayout>
+
+        <!-- BUTTON -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnContinue"
-            android:layout_width="wrap_content"
+            android:text="TIẾP TỤC"
+            android:backgroundTint="@color/camdep"
+            android:textColor="@android:color/white"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Tiếp tục"/>
+            style="@style/Widget.MaterialComponents.Button"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

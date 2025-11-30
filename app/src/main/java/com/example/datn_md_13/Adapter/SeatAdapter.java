@@ -138,4 +138,9 @@ public class SeatAdapter extends RecyclerView.Adapter<SeatAdapter.VH> {
             }
         });
     }
+    public List<SeatVM> getAll() {
+        return data;
+    }
+
+
 }

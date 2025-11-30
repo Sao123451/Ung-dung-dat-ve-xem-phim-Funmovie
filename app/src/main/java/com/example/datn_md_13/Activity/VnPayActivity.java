@@ -25,7 +25,7 @@ public class VnPayActivity extends AppCompatActivity {
     private String paymentUrl;
 
     private boolean callbackHandled = false;
-    private boolean exitedUnexpectedly = true;   // ⭐ QUAN TRỌNG
+    private boolean exitedUnexpectedly = true;   //  QUAN TRỌNG
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,7 +143,7 @@ public class VnPayActivity extends AppCompatActivity {
 
         exitedUnexpectedly = true;
 
-        Toast.makeText(this, "Thanh toán thất bại!", Toast.LENGTH_SHORT).show();
+//        Toast.makeText(this, "Thanh toán thất bại!", Toast.LENGTH_SHORT).show();
         setResult(RESULT_CANCELED);
 
         finish();
