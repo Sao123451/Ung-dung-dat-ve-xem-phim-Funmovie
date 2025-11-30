@@ -21,6 +21,15 @@ app.use(
     maxAge: 0,
   })
 );
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'public/uploads'), {
+    etag: false,
+    lastModified: false,
+    cacheControl: true,
+    maxAge: 0,
+  })
+);
 
 /* GLOBAL MIDDLEWARE */
 app.use(express.json({ limit: '10mb' }));
