@@ -210,7 +210,7 @@ public class CheckoutActivity extends AppCompatActivity {
         return r;
     }
     private void startPayCountdown() {
-        payTimer = new CountDownTimer(1 * 60 * 1000, 1000) {
+        payTimer = new CountDownTimer(10 * 60 * 1000, 1000) {
             @Override
             public void onTick(long ms) {
                 long sec = ms / 1000;

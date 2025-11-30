@@ -22,9 +22,6 @@
             android:name=".Activity.activity_add_voucher"
             android:exported="false" />
         <activity
-            android:name=".Activity.TicketDetail"
-            android:exported="false" />
-        <activity
             android:name=".Activity.TicketActivity"
             android:exported="false" /> <!-- Màn hình chính (Launcher) -->
         <activity
