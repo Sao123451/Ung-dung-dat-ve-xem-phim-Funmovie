@@ -33,28 +33,27 @@
             <!-- GUEST (chưa đăng nhập) -->
             <LinearLayout
                 android:id="@+id/header_guest"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:orientation="horizontal"
                 android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:visibility="visible">
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:src="@drawable/ic_person"
-                    android:tint="?attr/colorPrimary" />
+                    android:src="@drawable/ic_person" />
 
                 <TextView
                     android:id="@+id/btnGoLogin"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:text="Đăng nhập"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
+                    android:textStyle="bold" />
 
                 <View
                     android:layout_width="0dp"
@@ -63,9 +62,9 @@
 
                 <ImageView
                     android:layout_width="64dp"
-                    android:layout_height="24dp"
+                    android:layout_height="40dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/logo" />
+                    android:src="@drawable/img" />
             </LinearLayout>
 
             <!-- USER (đã đăng nhập) -->
@@ -137,7 +136,7 @@
                     android:layout_width="64dp"
                     android:layout_height="24dp"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/logo" />
+                    android:src="@drawable/logo1" />
             </LinearLayout>
 
         </LinearLayout>

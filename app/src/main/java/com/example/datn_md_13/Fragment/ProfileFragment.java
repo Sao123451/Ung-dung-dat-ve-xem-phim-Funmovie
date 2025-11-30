@@ -9,7 +9,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.datn_md_13.Activity.MemberCardActivity;
 import com.example.datn_md_13.Adapter.MoreMenuAdapter;
@@ -31,14 +31,11 @@ public class ProfileFragment extends Fragment {
         androidx.recyclerview.widget.RecyclerView rv = v.findViewById(R.id.rvMoreMenu);
 
         ArrayList<MoreMenuItem> items = new ArrayList<>();
-        items.add(new MoreMenuItem(R.drawable.ic_voucher_free, "Voucher miễn phí", R.color.fm_blue));
-        items.add(new MoreMenuItem(R.drawable.ic_cinema, "Rạp phim BETA", R.color.fm_green));
+        items.add(new MoreMenuItem(R.drawable.ic_voucher, "Voucher miễn phí", R.color.fm_blue));
+        items.add(new MoreMenuItem(R.drawable.ic_movie, "Rạp phim BETA", R.color.fm_green));
         items.add(new MoreMenuItem(R.drawable.ic_member, "Thành viên BETA", R.color.fm_purple));
-        items.add(new MoreMenuItem(R.drawable.ic_notify, "Thông báo", R.color.fm_orange));
-        items.add(new MoreMenuItem(R.drawable.ic_job, "Tuyển dụng", R.color.fm_pink));
-        items.add(new MoreMenuItem(R.drawable.ic_settings, "Cài đặt", R.color.fm_primary));
 
-        rv.setLayoutManager(new GridLayoutManager(requireContext(), 2));
+        rv.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         rv.setAdapter(new MoreMenuAdapter(items, position -> {
             switch (position) {
@@ -53,15 +50,6 @@ public class ProfileFragment extends Fragment {
 
                 case 2:
                     startActivity(new Intent(requireContext(), MemberCardActivity.class));
-                    break;
-
-                case 3:
-                    break;
-
-                case 4:
-                    break;
-
-                case 5:
                     break;
             }
         }));
