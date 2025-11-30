@@ -60,7 +60,7 @@ exports.publicByCinema = async (req, res, next) => {
     // Ngày
     const { start, end } = getDateRange(date);
 
-    // ⚡ BUILD FILTER CHO ROOM TYPE
+    // BUILD FILTER CHO ROOM TYPE
     let roomMatch = {};
     if (type && ["2D", "3D", "IMAX"].includes(type)) {
       roomMatch = { type };
@@ -76,12 +76,12 @@ exports.publicByCinema = async (req, res, next) => {
       .populate({
         path: "room",
         select: "name type",
-        match: roomMatch, // ⭐ CHỈ LẤY PHÒNG ĐÚNG TYPE
+        match: roomMatch, //  CHỈ LẤY PHÒNG ĐÚNG TYPE
       })
       .sort({ start_time: 1 })
       .lean();
 
-    // ⭐ BỎ NHỮNG SUẤT CHIẾU KHÔNG TRÙNG LOẠI (room = null)
+    // BỎ NHỮNG SUẤT CHIẾU KHÔNG TRÙNG LOẠI (room = null)
     const filtered = items.filter((s) => s.room);
 
     // Gom theo phim
@@ -94,7 +94,7 @@ exports.publicByCinema = async (req, res, next) => {
         map.set(movieId, { movie: s.movie, showtimes: [] });
       }
 
-      // ⭐ Đếm ghế available trong ShowtimeSeat
+      // Đếm ghế available trong ShowtimeSeat
       const available = await ShowtimeSeat.countDocuments({
         showtime: s._id,
         status: "available",
@@ -134,7 +134,7 @@ exports.publicSeatsByShowtime = async (req, res, next) => {
 
     if (!s) return res.status(404).json({ message: 'Showtime not found' });
 
-    // ⭐ Lấy ghế từ ShowtimeSeat
+    // Lấy ghế từ ShowtimeSeat
     const seats = await ShowtimeSeat.find({ showtime: id })
       .select('row number seat_type extra_price status')
       .sort({ row: 1, number: 1 })
@@ -215,7 +215,7 @@ exports.create = async (req, res, next) => {
       status: 'scheduled',
     });
 
-    // ⭐ Clone ghế từ Seat → ShowtimeSeat
+    //  Clone ghế từ Seat → ShowtimeSeat
     const seats = await Seat.find({ room }).lean();
 
     const clones = seats.map((s) => ({
@@ -230,7 +230,7 @@ exports.create = async (req, res, next) => {
 
     await ShowtimeSeat.insertMany(clones);
 
-     // ⭐ AUDIT: tạo suất chiếu
+     //  AUDIT: tạo suất chiếu
     req.auditAction  = 'showtime.create';
     req.auditSummary = `Tạo suất chiếu phim "${movieDoc.title}" tại phòng ${roomDoc.name} (${roomDoc.type}) lúc ${startTime.toLocaleString('vi-VN')}`;
     req.auditTarget  = {
@@ -255,7 +255,7 @@ exports.update = async (req, res, next) => {
 
     const newRoom = req.body.room || s.room;
 
-    // ⭐ Nếu đổi phòng → clone lại ghế
+    // Nếu đổi phòng → clone lại ghế
     if (req.body.room && req.body.room !== String(s.room)) {
       await ShowtimeSeat.deleteMany({ showtime: s._id });
 
@@ -283,7 +283,7 @@ exports.update = async (req, res, next) => {
     await s.save();
 
     const changedFields = Object.keys(req.body || {});
-    // ⭐ AUDIT: cập nhật suất chiếu
+    // AUDIT: cập nhật suất chiếu
     req.auditAction  = 'showtime.update';
     req.auditSummary = `Cập nhật suất chiếu phim "${s.movie?.title || s.movie}" tại phòng ${s.room?.name || s.room} (${s.room?.type || ''}): ${changedFields.join(', ') || 'không thay đổi trường nào'}`;
     req.auditTarget  = {
@@ -307,10 +307,10 @@ exports.delete = async (req, res, next) => {
     if (!s) return res.status(404).json({ message: 'Not found' });
 
 
-    await ShowtimeSeat.deleteMany({ showtime: id }); // ⭐ xoá ghế của suất
+    await ShowtimeSeat.deleteMany({ showtime: id }); // xoá ghế của suất
     await Showtime.findByIdAndDelete(id);
 
-    // ⭐ AUDIT: xóa suất chiếu
+    // AUDIT: xóa suất chiếu
     req.auditAction  = 'showtime.delete';
     req.auditSummary = `Xóa suất chiếu phim "${s.movie?.title || s.movie}" tại phòng ${s.room?.name || s.room} lúc ${s.start_time.toLocaleString('vi-VN')}`;
     req.auditTarget  = {
