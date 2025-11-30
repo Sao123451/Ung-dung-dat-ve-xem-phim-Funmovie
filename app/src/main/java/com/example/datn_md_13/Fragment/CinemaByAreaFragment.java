@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.datn_md_13.Adapter.CityCinemaAdapter;
 import com.example.datn_md_13.ApiService.ApiClient;
 import com.example.datn_md_13.ApiService.ApiService;
+import com.example.datn_md_13.MainActivity;
 import com.example.datn_md_13.Model.Cinema;
 import com.example.datn_md_13.Model.PublicCinemaResponse;
 import com.example.datn_md_13.R;
@@ -59,6 +60,10 @@ public class CinemaByAreaFragment extends Fragment {
         rvCities.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvCities.addItemDecoration(new DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL));
         rvCities.setHasFixedSize(true);
+
+        MainActivity.locationLoadedCallback = () -> {
+            if (adapter != null) adapter.notifyDataSetChanged();
+        };
 
         adapter = new CityCinemaAdapter(cinema ->
                 Toast.makeText(requireContext(), cinema.getName(), Toast.LENGTH_SHORT).show()

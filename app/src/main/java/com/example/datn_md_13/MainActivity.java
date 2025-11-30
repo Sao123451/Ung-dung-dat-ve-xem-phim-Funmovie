@@ -1,3 +1,4 @@
+// ======================= MAIN ACTIVITY FULL FIX =========================
 package com.example.datn_md_13;
 
 import android.Manifest;
@@ -9,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,30 +56,39 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
+    // ====== CALLBACK CHO FRAGMENT ======
+    public interface OnLocationLoaded {
+        void onLocationLoaded();
+    }
+    public static OnLocationLoaded locationLoadedCallback;
+
+    // ====== UI ======
     private RecyclerView rvBanner;
     private View mainContainer;
     private BottomNavigationView bottom;
-    private View headerRoot;
-    private View headerGuest;
-    private View headerUser;
+    private View headerRoot, headerGuest, headerUser;
     private TextView tvGreeting;
     private ShapeableImageView ivAvatar;
     private View btnGoLogin;
+
+    // ====== Banner ======
     private BannerAdapter bannerAdapter;
-    private static class Item {
-        String imageUrl;
-        String movieId;
-    }
+    private static class Item { String imageUrl, movieId; }
     private final List<Item> bannerItems = new ArrayList<>();
     private final Handler autoScrollHandler = new Handler(Looper.getMainLooper());
     private int bannerIndex = 0;
+
+    // ====== API / LOCATION ======
     private ApiService apiAuthed;
-    private static final int REQ_LOCATION   = 1001;
+    private static final int REQ_LOCATION = 1001;
     private static final int REQ_RESOLUTION = 2001;
     private FusedLocationProviderClient fusedLocationClient;
+
+    // ====== USER POSITION ======
     public static Double USER_LAT = null;
     public static Double USER_LNG = null;
 
+    // =====================================================================
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,17 +97,18 @@ public class MainActivity extends AppCompatActivity {
 
         apiAuthed = ApiClient.authed(this).create(ApiService.class);
 
-        rvBanner      = findViewById(R.id.rv_banner);
+        // ====== INIT UI ======
+        rvBanner = findViewById(R.id.rv_banner);
         mainContainer = findViewById(R.id.main_container);
-        bottom        = findViewById(R.id.bottom_nav);
+        bottom = findViewById(R.id.bottom_nav);
 
         headerRoot = findViewById(R.id.headerCard);
         if (headerRoot != null) {
             headerGuest = headerRoot.findViewById(R.id.header_guest);
-            headerUser  = headerRoot.findViewById(R.id.header_user);
-            tvGreeting  = headerRoot.findViewById(R.id.tvGreeting);
-            ivAvatar    = headerRoot.findViewById(R.id.ivAvatar);
-            btnGoLogin  = headerRoot.findViewById(R.id.btnGoLogin);
+            headerUser = headerRoot.findViewById(R.id.header_user);
+            tvGreeting = headerRoot.findViewById(R.id.tvGreeting);
+            ivAvatar = headerRoot.findViewById(R.id.ivAvatar);
+            btnGoLogin = headerRoot.findViewById(R.id.btnGoLogin);
 
             if (btnGoLogin != null) {
                 btnGoLogin.setOnClickListener(v ->
@@ -115,24 +127,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(rvBanner, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(v.getPaddingLeft(), bars.top, v.getPaddingRight(), v.getPaddingBottom());
-            return insets;
-        });
-        ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> insets);
-        ViewCompat.setOnApplyWindowInsetsListener(bottom, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), bars.bottom);
-            return insets;
-        });
-
+        // === Banner setup ===
         rvBanner.setLayoutManager(new LinearLayoutManager(this, RecyclerView.HORIZONTAL, false));
         new PagerSnapHelper().attachToRecyclerView(rvBanner);
         bannerAdapter = new BannerAdapter();
         rvBanner.setAdapter(bannerAdapter);
         loadBanners();
 
+        // === Bottom Nav ===
         bottom.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -178,12 +180,12 @@ public class MainActivity extends AppCompatActivity {
             bottom.setSelectedItemId(R.id.nav_home);
         }
 
-        setHeaderVisible(true);
-
+        // ================== LOCATION =====================
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         checkLocationPermissionAndGet();
     }
 
+    // =====================================================================
     private Fragment findOrCreate(String tag, Fragment fallback) {
         Fragment f = getSupportFragmentManager().findFragmentByTag(tag);
         return (f != null) ? f : fallback;
@@ -195,207 +197,14 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadCurrentUserAndRenderHeader();
-    }
-
-    private void loadCurrentUserAndRenderHeader() {
-        if (headerRoot == null) return;
-
-        if (!AuthManager.isLoggedIn(this)) {
-            showGuestHeader();
-            return;
-        }
-
-        apiAuthed.getUserProfile().enqueue(new Callback<User>() {
-            @Override
-            public void onResponse(@NonNull Call<User> call,
-                                   @NonNull Response<User> response) {
-                if (!response.isSuccessful() || response.body() == null) {
-                    applyHeaderFromCache();
-                    return;
-                }
-
-                User fresh = response.body();
-
-                applyHeaderUser(fresh);
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<User> call,
-                                  @NonNull Throwable t) {
-                applyHeaderFromCache();
-            }
-        });
-    }
-
-    private void applyHeaderFromCache() {
-        if (!AuthManager.isLoggedIn(this)) {
-            showGuestHeader();
-            return;
-        }
-        User cached = AuthManager.getUser(this);
-        applyHeaderUser(cached);
-    }
-
-    private void showGuestHeader() {
-        if (headerGuest != null) headerGuest.setVisibility(View.VISIBLE);
-        if (headerUser  != null) headerUser.setVisibility(View.GONE);
-        if (ivAvatar != null) {
-            ivAvatar.setImageResource(R.drawable.bg_avatar_placeholder);
-        }
-    }
-
-    private void applyHeaderUser(User u) {
-        if (headerRoot == null) return;
-
-        if (u == null) {
-            showGuestHeader();
-            return;
-        }
-
-        if (headerGuest != null) headerGuest.setVisibility(View.GONE);
-        if (headerUser  != null) headerUser.setVisibility(View.VISIBLE);
-
-        // Tên hiển thị
-        if (tvGreeting != null) {
-            tvGreeting.setText("Chào " + getDisplayName(u));
-        }
-
-        // Avatar: xử lý link tương đối từ backend (/public/uploads/...)
-        if (ivAvatar != null) {
-            String avatar = u.getAvatar();
-            if (avatar != null && !avatar.trim().isEmpty()) {
-                String url = avatar.trim();
-                if (!url.startsWith("http")) {
-                    url = ApiClient.absolutePublicUrl(url);
-                }
-                Glide.with(this)
-                        .load(url)
-                        .placeholder(R.drawable.bg_avatar_placeholder)
-                        .error(R.drawable.bg_avatar_placeholder)
-                        .into(ivAvatar);
-            } else {
-                ivAvatar.setImageResource(R.drawable.bg_avatar_placeholder);
-            }
-        }
-    }
-
-    // Ưu tiên full_name -> username -> prefix email
-    private String getDisplayName(User u) {
-        if (u == null) return "Bạn";
-        String name = null;
-
-        if (u.getFull_name() != null && !u.getFull_name().trim().isEmpty()) {
-            name = u.getFull_name().trim();
-        } else if (u.getUsername() != null && !u.getUsername().trim().isEmpty()) {
-            name = u.getUsername().trim();
-        } else if (u.getEmail() != null && !u.getEmail().trim().isEmpty()) {
-            String email = u.getEmail().trim();
-            int at = email.indexOf('@');
-            name = (at > 0) ? email.substring(0, at) : email;
-        }
-
-        if (name == null || name.isEmpty()) return "Bạn";
-
-        // Viết hoa chữ cái đầu
-        String[] parts = name.toLowerCase().split("\\s+");
-        StringBuilder sb = new StringBuilder();
-        for (String p : parts) {
-            if (!p.isEmpty()) {
-                sb.append(Character.toUpperCase(p.charAt(0)))
-                        .append(p.length() > 1 ? p.substring(1) : "")
-                        .append(" ");
-            }
-        }
-        return sb.toString().trim();
-    }
-
-    private void setBannerVisible(boolean visible) {
-        rvBanner.setVisibility(visible ? View.VISIBLE : View.GONE);
-        ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            int top = visible ? 0 : bars.top;
-            v.setPadding(v.getPaddingLeft(), top, v.getPaddingRight(), v.getPaddingBottom());
-            return insets;
-        });
-        ViewCompat.requestApplyInsets(mainContainer);
-    }
-
-    private void setHeaderVisible(boolean visible) {
-        if (headerRoot != null) headerRoot.setVisibility(visible ? View.VISIBLE : View.GONE);
-    }
-
-    private void loadBanners() {
-        ApiService api = ApiClient.get().create(ApiService.class);
-        api.getAllBanners().enqueue(new Callback<List<BannerDto>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<BannerDto>> call,
-                                   @NonNull Response<List<BannerDto>> response) {
-                if (!response.isSuccessful() || response.body() == null) {
-                    setBannerVisible(false);
-                    Toast.makeText(MainActivity.this, "Không tải được banner", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                List<BannerDto> data = response.body();
-
-                bannerItems.clear();
-                for (BannerDto b : data) {
-                    if (b.images == null) continue;
-                    for (BannerDto.ImageItem img : b.images) {
-                        Item it = new Item();
-                        it.imageUrl = img.image_url;
-                        it.movieId  = img.movie_id;
-                        bannerItems.add(it);
-                    }
-                }
-
-                if (bannerItems.isEmpty()) {
-                    setBannerVisible(false);
-                    autoScrollHandler.removeCallbacksAndMessages(null);
-                } else {
-                    setBannerVisible(true);
-                    bannerAdapter.notifyDataSetChanged();
-                    startAutoScroll();
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<List<BannerDto>> call,
-                                  @NonNull Throwable t) {
-                setBannerVisible(false);
-                Toast.makeText(MainActivity.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void startAutoScroll() {
-        autoScrollHandler.removeCallbacksAndMessages(null);
-        if (bannerItems.isEmpty()) return;
-        autoScrollHandler.postDelayed(new Runnable() {
-            @Override public void run() {
-                if (rvBanner.getAdapter() == null || bannerItems.isEmpty()) return;
-                bannerIndex = (bannerIndex + 1) % bannerItems.size();
-                rvBanner.smoothScrollToPosition(bannerIndex);
-                autoScrollHandler.postDelayed(this, 3000);
-            }
-        }, 3000);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        autoScrollHandler.removeCallbacksAndMessages(null);
-    }
-
+    // =====================================================================
     private void checkLocationPermissionAndGet() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
+
             ActivityCompat.requestPermissions(
                     this,
-                    new String[]{ Manifest.permission.ACCESS_FINE_LOCATION },
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     REQ_LOCATION
             );
         } else {
@@ -407,14 +216,18 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
+
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQ_LOCATION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                requestHighAccuracyAndGetLocation();
-            }
+
+        if (requestCode == REQ_LOCATION &&
+                grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+            requestHighAccuracyAndGetLocation();
         }
     }
 
+    // =====================================================================
     private void requestHighAccuracyAndGetLocation() {
         LocationRequest locationRequest = LocationRequest.create()
                 .setPriority(Priority.PRIORITY_HIGH_ACCURACY);
@@ -423,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
                 new LocationSettingsRequest.Builder().addLocationRequest(locationRequest);
 
         SettingsClient client = LocationServices.getSettingsClient(this);
+
         client.checkLocationSettings(builder.build())
                 .addOnSuccessListener(response -> getCurrentLocation())
                 .addOnFailureListener(e -> {
@@ -438,16 +252,22 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQ_RESOLUTION && resultCode == RESULT_OK) {
-            getCurrentLocation();
+
+        if (requestCode == REQ_RESOLUTION) {
+            if (resultCode == RESULT_OK) {
+                getCurrentLocation();
+            } else {
+                Toast.makeText(this, "Bạn cần bật GPS để sử dụng tính năng này", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
+    // =====================================================================
     @SuppressLint("MissingPermission")
     private void getCurrentLocation() {
         com.google.android.gms.location.LocationRequest req =
                 com.google.android.gms.location.LocationRequest.create()
-                        .setPriority(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY)
+                        .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
                         .setInterval(1000)
                         .setNumUpdates(1);
 
@@ -455,13 +275,20 @@ public class MainActivity extends AppCompatActivity {
                 req,
                 new com.google.android.gms.location.LocationCallback() {
                     @Override
-                    public void onLocationResult(
-                            @NonNull com.google.android.gms.location.LocationResult locationResult) {
-                        android.location.Location loc = locationResult.getLastLocation();
+                    public void onLocationResult(@NonNull com.google.android.gms.location.LocationResult result) {
+
+                        android.location.Location loc = result.getLastLocation();
+
                         if (loc != null) {
                             USER_LAT = loc.getLatitude();
                             USER_LNG = loc.getLongitude();
+
+                            // ======= GỌI CALLBACK CHO FRAGMENT =======
+                            if (locationLoadedCallback != null) {
+                                locationLoadedCallback.onLocationLoaded();
+                            }
                         }
+
                         fusedLocationClient.removeLocationUpdates(this);
                     }
                 },
@@ -469,10 +296,69 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+    // =====================================================================
+    private void loadBanners() {
+        ApiService api = ApiClient.get().create(ApiService.class);
+
+        api.getAllBanners().enqueue(new Callback<List<BannerDto>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<BannerDto>> call,
+                                   @NonNull Response<List<BannerDto>> response) {
+                if (!response.isSuccessful() || response.body() == null) return;
+
+                bannerItems.clear();
+
+                for (BannerDto b : response.body()) {
+                    if (b.images == null) continue;
+
+                    for (BannerDto.ImageItem img : b.images) {
+                        Item it = new Item();
+                        it.imageUrl = img.image_url;
+                        it.movieId = img.movie_id;
+                        bannerItems.add(it);
+                    }
+                }
+
+                bannerAdapter.notifyDataSetChanged();
+                startAutoScroll();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<BannerDto>> call,
+                                  @NonNull Throwable t) {}
+        });
+    }
+
+    private void startAutoScroll() {
+        autoScrollHandler.removeCallbacksAndMessages(null);
+
+        if (bannerItems.isEmpty()) return;
+
+        autoScrollHandler.postDelayed(new Runnable() {
+            @Override public void run() {
+                bannerIndex = (bannerIndex + 1) % bannerItems.size();
+                rvBanner.smoothScrollToPosition(bannerIndex);
+                autoScrollHandler.postDelayed(this, 3000);
+            }
+        }, 3000);
+    }
+
+    // =====================================================================
+    private void setBannerVisible(boolean visible) {
+        rvBanner.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private void setHeaderVisible(boolean visible) {
+        if (headerRoot != null)
+            headerRoot.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    // =====================================================================
     private class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.VH> {
-        @NonNull
-        @Override
-        public VH onCreateViewHolder(@NonNull android.view.ViewGroup parent, int viewType) {
+
+        @NonNull @Override
+        public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+
             android.widget.ImageView iv = new android.widget.ImageView(parent.getContext());
             iv.setLayoutParams(new RecyclerView.LayoutParams(
                     RecyclerView.LayoutParams.MATCH_PARENT,
@@ -485,9 +371,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(@NonNull VH holder, int position) {
             Item it = bannerItems.get(position);
+
             Glide.with(holder.iv.getContext())
                     .load(it.imageUrl)
-                    .centerCrop()
                     .into(holder.iv);
 
             holder.itemView.setOnClickListener(v -> {
@@ -496,9 +382,6 @@ public class MainActivity extends AppCompatActivity {
                             com.example.datn_md_13.activity_movie_detail.class);
                     i.putExtra("movie_id", it.movieId);
                     v.getContext().startActivity(i);
-                } else {
-                    Toast.makeText(v.getContext(),
-                            "Banner này chưa gắn phim", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -510,9 +393,9 @@ public class MainActivity extends AppCompatActivity {
 
         class VH extends RecyclerView.ViewHolder {
             android.widget.ImageView iv;
-            VH(@NonNull android.view.View itemView) {
+            VH(@NonNull View itemView) {
                 super(itemView);
-                iv = (android.widget.ImageView) itemView;
+                iv = (android.widget.ImageView)itemView;
             }
         }
     }
