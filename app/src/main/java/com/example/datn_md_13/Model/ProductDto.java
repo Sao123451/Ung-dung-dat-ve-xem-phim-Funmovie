@@ -10,4 +10,5 @@ public class ProductDto {
     public String name;      // tên sản phẩm
     public String type;      // combo | drink | popcorn
     public Integer price;    // đơn giá (VND)
+    public String image;
 }

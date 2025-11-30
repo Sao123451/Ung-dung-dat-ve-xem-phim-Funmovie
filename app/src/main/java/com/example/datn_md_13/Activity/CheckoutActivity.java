@@ -183,6 +183,7 @@ public class CheckoutActivity extends AppCompatActivity {
                         r.type  = p.type != null ? p.type : "combo";
                         r.price = (p.price != null) ? p.price : 0;
                         r.qty   = 0;
+                        r.image = ApiClient.absolutePublicUrl(p.image);
                         rows.add(r);
                     }
                     productAdapter.setItems(rows);
