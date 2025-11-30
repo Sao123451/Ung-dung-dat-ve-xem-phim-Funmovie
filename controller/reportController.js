@@ -154,3 +154,67 @@ exports.revenueByMonth = async (req, res) => {
     res.status(500).json({ message: "Report error", error: err.message });
   }
 };
+
+/* ======================================================
+   4) THỐNG KÊ CHI TIÊU KHÁCH HÀNG
+   GET /api/reports/customer-spending?from=&to=&limit=
+====================================================== */
+exports.customerSpending = async (req, res) => {
+  try {
+    const { from, to, limit } = req.query;
+
+    const match = { status: "paid" }; // chỉ tính vé đã thanh toán
+
+    if (from || to) {
+      match.payment_time = {};
+      if (from) match.payment_time.$gte = new Date(from);
+      if (to) match.payment_time.$lte = new Date(to);
+    }
+
+    const result = await Ticket.aggregate([
+      { $match: match },
+
+      {
+        $group: {
+          _id: "$user",
+          total_spending: { $sum: "$total_after" },
+          total_tickets: { $sum: 1 }
+        }
+      },
+
+      // JOIN User
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+
+      { $unwind: "$user" },
+
+      {
+        $project: {
+          _id: 0,
+          user_id: "$user._id",
+          fullname: "$user.fullname",
+          email: "$user.email",
+          phone: "$user.phone",
+          total_spending: 1,
+          total_tickets: 1
+        }
+      },
+
+      { $sort: { total_spending: -1 } },
+
+      ...(limit ? [{ $limit: Number(limit) }] : [])
+    ]);
+
+    res.json(result);
+  } catch (err) {
+    console.error("Report error:", err);
+    res.status(500).json({ message: "Report error", error: err.message });
+  }
+};
+

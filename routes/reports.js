@@ -35,4 +35,15 @@ r.get(
   report.revenueByMonth
 );
 
+/* =======================================
+   4) CHI TIÊU KHÁCH HÀNG
+======================================= */
+r.get(
+  "/customer-spending",
+  verifyToken,
+  requireRoles(...ALLOW),
+  report.customerSpending
+);
+
+
 module.exports = r;
