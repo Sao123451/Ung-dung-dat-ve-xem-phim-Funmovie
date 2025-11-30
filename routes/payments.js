@@ -18,5 +18,6 @@ router.post("/vnpay/init", verifyToken, c.initVnpay); // Tạo link thanh toán 
 router.get("/vnpay/return", c.vnpayReturn);           // Frontend redirect về
 router.get("/vnpay/ipn", c.vnpayIpn);                 // Server callback (quan trọng nhất)
 
+router.post("/vnpay/staff-init", verifyToken, c.staffInitVnpay);
 
 module.exports = router;

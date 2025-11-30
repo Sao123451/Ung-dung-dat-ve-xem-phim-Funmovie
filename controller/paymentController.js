@@ -9,6 +9,7 @@ const Payment = require("../models/Payment");
 const TicketCombo = require("../models/TicketCombo");
 const ShowtimeSeat = require("../models/ShowtimeSeat");
 const Showtime = require("../models/Showtime");
+const path = require("path");
 
 const vnpayService = require("../services/vnpayService");
 const sendTicketEmail = require("../services/email.service");
@@ -230,14 +231,9 @@ exports.vnpayReturn = async (req, res) => {
   if (!vnpayService.verifyChecksum(params))
     return res.json({ RspCode: "97", Message: "Invalid Checksum" });
 
-  res.json({
-    RspCode: "00",
-    Message: "Success",
-    reservation_code: params["vnp_TxnRef"],
-    code: params["vnp_ResponseCode"]
-  });
+  // gửi file HTML (để js external xử lý)
+  res.sendFile(path.join(__dirname, "../public/vnpay/return.html"));
 };
-
 
 
 
@@ -258,14 +254,79 @@ exports.vnpayIpn = async (req, res) => {
   if (!ticket)
     return res.json({ RspCode: "01", Message: "Ticket Not Found" });
 
-  // Thành công
+  // ===============================
+  // THANH TOÁN THÀNH CÔNG
+  // ===============================
   if (rsp === "00") {
     const t = await confirmTicketAtomic(ticket._id);
 
     t.payment_method = "vnpay";
     t.payment_id = params["vnp_TransactionNo"];
+    t.payment_status = "paid";
     await t.save();
+
+    return res.json({ RspCode: "00", Message: "Paid" });
   }
 
-  return res.json({ RspCode: "00", Message: "Confirm Success" });
+  // ===============================
+  // THANH TOÁN THẤT BẠI → HUỶ VÉ
+  // ===============================
+  await Ticket.updateOne(
+    { _id: ticket._id },
+    { status: "cancelled", payment_status: "failed" }
+  );
+
+  await TicketSeat.updateMany(
+    { ticket: ticket._id },
+    { status: "cancelled" }
+  );
+
+  await ShowtimeSeat.updateMany(
+    { showtime: ticket.showtime, status: "holding" },
+    { status: "available" }
+  );
+
+  return res.json({ RspCode: "00", Message: "Cancelled" });
+};
+// =========================================================
+// ⭐ STAFF INIT VNPAY (TÁCH RIÊNG — KHÔNG ẢNH HƯỞNG ANDROID)
+// =========================================================
+exports.staffInitVnpay = async (req, res, next) => {
+  try {
+    const { ticketId, returnUrl } = req.body;
+
+    if (!ticketId)
+      return res.status(400).json({ message: "ticketId required" });
+
+    const t = await Ticket.findById(ticketId);
+    if (!t) return res.status(404).json({ message: "Ticket not found" });
+
+    if (t.status !== "pending")
+      return res.status(400).json({ message: "Ticket not pending" });
+
+    let amount = Number(t.total_after);
+    if (!amount || isNaN(amount)) {
+      console.error("❌ Invalid amount:", t.total_after);
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    // ⭐ STAFF SẼ BẮT BUỘC TRUYỀN returnUrl
+    if (!returnUrl)
+      return res.status(400).json({ message: "returnUrl required for staff" });
+
+    const ip =
+      req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    const url = vnpayService.createPaymentUrl(
+      t.reservation_code,
+      amount,
+      ip,
+      returnUrl    // ⭐ KHÁC ANDROID — STAFF DÙNG RETURN.HTML
+    );
+
+    return res.json({ payment_url: url });
+
+  } catch (err) {
+    next(err);
+  }
 };

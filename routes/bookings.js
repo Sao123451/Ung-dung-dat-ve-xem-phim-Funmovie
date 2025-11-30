@@ -82,4 +82,6 @@ r.delete("/:id", verifyToken, requireRoles("admin", "manager"), c.remove);
 /* ADMIN SEND EMAIL */
 r.post("/:id/send-email", verifyToken, requireRoles("admin"), c.sendEmail);
 
+r.get("/find-by-res-code/:code", verifyToken, requireRoles("staff", "manager", "admin"), c.findByReservationCode);
+
 module.exports = r;
