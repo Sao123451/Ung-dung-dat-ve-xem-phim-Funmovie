@@ -268,33 +268,32 @@ public class MainActivity extends AppCompatActivity {
         com.google.android.gms.location.LocationRequest req =
                 com.google.android.gms.location.LocationRequest.create()
                         .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                        .setInterval(1000)
-                        .setNumUpdates(1);
+                        .setInterval(5000)      // 5 giây cập nhật lại 1 lần
+                        .setFastestInterval(2000); // 2 giây nếu có update nhanh hơn
 
         fusedLocationClient.requestLocationUpdates(
                 req,
                 new com.google.android.gms.location.LocationCallback() {
                     @Override
-                    public void onLocationResult(@NonNull com.google.android.gms.location.LocationResult result) {
+                    public void onLocationResult(
+                            @NonNull com.google.android.gms.location.LocationResult locationResult) {
 
-                        android.location.Location loc = result.getLastLocation();
-
+                        android.location.Location loc = locationResult.getLastLocation();
                         if (loc != null) {
                             USER_LAT = loc.getLatitude();
                             USER_LNG = loc.getLongitude();
 
-                            // ======= GỌI CALLBACK CHO FRAGMENT =======
+                            // Báo lại cho Fragment cập nhật UI (hiển thị khoảng cách)
                             if (locationLoadedCallback != null) {
                                 locationLoadedCallback.onLocationLoaded();
                             }
                         }
-
-                        fusedLocationClient.removeLocationUpdates(this);
                     }
                 },
                 Looper.getMainLooper()
         );
     }
+
 
     // =====================================================================
     private void loadBanners() {
