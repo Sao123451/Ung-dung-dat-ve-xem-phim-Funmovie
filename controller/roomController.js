@@ -99,7 +99,7 @@ exports.create = async (req, res, next) => {
       room.capacity = inserted;
       room = await room.save();
 
-      // ⭐ AUDIT: tạo phòng + sinh ghế
+      // AUDIT: tạo phòng + sinh ghế
       req.auditAction  = 'room.create';
       req.auditSummary = `Tạo phòng "${room.name}" tại rạp ${cin.name} (layout: ${presetKey}, ghế: ${inserted})`;
       req.auditTarget  = {
@@ -146,7 +146,7 @@ exports.update = async (req, res, next) => {
 
     await room.save();
 
-    // ⭐ AUDIT: cập nhật phòng
+    // AUDIT: cập nhật phòng
     req.auditAction  = 'room.update';
     req.auditSummary = `Cập nhật phòng "${room.name}" (rạp: ${room.cinema?.name || room.cinema})`;
     req.auditTarget  = {
@@ -182,7 +182,7 @@ exports.regenerateSeats = async (req, res, next) => {
     room.capacity = inserted;
     await room.save();
 
-    // ⭐ AUDIT: regenerate sơ đồ ghế
+    // AUDIT: regenerate sơ đồ ghế
     req.auditAction  = 'room.regenerateSeats';
     req.auditSummary = `Regenerate ghế phòng "${room.name}" (rạp: ${room.cinema?.name || room.cinema}, layout: ${key}, ghế: ${inserted})`;
     req.auditTarget  = {
@@ -204,7 +204,7 @@ exports.remove = async (req, res, next) => {
     if (!deleted) return res.status(404).json({ message: 'Not found' });
 
 
-     // ⭐ AUDIT: xóa phòng
+     // AUDIT: xóa phòng
     req.auditAction  = 'room.delete';
     req.auditSummary = `Xóa phòng "${deleted.name}" (rạp: ${deleted.cinema})`;
     req.auditTarget  = {

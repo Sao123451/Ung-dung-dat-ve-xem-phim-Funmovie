@@ -286,7 +286,7 @@ exports.remove = async (req, res, next) => {
     const del = await Seat.findByIdAndDelete(id);
     if (!del) return res.status(404).json({ message: 'Not found' });
 
-    // ⭐ AUDIT: xóa 1 ghế
+    // AUDIT: xóa 1 ghế
     req.auditAction  = 'seat.delete';
     req.auditSummary = `Xóa ghế ${seat.row}${seat.number} trong phòng ${seat.room?.name || seat.room}`;
     req.auditTarget  = {
