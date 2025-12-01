@@ -18,10 +18,7 @@ export function buildBookingPayload() {
 
     const payMap = {
         "Tiền mặt": "cash",
-        "Chuyển khoản": "bank",
-        "MOMO": "momo",
-        "VNPay": "vnpay",
-        "Thẻ ngân hàng": "card"
+        "VNPay": "vnpay"
     };
 
     return {
@@ -34,7 +31,7 @@ export function buildBookingPayload() {
 }
 
 /* ============================================================
-   STAFF CONFIRM PAYMENT
+   STAFF CONFIRM PAYMENT (CASH + VNPAY)
 ============================================================ */
 export function bindConfirmPay() {
 
@@ -43,11 +40,61 @@ export function bindConfirmPay() {
 
     btn.onclick = async () => {
 
+        const method = S.payMethod;
         const payload = buildBookingPayload();
 
-        try {
+        console.log("⭐ METHOD:", method);
+        console.log("⭐ PAYLOAD:", payload);
 
-            // CREATE PAID TICKET
+        /* ============================================================
+           ⭐ CASE 1 — VNPAY
+        ============================================================= */
+        if (method === "VNPay") {
+            try {
+                // ===== B1: Tạo ticket pending =====
+                const ticket = await api("/bookings/staff-create-pending", {
+                    method: "POST",
+                    body: payload
+                });
+
+                if (!ticket || !ticket.ticket_id) {
+                    showToast("Không tạo được ticket để thanh toán!");
+                    return;
+                }
+
+                S.ticket_id = ticket.ticket_id;
+
+                console.log("⭐ TICKET_ID:", S.ticket_id);
+
+                // ===== B2: Lấy URL thanh toán VNPay =====
+                const vnp = await api("/payments/vnpay/init", {
+                    method: "POST",
+                    body: { ticketId: S.ticket_id }   // 👈 ĐÚNG 100%
+                });
+
+                if (!vnp || !vnp.payment_url) {
+                    showToast("Không lấy được URL VNPay!");
+                    return;
+                }
+
+                console.log("⭐ VNPay URL:", vnp.payment_url);
+
+                // ===== B3: Redirect cùng tab =====
+                location.assign(vnp.payment_url);
+
+                return;
+
+            } catch (err) {
+                console.error("🔥 VNPay Error:", err);
+                showToast("Lỗi VNPay!");
+                return;
+            }
+        }
+
+        /* ============================================================
+           ⭐ CASE 2 — TIỀN MẶT
+        ============================================================= */
+        try {
             const res = await api("/bookings/staff-create", {
                 method: "POST",
                 body: payload
@@ -58,7 +105,6 @@ export function bindConfirmPay() {
                 return;
             }
 
-            // ⭐ LẤY DETAIL ĐÚNG ROUTE STAFF
             const detail = await api(`/bookings/detailBooking/${res.ticket_id}`);
 
             S.lastTicketId = res.ticket_id;
@@ -69,9 +115,9 @@ export function bindConfirmPay() {
             await loadPrintTicket(res.ticket_id);
             switchView("print");
 
-        } catch (e) {
-            console.error("Lỗi tạo vé:", e);
-            showToast("Lỗi tạo vé!");
+        } catch (err) {
+            console.error("🔥 CASH error:", err);
+            showToast("Lỗi thanh toán tiền mặt!");
         }
     };
 }

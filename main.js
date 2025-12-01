@@ -1,17 +1,40 @@
-/************************************************************
- *  MAIN.JS — VERSION FIXED FOR DIRECT PRINT (NO OFFLINE)
- ************************************************************/
-
 import { hardGuard } from "./core/auth.js";
 import { loadStaffCinema } from "./features/cinema.js";
 import { fetchMovies, renderHome } from "./features/movies.js";
-import { bindGoPay } from "./features/seats.js";
 import { bindConfirmPay } from "./features/booking.js";
 import { bindSidebar, switchView } from "./core/routes.js";
 import { loadPrintTicket } from "./features/print.js";
 import { S } from "./core/state.js";
 import { api } from "./core/api.js";
-import pay from "./features/pay.js";   // ⭐ THÊM IMPORT NÀY
+import pay from "./features/pay.js";
+
+
+// Handle VNPay return redirect
+window.addEventListener("DOMContentLoaded", async () => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("vnp_return_code");
+
+    if (code) {
+        console.log("⭐ Staff nhận mã VNPay:", code);
+
+        try {
+            const detail = await api(`/bookings/find-by-res-code/${code}`);
+
+            if (detail && detail.ticket_id) {
+                S.lastTicketId = detail.ticket_id;
+                S.lastTicketDetail = detail;
+
+                await loadPrintTicket(detail.ticket_id);
+                switchView("print");
+            } else {
+                alert("Không tìm thấy vé sau thanh toán!");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Lỗi khi tải vé VNPay!");
+        }
+    }
+});
 
 /* ============================================================
    GLOBAL POPUP
@@ -28,6 +51,39 @@ window.hideMidAlert = function () {
     const box = document.getElementById("midAlert");
     if (box) box.classList.add("d-none");
 };
+
+/* ============================================================
+   AUTO HANDLE VNPay REDIRECT
+============================================================ */
+(async function handleVnPayReturn() {
+    const url = new URL(location.href);
+    const code = url.searchParams.get("vnp_return_code");
+    if (!code) return;
+
+    console.log("⭐ STAFF nhận mã return:", code);
+
+    // Xóa query để không load lại lần sau
+    history.replaceState(null, "", location.pathname);
+
+    try {
+        const detail = await api(`/bookings/find-by-res-code/${code}`);
+
+        if (!detail || !detail.ticket_id) {
+            alert("Không tìm thấy vé sau thanh toán!");
+            return;
+        }
+
+        S.lastTicketId = detail.ticket_id;
+        S.lastTicketDetail = detail;
+
+        await loadPrintTicket(detail.ticket_id);
+        switchView("print");
+
+    } catch (err) {
+        console.error(err);
+        alert("Lỗi load vé sau thanh toán!");
+    }
+})();
 
 /* ============================================================
    DOMContentLoaded
@@ -56,11 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // PAYMENT
     bindConfirmPay();
     bindPayMethodButtons();
-    pay.bindMemberSearch();  // ⭐⭐ SỬA QUAN TRỌNG — GẮN SỰ KIỆN NÚT TÌM THẺ
-
-    // BACK BUTTONS
-    bindBackFromPay();
-    bindBackFromSeats();
+    pay.bindMemberSearch();
 
     renderHome();
 });
@@ -77,7 +129,7 @@ document.addEventListener("staff-created", async (ev) => {
         S.lastTicketDetail = t;
         S.lastTicketId = ticketId;
 
-        console.log("⭐ Loaded staff detail (direct print):", t);
+        console.log("⭐ Direct print:", t);
 
         await loadPrintTicket(ticketId);
         window.switchView("print");
@@ -93,9 +145,8 @@ document.addEventListener("staff-created", async (ev) => {
 function bindPayMethodButtons() {
     document.querySelectorAll(".pay-pill").forEach(btn => {
         btn.onclick = () => {
-            document.querySelectorAll(".pay-pill").forEach(b =>
-                b.classList.remove("active")
-            );
+            document.querySelectorAll(".pay-pill")
+                .forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
 
             S.payMethod = btn.innerText.trim();
@@ -121,12 +172,12 @@ function setupTopbar() {
 ============================================================ */
 function bindLogout() {
     const btn = document.getElementById("btnLogout");
-    if (btn) {
-        btn.onclick = () => {
-            localStorage.clear();
-            location.href = "login.html";
-        };
-    }
+    if (!btn) return;
+
+    btn.onclick = () => {
+        localStorage.clear();
+        location.href = "login.html";
+    };
 }
 
 /* ============================================================
@@ -141,21 +192,21 @@ function bindReload() {
    MOVIE TABS
 ============================================================ */
 function bindMovieTabs() {
-    const tabNow = document.getElementById("tab-now");
-    const tabComing = document.getElementById("tab-coming");
+    const now = document.getElementById("tab-now");
+    const coming = document.getElementById("tab-coming");
 
-    if (!tabNow || !tabComing) return;
+    if (!now || !coming) return;
 
-    tabNow.onclick = () => {
-        tabNow.classList.add("active");
-        tabComing.classList.remove("active");
+    now.onclick = () => {
+        now.classList.add("active");
+        coming.classList.remove("active");
         S.movieTab = "now";
         renderHome();
     };
 
-    tabComing.onclick = () => {
-        tabComing.classList.add("active");
-        tabNow.classList.remove("active");
+    coming.onclick = () => {
+        coming.classList.add("active");
+        now.classList.remove("active");
         S.movieTab = "coming";
         renderHome();
     };
@@ -163,6 +214,9 @@ function bindMovieTabs() {
     S.movieTab = "now";
 }
 
+/* ============================================================
+   DISABLE STAFF IF NO CINEMA
+============================================================ */
 function disableAllFeatures() {
     document.querySelectorAll("section[id^='view-']")
         .forEach(sec => sec.classList.add("d-none"));
@@ -178,33 +232,8 @@ function disableAllFeatures() {
         `;
         home.classList.remove("d-none");
     }
-
-    document.querySelectorAll(".nav-linkx").forEach(a => {
-        a.style.pointerEvents = "none";
-        a.style.opacity = "0.5";
-    });
 }
 
-/* ============================================================
-   BACK BUTTON: PAY → SEATS
-============================================================ */
-function bindBackFromPay() {
-    const btn = document.getElementById("btnBackFromPay");
-    if (!btn) return;
-
-    btn.onclick = () => {
-        window.switchView("seats");
-    };
-}
-
-/* ============================================================
-   BACK BUTTON: SEATS → SCHEDULE
-============================================================ */
-function bindBackFromSeats() {
-    const btn = document.getElementById("btnBackFromSeats");
-    if (!btn) return;
-
-    btn.onclick = () => {
-        window.switchView("schedule");
-    };
-}
+/************************************************************
+ *  🔥 KHÔNG CÒN postMessage LISTENER — ĐÃ LOẠI BỎ HOÀN TOÀN
+ ************************************************************/
