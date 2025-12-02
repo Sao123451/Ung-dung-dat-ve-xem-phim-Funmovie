@@ -73,6 +73,15 @@ async function createVoucher(req, res, next) {
       if (docs.length > 0) await UserVoucher.insertMany(docs);
     }
 
+    // ⭐ AUDIT: tạo voucher
+    req.auditAction  = "voucher.create";
+    req.auditSummary = `Tạo voucher ${v.code} (scope=${v.scope}, type=${v.discount_type}, value=${v.value})`;
+    req.auditTarget  = {
+      type: "Voucher",
+      id:   v._id,
+      name: v.code,
+    };
+
     res.status(201).json({ message: "Voucher created", voucher: v });
 
   } catch (err) { next(err); }
@@ -90,6 +99,16 @@ async function updateVoucher(req, res, next) {
 
     if (!updated) return res.status(404).json({ message: "Voucher not found" });
 
+    // ⭐ AUDIT: cập nhật voucher
+    const changedFields = Object.keys(req.body || {});
+    req.auditAction  = "voucher.update";
+    req.auditSummary = `Cập nhật voucher ${updated.code}: ${changedFields.join(", ") || "không thay đổi trường nào"}`;
+    req.auditTarget  = {
+      type: "Voucher",
+      id:   updated._id,
+      name: updated.code,
+    };
+
     res.json({ message: "Voucher updated", voucher: updated });
 
   } catch (err) { next(err); }
@@ -102,6 +121,15 @@ async function removeVoucher(req, res, next) {
   try {
     const deleted = await Voucher.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Voucher not found" });
+
+    // ⭐ AUDIT: xóa voucher
+    req.auditAction  = "voucher.delete";
+    req.auditSummary = `Xóa voucher ${deleted.code}`;
+    req.auditTarget  = {
+      type: "Voucher",
+      id:   deleted._id,
+      name: deleted.code,
+    };
 
     res.json({ message: "Voucher deleted" });
 
