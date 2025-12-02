@@ -210,32 +210,32 @@ function violatesSingleSeatRule(selectedSet = S.seatsSelected) {
         const arr = byRow[row].sort((a, b) => a.number - b.number);
 
         for (let i = 0; i < arr.length; i++) {
-        const se = arr[i];
-        const key = `${se.row}${se.number}`;
+            const se = arr[i];
+            const key = `${se.row}${se.number}`;
 
-        const isFree =
-            !selectedSet.has(key) &&
-            !BAD_STATUSES.has(String(se.status).toLowerCase());
+            const isFree =
+                !selectedSet.has(key) &&
+                !BAD_STATUSES.has(String(se.status).toLowerCase());
 
-        if (!isFree) continue;
+            if (!isFree) continue;
 
-        const left = arr[i - 1];
-        const right = arr[i + 1];
+            const left = arr[i - 1];
+            const right = arr[i + 1];
 
-        const leftBlocked =
-            !left ||
-            selectedSet.has(`${left.row}${left.number}`) ||
-            BAD_STATUSES.has(String(left?.status).toLowerCase());
+            const leftBlocked =
+                !left ||
+                selectedSet.has(`${left.row}${left.number}`) ||
+                BAD_STATUSES.has(String(left?.status).toLowerCase());
 
-        const rightBlocked =
-            !right ||
-            selectedSet.has(`${right.row}${right.number}`) ||
-            BAD_STATUSES.has(String(right?.status).toLowerCase());
+            const rightBlocked =
+                !right ||
+                selectedSet.has(`${right.row}${right.number}`) ||
+                BAD_STATUSES.has(String(right?.status).toLowerCase());
 
-        if (leftBlocked && rightBlocked) return true;
+            if (leftBlocked && rightBlocked) return true;
+        }
     }
-}
-return false;
+    return false;
 }
 
 /* ============================================================
@@ -268,8 +268,16 @@ export function startSeatTimer() {
 
         if (seatTimeLeft <= 0) {
             clearSeatTimer();
+
+            // 🔥 Nếu ticket đã được tạo (đặt vé thành công) → KHÔNG redirect
+            if (S.lastTicketId) {
+                return;
+            }
+
+            // 🔥 Nếu chưa mua vé → quay về chọn suất như cũ
             showToast("Hết thời gian giữ ghế!");
             switchView("schedule");
+            return;
         }
     }, 1000);
 }

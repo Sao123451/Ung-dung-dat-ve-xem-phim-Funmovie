@@ -178,29 +178,37 @@ export function bindMemberSearch() {
         }
 
         try {
-            // ⭐⭐ ĐÃ SỬA LỖI: THÊM BACKTICK ĐÚNG CÚ PHÁP
             const res = await api(`/users/find-by-card/${card}`);
 
+            // 🔥 Kiểm tra chắc chắn thẻ hợp lệ
+            if (!res || !res.membership_card) {
+                throw new Error("NOT_FOUND");
+            }
+
+            // ⭐ Lưu thẻ hợp lệ
             S.memberCard = res.membership_card;
 
             box.innerHTML = `
-                <div class="member-box">
-                    <div><b>Tên:</b> ${esc(res.full_name)}</div>
-                    <div><b>Mã thẻ:</b> ${esc(res.membership_card)}</div>
-                </div>
-            `;
+            <div class="member-box">
+                <div><b>Tên:</b> ${esc(res.full_name)}</div>
+                <div><b>Mã thẻ:</b> ${esc(res.membership_card)}</div>
+            </div>
+        `;
 
             showToast("✔ Đã áp dụng thẻ thành viên");
 
         } catch (err) {
+            // ❌ Thẻ sai hoặc không tìm thấy
             S.memberCard = null;
 
             box.innerHTML = `
-                <div class="text-danger small">Không tìm thấy thẻ thành viên</div>
-            `;
+            <div class="text-danger small">❌ Không tìm thấy thẻ thành viên</div>
+        `;
+
             showToast("Không tìm thấy mã thẻ");
         }
     };
+
 }
 
 /* ============================================================

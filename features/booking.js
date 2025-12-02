@@ -112,8 +112,15 @@ export function bindConfirmPay() {
 
             showToast("✔ Đặt vé thành công!");
 
+            // 🔥 TẮT TIMER GIỮ GHẾ
+            import("./seats.js").then(m => m.clearSeatTimer());
+
+            // 🔥 Đánh dấu đã có ticket (để seats.js không redirect)
+            S.lastTicketId = res.ticket_id;
+
             await loadPrintTicket(res.ticket_id);
             switchView("print");
+
 
         } catch (err) {
             console.error("🔥 CASH error:", err);

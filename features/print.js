@@ -30,6 +30,13 @@ export async function loadPrintTicket(ticketId = null) {
             return;
         }
 
+        // 🔥 NGỪNG HOÀN TOÀN TIMER GIỮ GHẾ (seats.js)
+        import("../features/seats.js").then(m => m.clearSeatTimer());
+
+        // 🔥 Đánh dấu đã có ticket để seats.js không redirect
+        S.lastTicketId = ticketId;
+
+
         const movieTitle = esc(t.movie_title || "Không rõ phim");
         const cinemaName = esc(t.cinema_name || "");
         const roomName = esc(t.room_name || "");
@@ -61,7 +68,7 @@ export async function loadPrintTicket(ticketId = null) {
         // ⭐ TÍNH TỔNG CHUẨN
         const total =
             (t.total_after ?? t.total_before ??
-            (t.seat_subtotal + t.combo_subtotal)) || 0;
+                (t.seat_subtotal + t.combo_subtotal)) || 0;
 
         wrap.innerHTML = `
             <div class="print-ticket-card">
