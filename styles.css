@@ -624,24 +624,38 @@ img.banner-thumb { display:block; width:100%; height:220px; object-fit:contain; 
   flex:1;
 }
 
-/* hàng couple riêng ở cuối — mỗi "cặp" rộng hơn */
+/* Hàng couple – dùng cùng kích thước cột với hàng thường */
 .st-cells-couple{
   display:grid;
-  grid-template-columns: repeat(var(--cols, 6), 68px);
-  gap:10px;
+  grid-template-columns: repeat(var(--cols, 12), 38px);
+  gap:8px;
   justify-content:center;
 }
 
+
 /* ghế */
 .st-seat{
-  min-width:38px; height:30px;
-  border-radius:10px; padding:0 6px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:12px; user-select:none;
+  width:38px;
+  min-width:38px;
+  height:30px;
+  border-radius:10px;
+  padding:0 6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  user-select:none;
 }
+
 .st-seat.normal{ background:#2b67ff22; border:1px solid #2b67ff66; }
 .st-seat.vip{    background:#ff3b3022; border:1px solid #ff3b3066; }
-.st-seat.couple{ background:#ff3bb422; border:1px solid #ff3bb466; min-width:68px; }
+
+/* ✅ Couple cùng size ghế thường */
+.st-seat.couple{
+  background:#ff3bb422;
+  border:1px solid #ff3bb466;
+}
+
 
 /* trạng thái */
 .st-seat.available{ opacity:1; }

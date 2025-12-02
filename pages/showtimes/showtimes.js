@@ -408,151 +408,193 @@ function renderSeatMap(grid) {
 
   async function showEditModal(id) {
 
-    let st = null;
+  let st = null;
 
-    if (id) {
-      const res = await authFetch(`showtimes/${id}`);
-      st = await res.json().catch(() => null);
+  if (id) {
+    const res = await authFetch(`showtimes/${id}`);
+    st = await res.json().catch(() => null);
 
-      if (!res.ok || !st) {
-        return showToast("Không thể tải dữ liệu!", "err");
-      }
+    if (!res.ok || !st) {
+      return showToast("Không thể tải dữ liệu!", "err");
     }
+  }
 
-    const formHtml = html`
-      <h3>${id ? "Chỉnh sửa suất chiếu" : "Tạo suất chiếu"}</h3>
+  const formHtml = html`
+    <h3>${id ? "Chỉnh sửa suất chiếu" : "Tạo suất chiếu"}</h3>
 
-      <div class="form mt-2">
+    <div class="form mt-2">
 
-        <label>Phim</label>
-        <select id="fm-movie"></select>
-        <div class="error-text"></div>
+      <label>Phim</label>
+      <select id="fm-movie"></select>
+      <div class="error-text"></div>
 
-        <label>Rạp</label>
-        <select id="fm-cinema"></select>
-        <div class="error-text"></div>
+      <label>Rạp</label>
+      <select id="fm-cinema"></select>
+      <div class="error-text"></div>
 
-        <label>Phòng</label>
-        <select id="fm-room"></select>
-        <div class="error-text"></div>
+      <label>Phòng</label>
+      <select id="fm-room"></select>
+      <div class="error-text"></div>
 
-        <label>Giờ bắt đầu</label>
-        <input type="datetime-local" id="fm-start">
-        <div class="error-text"></div>
+      <label>Giờ bắt đầu</label>
+      <input type="datetime-local" id="fm-start">
+      <div class="error-text"></div>
 
-        <label>Giá vé</label>
-        <input type="number" id="fm-price" min="1000">
-        <div class="error-text"></div>
+      <label>Giá vé</label>
+      <input type="number" id="fm-price" min="1000">
+      <div class="error-text"></div>
 
-        <div class="mt-3 text-right">
-          <button class="btn" id="fm-cancel">Hủy</button>
-          <button class="btn primary" id="fm-save">Lưu</button>
-        </div>
-
+      <div class="mt-3 text-right">
+        <button class="btn" id="fm-cancel">Hủy</button>
+        <button class="btn primary" id="fm-save">Lưu</button>
       </div>
-    `;
 
-    const { el, close } = openModal(formHtml);
+    </div>
+  `;
 
-    const fmMovie = $("#fm-movie", el);
-    const fmCinema = $("#fm-cinema", el);
-    const fmRoom = $("#fm-room", el);
-    const fmStart = $("#fm-start", el);
-    const fmPrice = $("#fm-price", el);
+  const { el, close } = openModal(formHtml);
 
-    // Load movies
-    const mv = await (await authFetch("movies")).json().catch(() => []);
-    fmMovie.innerHTML = mv.map(m => `<option value="${m._id}">${esc(m.title)}</option>`).join("");
+  const fmMovie = $("#fm-movie", el);
+  const fmCinema = $("#fm-cinema", el);
+  const fmRoom = $("#fm-room", el);
+  const fmStart = $("#fm-start", el);
+  const fmPrice = $("#fm-price", el);
 
-    // Load cinemas
-    const ci = await (await authFetch("cinemas?limit=1000")).json().catch(() => []);
-    fmCinema.innerHTML = ci.items
-      .map(c => `<option value="${c._id}">${esc(c.name)}</option>`)
+  // ====== LOAD MOVIES + MAP DURATION (để tính end_time) ======
+  const mv = await (await authFetch("movies")).json().catch(() => []);
+  const durationMap = {}; // movieId -> duration (phút)
+
+  fmMovie.innerHTML = mv
+    .map(m => {
+      durationMap[m._id] = m.duration || 120;
+      return `<option value="${m._id}">${esc(m.title)}</option>`;
+    })
+    .join("");
+
+  // ====== LOAD CINEMAS ======
+  const ci = await (await authFetch("cinemas?limit=1000")).json().catch(() => []);
+  fmCinema.innerHTML = (ci.items || [])
+    .map(c => `<option value="${c._id}">${esc(c.name)}</option>`)
+    .join("");
+
+  async function loadRoomsForCinema() {
+    if (!fmCinema.value) {
+      fmRoom.innerHTML = "";
+      return;
+    }
+    const rm = await (await authFetch(`rooms?cinema=${fmCinema.value}&limit=500`))
+      .json()
+      .catch(() => []);
+    fmRoom.innerHTML = (rm.items || [])
+      .map(r => `<option value="${r._id}">${esc(r.name)} • ${r.type}</option>`)
       .join("");
+  }
 
-    async function loadRoomsForCinema() {
-      const rm = await (await authFetch(`rooms?cinema=${fmCinema.value}&limit=500`)).json().catch(() => []);
-      fmRoom.innerHTML = rm.items
-        .map(r => `<option value="${r._id}">${esc(r.name)} • ${r.type}</option>`)
-        .join("");
-    }
+  fmCinema.onchange = loadRoomsForCinema;
 
-    fmCinema.onchange = loadRoomsForCinema;
+  // ====== EDIT MODE: FILL DATA + KHÓA PHIM & RẠP ======
+  if (id && st) {
+    // set movie, cinema
+    fmMovie.value = st.movie?._id;
+    fmCinema.value = st.cinema?._id;
 
-    // If EDIT -> Fill data
-    if (id && st) {
-      fmMovie.value = st.movie?._id;
-      fmCinema.value = st.cinema?._id;
+    await loadRoomsForCinema();
+    fmRoom.value = st.room?._id;
 
+    const d = new Date(st.start_time);
+    fmStart.value = d.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+
+    fmPrice.value = st.ticket_price;
+
+    // 👉 KHÓA KHÔNG CHO SỬA PHIM & RẠP
+    fmMovie.disabled = true;
+    fmCinema.disabled = true;
+    // (Phòng vẫn cho đổi, vì bạn có thể muốn chuyển sang phòng khác trong cùng rạp)
+  } else {
+    // CREATE MODE: load rooms lần đầu
+    if (fmCinema.value) {
       await loadRoomsForCinema();
-      fmRoom.value = st.room?._id;
+    }
+  }
 
-      const d = new Date(st.start_time);
-      fmStart.value = d.toISOString().slice(0, 16);
+  $("#fm-cancel", el).onclick = close;
 
-      fmPrice.value = st.ticket_price;
+  $("#fm-save", el).onclick = async () => {
+
+    let ok = true;
+    [fmMovie, fmCinema, fmRoom, fmStart, fmPrice].forEach(clearInputError);
+
+    if (!fmMovie.value) { setInputError(fmMovie, "Chọn phim"); ok = false; }
+    if (!fmCinema.value) { setInputError(fmCinema, "Chọn rạp"); ok = false; }
+    if (!fmRoom.value) { setInputError(fmRoom, "Chọn phòng"); ok = false; }
+
+    // ==== Validate datetime-local (NO PAST) ====
+    if (!fmStart.value) {
+      setInputError(fmStart, "Nhập thời gian");
+      ok = false;
     } else {
-      fmCinema.dispatchEvent(new Event("change"));
+      const chosen = new Date(fmStart.value);
+      const now = new Date();
+      if (chosen < now) {
+        setInputError(fmStart, "Thời gian không được ở quá khứ");
+        ok = false;
+      }
     }
 
-    $("#fm-cancel", el).onclick = close;
+    if (!fmPrice.value || fmPrice.value <= 0) {
+      setInputError(fmPrice, "Giá không hợp lệ");
+      ok = false;
+    }
 
-    $("#fm-save", el).onclick = async () => {
+    if (!ok) return showToast("Vui lòng kiểm tra dữ liệu.", "warn");
 
-      let ok = true;
-      [fmMovie, fmCinema, fmRoom, fmStart, fmPrice].forEach(clearInputError);
-
-      if (!fmMovie.value) { setInputError(fmMovie, "Chọn phim"); ok = false; }
-      if (!fmCinema.value) { setInputError(fmCinema, "Chọn rạp"); ok = false; }
-      if (!fmRoom.value) { setInputError(fmRoom, "Chọn phòng"); ok = false; }
-
-      // ==== Validate datetime-local (NO PAST) ====
-      if (!fmStart.value) {
-        setInputError(fmStart, "Nhập thời gian");
-        ok = false;
-      } else {
-        const chosen = new Date(fmStart.value);
-        const now = new Date();
-        if (chosen < now) {
-          setInputError(fmStart, "Thời gian không được ở quá khứ");
-          ok = false;
-        }
-      }
-
-      if (!fmPrice.value || fmPrice.value <= 0) {
-        setInputError(fmPrice, "Giá không hợp lệ");
-        ok = false;
-      }
-
-      if (!ok) return showToast("Vui lòng kiểm tra dữ liệu.", "warn");
-
-      const body = {
-        movie: fmMovie.value,
-        cinema: fmCinema.value,
-        room: fmRoom.value,
-        start_time: fmStart.value,
-        ticket_price: Number(fmPrice.value),
-      };
-
-      let url = "showtimes";
-      let method = "POST";
-
-      if (id) {
-        url = `showtimes/${id}`;
-        method = "PUT";
-      }
-
-      const res = await authFetch(url, { method, body });
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) return showToast(data?.message || "Lưu thất bại", "err");
-
-      showToast(id ? "Đã cập nhật suất chiếu" : "Đã tạo suất chiếu", "ok");
-      close();
-      loadShowtimes();
+    const body = {
+      movie: fmMovie.value,
+      cinema: fmCinema.value,
+      room: fmRoom.value,
+      start_time: fmStart.value,
+      ticket_price: Number(fmPrice.value),
     };
 
-  }
+    // ====== TÍNH end_time TRÊN FE ĐỂ GIỜ KẾT THÚC CŨNG CẬP NHẬT ======
+    let durationMin = 120;
+
+    if (id && st && st.movie && st.movie.duration) {
+      // edit: ưu tiên duration từ showtime hiện tại
+      durationMin = st.movie.duration;
+    } else if (durationMap[fmMovie.value]) {
+      // create: lấy từ danh sách phim
+      durationMin = durationMap[fmMovie.value];
+    }
+
+    try {
+      const startDate = new Date(fmStart.value);
+      const endDate = new Date(startDate.getTime() + durationMin * 60000);
+      body.end_time = endDate.toISOString(); // gửi luôn cho backend
+    } catch (e) {
+      console.warn("Không tính được end_time, dùng mặc định backend", e);
+    }
+
+    let url = "showtimes";
+    let method = "POST";
+
+    if (id) {
+      url = `showtimes/${id}`;
+      method = "PUT";
+    }
+
+    const res = await authFetch(url, { method, body });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) return showToast(data?.message || "Lưu thất bại", "err");
+
+    showToast(id ? "Đã cập nhật suất chiếu" : "Đã tạo suất chiếu", "ok");
+    close();
+    loadShowtimes();
+  };
+
+}
+
 
   /* ============================================================
    * INIT

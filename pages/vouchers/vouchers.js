@@ -371,18 +371,28 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
 
         if (!ok) return;
 
-        const body = {
-          code,
-          scope: iScope.value,
-          discount_type: iType.value,
-          value: valueNum,
-          max_discount: maxNum,
-          min_order: Number(iMin.value || 0),
-          start_date: iStart.value,
-          end_date: iEnd.value,
-          usage_limit: Number(iLim.value || 0),
-          active: iAct.value === "true"
-        };
+        function toLocalDateISO(dateStr) {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split("-");
+  // Tạo Date theo múi giờ LOCAL (VN +07)
+  const dt = new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0);
+  return dt.toISOString(); // gửi lên dạng ISO có timezone
+}
+
+const body = {
+  code,
+  scope: iScope.value,
+  discount_type: iType.value,
+  value: valueNum,
+  max_discount: maxNum,
+  min_order: Number(iMin.value || 0),
+  // ⭐ gửi start/end theo "00:00 giờ LOCAL", không phải chuỗi yyyy-mm-dd
+  start_date: toLocalDateISO(iStart.value),
+  end_date: toLocalDateISO(iEnd.value),
+  usage_limit: Number(iLim.value || 0),
+  active: iAct.value === "true"
+};
+
 
         try {
           let res;
