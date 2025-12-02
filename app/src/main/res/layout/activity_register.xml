@@ -23,7 +23,7 @@
             android:layout_height="160dp"
             android:layout_marginTop="40dp"
             android:layout_marginBottom="10dp"
-            android:src="@drawable/logo1"
+            android:src="@drawable/logo"
             android:contentDescription="@string/app_name"
             android:adjustViewBounds="true"
             android:scaleType="fitCenter" />

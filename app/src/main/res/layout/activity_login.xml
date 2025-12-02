@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:gravity="center_horizontal"
     tools:context=".Activity.Login"
-    android:background="@color/white">
+    android:background="#FCFAFD">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topAppBar"
@@ -37,7 +37,7 @@
             android:layout_height="160dp"
             android:layout_marginTop="40dp"
             android:layout_marginBottom="10dp"
-            android:src="@drawable/logo1"
+            android:src="@drawable/img"
             android:contentDescription="@string/app_name"
             android:adjustViewBounds="true"
             android:scaleType="fitCenter" />
