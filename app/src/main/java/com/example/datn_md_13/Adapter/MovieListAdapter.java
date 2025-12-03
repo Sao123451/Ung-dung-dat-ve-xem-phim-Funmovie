@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CenterCrop;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.example.datn_md_13.Model.Movie;
 import com.example.datn_md_13.R;
 
@@ -20,12 +22,14 @@ import java.util.List;
 import java.util.Locale;
 
 public class MovieListAdapter extends RecyclerView.Adapter<MovieListAdapter.VH> {
-    private final List<Movie> data = new ArrayList<>();
-    private final @LayoutRes int layoutRes; // ép layout
-    private final String typeKey;           // "coming" | "now" | "early"
-    private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
-    // ====== Click listener ======
+    private final List<Movie> data = new ArrayList<>();
+    private final @LayoutRes int layoutRes;
+    private final String typeKey; // coming | now | early
+
+    private final SimpleDateFormat sdf =
+            new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
     public interface OnItemClickListener { void onClick(Movie movie); }
     private OnItemClickListener listener;
     public void setOnItemClickListener(OnItemClickListener l) { this.listener = l; }
@@ -52,53 +56,80 @@ public class MovieListAdapter extends RecyclerView.Adapter<MovieListAdapter.VH> 
     public void onBindViewHolder(@NonNull VH h, int i) {
         Movie m = data.get(i);
 
-        // Text
-        if (h.tvTitle != null)  h.tvTitle.setText(m.title != null ? m.title : "");
-        if (h.tvTitle2 != null) h.tvTitle2.setText(m.title != null ? m.title : "");
+        String title = formatTitle(m.title);
 
+        if (h.tvTitle != null) h.tvTitle.setText(title);
+        if (h.tvTitle2 != null) h.tvTitle2.setText(title);
+
+        // COMING
         if ("coming".equals(typeKey)) {
             if (h.tvDate != null) {
-                h.tvDate.setText(m.releaseDate != null
-                        ? "Khởi chiếu: " + sdf.format(m.releaseDate)
-                        : "Khởi chiếu: Chưa rõ");
+                h.tvDate.setText(
+                        m.releaseDate != null ?
+                                "Khởi chiếu: " + sdf.format(m.releaseDate)
+                                : "Khởi chiếu: Chưa rõ"
+                );
             }
-        } else { // now | early
+        }
+        // NOW | EARLY
+        else {
             if (h.tvDuration != null) {
-                h.tvDuration.setText("Thời lượng: " + (m.duration != null ? m.duration + " phút" : "—"));
+                h.tvDuration.setText(
+                        m.duration != null ?
+                                (m.duration + " phút")
+                                : "—"
+                );
             }
         }
 
-        // Image
-        String poster = m.poster;
-        if (h.ivPoster != null) {
-            Glide.with(h.itemView.getContext())
-                    .load(poster)
+        loadPoster(h.ivPoster, m.poster);
+        loadPoster(h.ivPoster2, m.poster);
 
-                    .into(h.ivPoster);
-        }
-        if (h.ivPoster2 != null) {
-            Glide.with(h.itemView.getContext())
-                    .load(poster)
-
-                    .into(h.ivPoster2);
-        }
-
-        // Click item
+        // CLICK
         h.itemView.setOnClickListener(v -> {
             if (listener == null) return;
             int pos = h.getAdapterPosition();
-            if (pos == RecyclerView.NO_POSITION) return;
-            listener.onClick(data.get(pos));
+            if (pos != RecyclerView.NO_POSITION) listener.onClick(data.get(pos));
         });
-
     }
 
     @Override public int getItemCount() { return data.size(); }
 
+    // ===========================
+    // 📌 FORMAT TITLE
+    // ===========================
+    private String formatTitle(String s) {
+        if (s == null || s.trim().isEmpty()) return "Phim chưa có tên";
+        s = s.trim();
+        s = s.substring(0,1).toUpperCase() + s.substring(1);
+
+        if (s.length() > 26)
+            s = s.substring(0, 23) + "...";
+
+        return s;
+    }
+
+    // ===========================
+    // 📌 LOAD POSTER ĐẸP
+    // ===========================
+    private void loadPoster(ImageView iv, String url) {
+        if (iv == null) return;
+
+        int radius = 18; // BO GÓC 18dp
+
+        Glide.with(iv.getContext())
+                .load(url)
+                .transform(
+                        new CenterCrop(),
+                        new RoundedCorners(radius)
+                )
+                .placeholder(R.drawable.bg_image_placeholder)
+                .error(R.drawable.bg_image_placeholder)
+                .into(iv);
+    }
+
     static class VH extends RecyclerView.ViewHolder {
-        // item_movie (coming)
         ImageView ivPoster; TextView tvTitle, tvDate;
-        // item_movie2 (now/early)
         ImageView ivPoster2; TextView tvTitle2, tvDuration;
 
         VH(@NonNull View v) {

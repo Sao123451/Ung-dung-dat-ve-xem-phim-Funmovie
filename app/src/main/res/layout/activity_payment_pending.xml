@@ -10,6 +10,7 @@
         android:id="@+id/tvCountdown"
         android:text="--:--"
         android:textSize="36sp"
+        android:textColor="@color/camdep"
         android:textStyle="bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>

@@ -54,12 +54,8 @@ public interface ApiService {
     Call<RegisterResponse> register(@Body Map<String, String> body);
     @POST("auth/register")
     Call<RegisterResponse> registerStep1(@Body Map<String, String> emailOnly);
-
     @POST("auth/register")
     Call<RegisterResponse> registerStep2(@Body Map<String, String> data);
-
-
-    // Backend trả { message, token, user }
     @POST("auth/login")
     Call<LoginResponse> login(@Body LoginRequest body);
 
@@ -93,16 +89,11 @@ public interface ApiService {
     @POST("auth/password/forgot")
     Call<BasicResponse> forgotResetPassword(@Body Map<String, String> body);
 
-
-
     /* ========== User profile ========== */
-
     @GET("users/me")
     Call<User> getUserProfile();
-
     @PUT("users/me")
     Call<UpdateUserResponse> updateMe(@Body User body);
-
     @Multipart
     @PUT("users/me")
     Call<UpdateUserResponse> updateMeWithAvatar(
@@ -111,7 +102,6 @@ public interface ApiService {
             @Part("phone") RequestBody phone,
             @Part("birth_date") RequestBody birthDate
     );
-
     class UpdateUserResponse {
         private String message;
         private User user;
@@ -124,7 +114,8 @@ public interface ApiService {
             return user;
         }
     }
-
+    @GET("/users/me/spent")
+    Call<Map<String, Integer>> getTotalSpent();
     /* ========== News ========== */
     @GET("news/public")
     Call<NewsListResponse> getNews(
@@ -148,24 +139,19 @@ public interface ApiService {
     /* ========== Movies ========== */
     @GET("movies/coming")
     Call<List<Movie>> getComing();
-
     @GET("movies/now-showing")
     Call<List<Movie>> getNowShowing();
-
     @GET("movies/archived")
     Call<List<Movie>> getArchived();
-
     @GET("movies/{id}")
     Call<Movie> getMovieById(@Path("id") String id);
 
     /* ========== Banners ========== */
     @GET("banners/public/all")
     Call<List<BannerDto>> getAllBanners();
-
     @GET("banners/{id}/public")
     Call<BannerPublicDetail> getBannerById(@Path("id") String bannerId,
                                            @Query("withLink") boolean withLink);
-
     class BannerPublicDetail {
         public String link_url;
         public List<String> images;
@@ -179,14 +165,12 @@ public interface ApiService {
             @Query("q") String q,
             @Query("city") String city
     );
-
     @GET("showtimes/public/by-cinema")
     Call<ShowtimesByCinemaResponse> getShowtimesByCinema(
             @Query("cinema") String cinemaId,
             @Query("date") String yyyyMMdd,
             @Query("type") String type
     );
-
     @GET("showtimes/{id}")
     Call<ShowtimeDetail> getShowtimeById(@Path("id") String showtimeId);
 
@@ -196,33 +180,25 @@ public interface ApiService {
             @Query("room") String roomId,
             @Query("mode") String mode // "grid"
     );
-
     @GET("showtimes/{id}/seats")
     Call<ShowtimeSeatResponse> getSeatsByShowtime(@Path("id") String showtimeId);
-
     /* ========== Booking (không header: dùng ApiClient.authed(ctx)) ========== */
     @POST("bookings/quote")
     Call<BookingQuoteResponse> quote(@Body BookingRequest req);
-
     @POST("bookings")
     Call<BookingCreateResponse> createBooking(@Body BookingRequest req);
-
     @GET("bookings/{id}")
     Call<BookingCreateResponse.Ticket> getBookingById(@Path("id") String id);
-
     @POST("bookings/{id}/confirm")
     Call<BookingCreateResponse> confirmBooking(@Path("id") String id,
                                                @Body ConfirmReq body);
-
     /* ========== Booking (bản có header cho tương thích cũ) ========== */
     @POST("bookings")
     Call<BookingCreateResponse> createBooking(@Header("Authorization") String token,
                                               @Body BookingRequest req);
-
     @GET("bookings/{id}")
     Call<BookingCreateResponse.Ticket> getBookingById(@Header("Authorization") String token,
                                                       @Path("id") String id);
-
     @POST("bookings/{id}/confirm")
     Call<BookingCreateResponse> confirmBooking(@Header("Authorization") String token,
                                                @Path("id") String id,
@@ -231,7 +207,6 @@ public interface ApiService {
     /* ========== Payments ========== */
     @POST("payments/init")
     Call<PaymentInit.Res> paymentInit(@Body PaymentInit.Req req);
-
     @POST("payments/init")
     Call<PaymentInit.Res> paymentInit(@Header("Authorization") String token,
                                       @Body PaymentInit.Req req);
@@ -240,20 +215,14 @@ public interface ApiService {
 
     @GET("products/public")
     Call<ProductListRes> getProducts();
-
     @GET("vouchers/public")
     Call<VoucherListPublicRes> getVouchers();
-
-
     @POST("vouchers/add")
     Call<SimpleResponse> addVoucher(@Body VoucherAdd body);
-
     @GET("vouchers/my")
     Call<VoucherListRes> getMyVouchers();
-
     @PUT("vouchers/use/{id}")
     Call<SimpleResponse> useVoucher(@Path("id") String userVoucherId);
-
 
     /* ========== Ticket  ========== */
     @GET("tickets/my")

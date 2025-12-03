@@ -20,12 +20,12 @@ import com.example.datn_md_13.Model.User;
 import com.example.datn_md_13.R;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 import com.google.zxing.BarcodeFormat;
 
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import retrofit2.Call;
@@ -34,20 +34,13 @@ import retrofit2.Response;
 
 public class Activity_member extends AppCompatActivity {
 
-    private TextView tvInitial, tvMemberName, tvLevel,
-            tvTotalSpent, tvRewardPoints, tvVipHint,
-            tvSpentLabel, tvVipTargetLabel,
-            tvMembershipCardLabel, tvMembershipCard;
-
-    private LinearProgressIndicator progressVip;
+    private TextView tvInitial, tvMemberName, tvMembershipCard, tvTotalSpent;
     private LinearLayout rowAccountInfor, rowChangePassword, rowMembership, row_transaction_history;
     private MaterialButton btnLogout;
     private CircleImageView ivAvatar;
     private ImageView imgBarcode;
 
     private ApiService apiService;
-
-    private static final int VIP_TARGET = 3_000_000; // 3 triệu
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -61,15 +54,9 @@ public class Activity_member extends AppCompatActivity {
         // Bind views
         tvInitial                = findViewById(R.id.tvInitial);
         tvMemberName             = findViewById(R.id.tvMemberName);
-        tvLevel                  = findViewById(R.id.tvLevel);
-        tvTotalSpent             = findViewById(R.id.tvTotalSpent);
-        tvRewardPoints           = findViewById(R.id.tvRewardPoints);
-        tvVipHint                = findViewById(R.id.tvVipHint);
-        tvSpentLabel             = findViewById(R.id.tvSpentLabel);
-        tvVipTargetLabel         = findViewById(R.id.tvVipTargetLabel);
-        tvMembershipCardLabel    = findViewById(R.id.tvMembershipCardLabel);
         tvMembershipCard         = findViewById(R.id.tvMembershipCard);
-        progressVip              = findViewById(R.id.progressVip);
+        tvTotalSpent             = findViewById(R.id.tvTotalSpent);
+
         btnLogout                = findViewById(R.id.btnLogout);
         rowAccountInfor          = findViewById(R.id.row_account_info);
         rowChangePassword        = findViewById(R.id.row_change_password);
@@ -89,12 +76,11 @@ public class Activity_member extends AppCompatActivity {
             finishAffinity();
         });
 
-        // Đi tới màn thông tin tài khoản
+        // Điều hướng
         rowAccountInfor.setOnClickListener(v ->
                 startActivity(new Intent(this, User_Information.class))
         );
 
-        // Đi tới màn đổi mật khẩu
         rowChangePassword.setOnClickListener(v ->
                 startActivity(new Intent(this, ChangePassword.class))
         );
@@ -107,18 +93,37 @@ public class Activity_member extends AppCompatActivity {
                 startActivity(new Intent(this, TicketActivity.class))
         );
 
-
-        tvLevel.setText("MEMBER");
-
-        // Chỉ demo VIP progress (có thể thay bằng dữ liệu thật)
-        setupVipDemo();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         loadMemberProfile();
+        loadTotalSpent();
     }
+    private void loadTotalSpent() {
+        apiService.getTotalSpent().enqueue(new Callback<Map<String, Integer>>() {
+            @Override
+            public void onResponse(Call<Map<String, Integer>> call, Response<Map<String, Integer>> res) {
+
+                if (!res.isSuccessful() || res.body() == null) {
+                    tvTotalSpent.setText("0 đ");
+                    return;
+                }
+
+                int total = res.body().get("total");
+
+                NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
+                tvTotalSpent.setText(nf.format(total) + " đ");
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, Integer>> call, Throwable t) {
+                tvTotalSpent.setText("0 đ");
+            }
+        });
+    }
+
 
     /** Lấy thông tin thành viên từ API /users/me */
     private void loadMemberProfile() {
@@ -133,12 +138,12 @@ public class Activity_member extends AppCompatActivity {
 
                 User user = res.body();
 
-                // ====== HIỂN THỊ TÊN ======
+                // ====== TÊN ======
                 String displayName = getDisplayName(user);
                 tvMemberName.setText(displayName);
                 tvInitial.setText(getInitial(displayName));
 
-                // ====== ẢNH ĐẠI DIỆN ======
+                // ====== AVATAR ======
                 String avatar = user.getAvatar();
                 if (avatar != null && !avatar.trim().isEmpty()) {
                     if (!avatar.startsWith("http")) {
@@ -164,6 +169,7 @@ public class Activity_member extends AppCompatActivity {
                     generateBarcode(card);
                 } else {
                     tvMembershipCard.setText("Chưa cấp");
+                    imgBarcode.setImageBitmap(null);
                 }
 
             }
@@ -190,26 +196,6 @@ public class Activity_member extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    /** Demo tiến độ VIP — sau này thay bằng dữ liệu thật từ API */
-    private void setupVipDemo() {
-        int totalSpent = 1_839_000;
-        int rewardPts  = 0;
-        NumberFormat nf = NumberFormat.getInstance(new Locale("vi","VN"));
-
-        tvTotalSpent.setText(nf.format(totalSpent) + " đ");
-        tvRewardPoints.setText(nf.format(rewardPts));
-
-        int percent = Math.max(0, Math.min(100, (int)(totalSpent * 100f / VIP_TARGET)));
-        progressVip.setProgressCompat(percent, true);
-
-        tvVipHint.setText("Bạn cần tích lũy thêm " +
-                nf.format(Math.max(VIP_TARGET - totalSpent, 0)) +
-                " đ để thăng hạng VIP");
-
-        tvSpentLabel.setText(nf.format(totalSpent) + " đ");
-        tvVipTargetLabel.setText(nf.format(VIP_TARGET) + " đ");
     }
 
     /** Lấy tên hiển thị: full_name → username → email */

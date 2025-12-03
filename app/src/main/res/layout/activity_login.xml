@@ -84,7 +84,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="24dp"
-            android:backgroundTint="@color/orange"
+            android:backgroundTint="@color/camdep"
             android:text="Đăng nhập"
             android:textAllCaps="false"
             android:textColor="@android:color/white"

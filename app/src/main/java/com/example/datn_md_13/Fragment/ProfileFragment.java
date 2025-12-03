@@ -61,7 +61,6 @@ public class ProfileFragment extends Fragment {
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.main_container, f)
-                .addToBackStack(null)
                 .commit();
     }
 }

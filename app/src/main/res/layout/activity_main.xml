@@ -103,40 +103,6 @@
                         android:textStyle="bold"
                         android:textColor="@color/black" />
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="2dp">
-
-                        <TextView
-                            android:id="@+id/tvMember"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="MEMBER"
-                            android:textAllCaps="true"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="#FF7A00" />
-
-                        <TextView
-                            android:id="@+id/tvPoint1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp"
-                            android:text="0"
-                            android:textSize="13sp"
-                            android:textColor="@color/black" />
-
-                        <TextView
-                            android:id="@+id/tvPoint2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp"
-                            android:text="0"
-                            android:textSize="13sp"
-                            android:textColor="@color/black" />
-                    </LinearLayout>
                 </LinearLayout>
 
                 <ImageView

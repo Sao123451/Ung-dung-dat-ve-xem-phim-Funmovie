@@ -10,8 +10,7 @@
     <ImageView
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:src="@drawable/ic_success"
-        android:tint="#4CAF50" />
+        android:src="@drawable/ic_success" />
 
     <TextView
         android:id="@+id/tvSuccessTitle"
@@ -38,6 +37,6 @@
         android:layout_height="wrap_content"
         android:text="OK"
         android:layout_marginTop="20dp"
-        android:backgroundTint="#673AB7"
+        android:backgroundTint="@color/camdep"
         android:textColor="#FFF"/>
 </LinearLayout>

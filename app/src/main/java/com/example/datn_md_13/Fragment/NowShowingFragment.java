@@ -47,7 +47,7 @@ public class NowShowingFragment extends Fragment {
         adapter = new MovieListAdapter(R.layout.item_movie2, "now");
         rv.setAdapter(adapter);
 
-        // ⬇️ Click item → mở màn đặt vé theo phim
+        // Click item → mở màn đặt vé theo phim
         adapter.setOnItemClickListener(movie -> {
             if (getContext() == null || movie == null) return;
             Intent i = new Intent(getContext(), BookingByMovieActivity.class);

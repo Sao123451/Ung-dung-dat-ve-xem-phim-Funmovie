@@ -101,13 +101,13 @@
 
                 <Button
                     android:id="@+id/btnSave"
-                    android:layout_width="match_parent"
+                    android:layout_width="313dp"
                     android:layout_height="60dp"
                     android:layout_marginTop="32dp"
+                    android:backgroundTint="@color/camdep"
                     android:text="Lưu thay đổi"
-                    android:background="@drawable/bg_payment_selected"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp"/>
+                    android:textSize="18sp" />
             </LinearLayout>
         </ScrollView>
     </LinearLayout>

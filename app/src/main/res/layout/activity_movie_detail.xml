@@ -296,7 +296,7 @@
                 android:insetRight="0dp"
                 app:icon="@drawable/ic_share_24"
                 app:iconTint="@android:color/white"
-                android:background="@drawable/bg_btn_primary"
+                android:background="@drawable/bg_appbar_gradient"
                 android:textColor="@android:color/white"/>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

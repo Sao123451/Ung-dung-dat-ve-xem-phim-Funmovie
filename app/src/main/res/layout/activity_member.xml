@@ -130,7 +130,7 @@
 
             <ImageView
                 android:id="@+id/imgBarcode"
-                android:layout_width="312dp"
+                android:layout_width="339dp"
                 android:layout_height="60dp"
                 android:layout_marginTop="4dp"
                 android:contentDescription="barcode" />
@@ -167,75 +167,13 @@
                         android:textSize="16sp"/>
                 </LinearLayout>
 
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="match_parent"
-                    android:background="#E0E0E0"/>
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingStart="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Điểm thưởng"
-                        android:textColor="#7A7A7A"/>
-
-                    <TextView
-                        android:id="@+id/tvRewardPoints"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textStyle="bold"
-                        android:textSize="16sp"/>
-                </LinearLayout>
             </LinearLayout>
 
-            <!-- Tiến độ VIP -->
-            <TextView
-                android:id="@+id/tvVipHint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="Bạn cần tích lũy thêm ... đ để thăng hạng VIP"/>
 
-            <com.google.android.material.progressindicator.LinearProgressIndicator
-                android:id="@+id/progressVip"
-                android:layout_width="match_parent"
-                android:layout_height="8dp"
-                android:layout_marginTop="8dp"
-                app:indicatorColor="#2F80ED"
-                app:trackColor="#E0E0E0"/>
 
-            <!-- Nhãn trái-phải -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/tvSpentLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0 đ"/>
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"/>
-
-                <TextView
-                    android:id="@+id/tvVipTargetLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="3.000.000 đ"/>
-            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
     <!-- Danh sách các tùy chọn tài khoản -->
@@ -386,6 +324,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:text="Đăng xuất"
+        android:backgroundTint="@color/camdep"
         app:cornerRadius="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

@@ -22,7 +22,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginBottom="12dp"
-            android:tint="@color/fm_orange" />
+            android:tint="@color/camdep" />
 
         <TextView
             android:id="@+id/tvLabel"
