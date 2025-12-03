@@ -114,8 +114,9 @@ public interface ApiService {
             return user;
         }
     }
-    @GET("/users/me/spent")
+    @GET("users/me/spent")
     Call<Map<String, Integer>> getTotalSpent();
+
     /* ========== News ========== */
     @GET("news/public")
     Call<NewsListResponse> getNews(
