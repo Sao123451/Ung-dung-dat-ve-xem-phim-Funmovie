@@ -244,7 +244,4 @@ public interface ApiService {
 
     @POST("tickets/release-holding")
     Call<BaseResponse> releaseHoldingSeats(@Body ReleaseSeatRequest body);
-
-
-
 }

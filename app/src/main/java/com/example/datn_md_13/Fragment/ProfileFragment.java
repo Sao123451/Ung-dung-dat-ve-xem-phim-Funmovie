@@ -15,6 +15,7 @@ import com.example.datn_md_13.Activity.MemberCardActivity;
 import com.example.datn_md_13.Adapter.MoreMenuAdapter;
 import com.example.datn_md_13.Model.MoreMenuItem;
 import com.example.datn_md_13.R;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
 
@@ -32,35 +33,31 @@ public class ProfileFragment extends Fragment {
 
         ArrayList<MoreMenuItem> items = new ArrayList<>();
         items.add(new MoreMenuItem(R.drawable.ic_voucher, "Voucher miễn phí", R.color.fm_blue));
-        items.add(new MoreMenuItem(R.drawable.ic_movie, "Rạp phim BETA", R.color.fm_green));
-        items.add(new MoreMenuItem(R.drawable.ic_member, "Thành viên BETA", R.color.fm_purple));
+        items.add(new MoreMenuItem(R.drawable.ic_movie, "Rạp phim FunMovie", R.color.fm_green));
+        items.add(new MoreMenuItem(R.drawable.ic_member, "Thành viên FunMovie", R.color.fm_purple));
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         rv.setAdapter(new MoreMenuAdapter(items, position -> {
+
+            BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav);
+
             switch (position) {
 
-                case 0:
-                    openFragment(new VoucherFragment());
+                case 0: // Voucher
+                    bottomNav.setSelectedItemId(R.id.nav_voucher);
                     break;
 
-                case 1:
-                    openFragment(new CinemaByAreaFragment());
+                case 1: // Rạp chiếu
+                    bottomNav.setSelectedItemId(R.id.nav_booking);
                     break;
 
-                case 2:
+                case 2: // Thành viên
                     startActivity(new Intent(requireContext(), MemberCardActivity.class));
                     break;
             }
         }));
 
         return v;
-    }
-
-    private void openFragment(Fragment f) {
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.main_container, f)
-                .commit();
     }
 }

@@ -1,10 +1,11 @@
 package com.example.datn_md_13.Model;
 
-import java.util.List;
-
 public class Ticket {
+
     public String _id;
-    public String status;
+    public String status;               // pending | paid | cancelled
+    public String payment_status;       // 🔥 THÊM — unpaid | paid | failed
+    public String payment_method;       // 🔥 THÊM — cash | vnpay | momo...
     public String reservation_code;
     public int total_after;
     public String createdAt;

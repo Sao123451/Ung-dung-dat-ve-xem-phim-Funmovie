@@ -1,23 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
+    xmlns:tools="http://schemas.android.com/tools" >
     <!-- INTERNET -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- LOCATION -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- LOCATION -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-
-    <!-- FOREGROUND SERVICE (Android 14+) -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> <!-- FOREGROUND SERVICE (Android 14+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-
-    <!-- Google AD ID -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
-
-    <!-- GPS Feature -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" /> <!-- Google AD ID -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" /> <!-- GPS Feature -->
     <uses-feature android:name="android.hardware.location.gps" />
 
     <application
@@ -30,9 +21,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DATN_MD13"
         android:usesCleartextTraffic="true"
-        tools:targetApi="31">
-
-        <!-- 🔥 FIX QUAN TRỌNG: foregroundServiceType="location" -->
+        tools:targetApi="31" >
         <service
             android:name=".LocationService"
             android:exported="false"
@@ -47,46 +36,78 @@
         <activity
             android:name=".Activity.TicketActivity"
             android:exported="false" />
-
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!-- USER AUTH -->
-        <activity android:name=".Activity.Login" android:exported="true" />
-        <activity android:name=".Activity.Register" android:exported="false" android:windowSoftInputMode="adjustPan" />
-        <activity android:name=".Activity.Edit_User_Info" android:exported="false" android:windowSoftInputMode="adjustPan" />
-        <activity android:name=".Activity.ChangePassword" android:exported="false" />
-        <activity android:name=".Activity.User_Information" android:exported="false" />
-        <activity android:name=".Activity.OtpVerifyActivity" android:exported="false" android:windowSoftInputMode="adjustPan" />
-        <activity android:name=".Activity.ForgotPasswordEmailActivity" android:exported="false" />
-        <activity android:name=".Activity.ForgotPasswordOtpActivity" android:exported="false" />
-        <activity android:name=".Activity.ForgotPasswordNewPassActivity" android:exported="false" />
-
-        <!-- BOOKING -->
-        <activity android:name=".Activity.Activity_seat_selection" android:exported="false" />
-        <activity android:name=".Activity.CheckoutActivity" android:exported="false" />
-        <activity android:name=".Activity.PaymentPendingActivity" android:exported="false" />
-        <activity android:name=".Activity.TicketDetailActivity" android:exported="false" />
-
-        <!-- CINEMA & MOVIES -->
-        <activity android:name=".Activity.ShowtimesByCinemaActivity" android:exported="false" />
-        <activity android:name=".Activity.AreaPickerActivity" android:exported="false" />
-        <activity android:name=".Activity.NewsDetailActivity" android:exported="false" />
-
-        <!-- MEMBERSHIP -->
-        <activity android:name=".Activity.MemberCardActivity" android:exported="false" />
-        <activity android:name=".Activity.Activity_member" android:exported="false" />
-
-        <!-- MOVIE PAGES -->
-        <activity android:name=".BookingByMovieActivity" android:exported="false" />
-        <activity android:name=".activity_movie_detail" android:exported="false" />
-
+        </activity> <!-- USER AUTH -->
+        <activity
+            android:name=".Activity.Login"
+            android:exported="true" />
+        <activity
+            android:name=".Activity.Register"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".Activity.Edit_User_Info"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".Activity.ChangePassword"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.User_Information"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.OtpVerifyActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".Activity.ForgotPasswordEmailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.ForgotPasswordOtpActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.ForgotPasswordNewPassActivity"
+            android:exported="false" /> <!-- BOOKING -->
+        <activity
+            android:name=".Activity.Activity_seat_selection"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.CheckoutActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.PaymentPendingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.TicketDetailActivity"
+            android:exported="false" /> <!-- CINEMA & MOVIES -->
+        <activity
+            android:name=".Activity.ShowtimesByCinemaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.AreaPickerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.NewsDetailActivity"
+            android:exported="false" /> <!-- MEMBERSHIP -->
+        <activity
+            android:name=".Activity.MemberCardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activity.Activity_member"
+            android:exported="false" /> <!-- MOVIE PAGES -->
+        <activity
+            android:name=".BookingByMovieActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity_movie_detail"
+            android:exported="false" />
     </application>
 
 </manifest>

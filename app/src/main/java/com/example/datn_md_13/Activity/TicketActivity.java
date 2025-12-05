@@ -14,6 +14,7 @@ import com.example.datn_md_13.ApiService.ApiService;
 import com.example.datn_md_13.Model.Ticket;
 import com.example.datn_md_13.R;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -57,10 +58,16 @@ public class TicketActivity extends AppCompatActivity {
             public void onResponse(Call<List<Ticket>> call, Response<List<Ticket>> res) {
                 if (res.isSuccessful()) {
                     List<Ticket> list = res.body();
+                    List<Ticket> paidList = new ArrayList<>();
+                    for (Ticket t : list) {
+                        if ("paid".equalsIgnoreCase(t.payment_status)) {
+                            paidList.add(t);
+                        }
+                    }
 
                     TicketAdapter adapter = new TicketAdapter(
                             TicketActivity.this,
-                            list,
+                            paidList,
                             ticket -> {}
                     );
 
@@ -77,4 +84,5 @@ public class TicketActivity extends AppCompatActivity {
             }
         });
     }
+
 }
