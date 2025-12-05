@@ -2,8 +2,14 @@ package com.example.datn_md_13.Activity;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -107,7 +113,7 @@ public class Edit_User_Info extends AppCompatActivity {
                     etFullName.setText(u.getFull_name() != null ? u.getFull_name() : "");
                     etPhone.setText(u.getPhone() != null ? u.getPhone() : "");
                     etBirthDate.setText(u.getBirthDate() != null ? u.getBirthDate() : "");
-                    loadAvatar(u.getAvatar());
+                    loadAvatar(u.getAvatar(), u.getFull_name());
                 } else {
                     Toast.makeText(Edit_User_Info.this,
                             "Không thể tải thông tin!", Toast.LENGTH_SHORT).show();
@@ -353,20 +359,79 @@ public class Edit_User_Info extends AppCompatActivity {
         return MultipartBody.Part.createFormData("avatar", "avatar.jpg", reqFile);
     }
 
-    private void loadAvatar(String avatarUrl) {
-        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+    private void loadAvatar(String avatarUrl, String fullName) {
+
+        if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+
             if (!avatarUrl.startsWith("http")) {
                 avatarUrl = ApiClient.absolutePublicUrl(avatarUrl);
             }
+
             Glide.with(this)
                     .load(avatarUrl)
                     .placeholder(R.drawable.bg_avatar_circle)
                     .error(R.drawable.bg_avatar_circle)
                     .into(ivAvatar);
-        } else {
-            ivAvatar.setImageResource(R.drawable.bg_avatar_circle);
+
+            return;
         }
+
+        // ======= Avatar CHỮ =======
+        String initial = getInitial(fullName);
+        Bitmap bmp = createInitialAvatar(initial, 72); // 72dp cho avatar to
+        ivAvatar.setImageBitmap(bmp);
     }
+
+    private String getInitial(String name) {
+        if (name == null || name.trim().isEmpty()) return "U";
+        return String.valueOf(Character.toUpperCase(name.trim().charAt(0)));
+    }
+
+    private Bitmap createInitialAvatar(String text, int sizeDp) {
+        int sizePx = Math.round(
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        sizeDp,
+                        getResources().getDisplayMetrics()
+                )
+        );
+
+        Bitmap bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+
+        float radius = sizePx / 2f;
+
+        // Background nền xám nhạt (#ECECEC)
+        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bg.setColor(Color.parseColor("#ECECEC"));
+        canvas.drawCircle(radius, radius, radius, bg);
+
+        // Viền mỏng màu xám (#CDCDCD)
+        Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stroke.setStyle(Paint.Style.STROKE);
+        stroke.setStrokeWidth(sizePx * 0.04f);
+        stroke.setColor(Color.parseColor("#CDCDCD"));
+        canvas.drawCircle(radius, radius, radius - stroke.getStrokeWidth(), stroke);
+
+        // Text màu xanh (#2979FF)
+        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(Color.parseColor("#2979FF"));
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(sizePx * 0.55f);
+
+        Rect bounds = new Rect();
+        textPaint.getTextBounds(text, 0, text.length(), bounds);
+
+        canvas.drawText(
+                text,
+                radius,
+                radius - bounds.exactCenterY(),
+                textPaint
+        );
+
+        return bmp;
+    }
+
 
     private String safeText(TextInputEditText edt) {
         return edt.getText() != null ? edt.getText().toString().trim() : "";

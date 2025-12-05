@@ -118,6 +118,6 @@
         android:layout_margin="16dp"
         android:contentDescription="Chỉnh sửa thông tin"
         app:srcCompat="@drawable/ic_edit"
-        app:backgroundTint="?attr/colorPrimary"/>
+        app:backgroundTint="@color/camdep"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

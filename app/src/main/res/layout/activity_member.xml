@@ -56,87 +56,6 @@
             android:padding="16dp"
             android:gravity="center_horizontal">
 
-            <!-- Avatar + tên -->
-            <FrameLayout
-                android:id="@+id/headerAvatar"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_circle_avatar">
-
-                <!-- Avatar (ẩn mặc định, chỉ hiện khi có URL) -->
-                <de.hdodenhof.circleimageview.CircleImageView
-                    android:id="@+id/ivAvatar"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/bg_avatar_circle"
-                    android:scaleType="centerCrop"
-                    android:visibility="gone"/>
-
-                <!-- Chữ cái đầu fallback -->
-                <TextView
-                    android:id="@+id/tvInitial"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:text="N"
-                    android:textColor="#2F80ED"
-                    android:textStyle="bold"
-                    android:textSize="24sp"/>
-            </FrameLayout>
-
-            <TextView
-                android:id="@+id/tvMemberName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Tên người dùng"
-                android:textStyle="bold"
-                android:textSize="18sp"/>
-
-
-            <TextView
-                android:id="@+id/tvLevel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="MEMBER"
-                android:textColor="#7A7A7A"
-                android:textAllCaps="true"
-                android:textSize="13sp"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:id="@+id/tvMembershipCardLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Thẻ thành viên"
-                    android:textColor="#7A7A7A"
-                    android:textSize="16sp"
-                    android:layout_marginLeft="18dp"/>
-
-                <TextView
-                    android:id="@+id/tvMembershipCard"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0000000000"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginLeft="30dp"/>
-
-            </LinearLayout>
-
-            <ImageView
-                android:id="@+id/imgBarcode"
-                android:layout_width="339dp"
-                android:layout_height="60dp"
-                android:layout_marginTop="4dp"
-                android:contentDescription="barcode" />
-
-
-            <!-- Tổng chi tiêu / điểm thưởng -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -146,33 +65,107 @@
                 android:paddingVertical="12dp"
                 android:paddingHorizontal="16dp">
 
+
+                <FrameLayout
+                    android:id="@+id/headerAvatar"
+                    android:layout_width="78dp"
+                    android:layout_height="78dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_circle_avatar">
+
+                    <!-- Avatar (ẩn mặc định, chỉ hiện khi có URL) -->
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/ivAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/bg_avatar_circle"
+                        android:visibility="gone" />
+
+                    <!-- Chữ cái đầu fallback -->
+                    <TextView
+                        android:id="@+id/tvInitial"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="N"
+                        android:textColor="#2F80ED"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+
+
+
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="96dp"
                     android:layout_weight="1"
                     android:orientation="vertical">
+
+
+                    <TextView
+                        android:layout_marginLeft="10dp"
+                        android:id="@+id/tvMemberName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Tên người dùng"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginLeft="10dp"
+                        android:textStyle="bold"
                         android:text="Tổng chi tiêu"
-                        android:textColor="#7A7A7A"/>
+                        android:textColor="#7A7A7A" />
 
                     <TextView
                         android:id="@+id/tvTotalSpent"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginTop="5dp"
                         android:text="0 đ"
-                        android:textStyle="bold"
-                        android:textSize="16sp"/>
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
-
-
             </LinearLayout>
 
 
+            <LinearLayout
+                android:layout_width="347dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp">
 
+                <TextView
+                    android:id="@+id/tvMembershipCardLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="30dp"
+                    android:text="Thẻ thành viên"
+                    android:textColor="#7A7A7A"
+                    android:textSize="16sp" />
 
+                <TextView
+                    android:id="@+id/tvMembershipCard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="30dp"
+                    android:text="0000000000"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/imgBarcode"
+                android:layout_width="339dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="4dp"
+                android:contentDescription="barcode" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

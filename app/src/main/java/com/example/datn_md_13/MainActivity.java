@@ -5,9 +5,15 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -275,20 +281,31 @@ public class MainActivity extends AppCompatActivity {
 
         // Avatar: xử lý link tương đối từ backend (/public/uploads/...)
         if (ivAvatar != null) {
-            String avatar = u.getAvatar();
-            if (avatar != null && !avatar.trim().isEmpty()) {
-                String url = avatar.trim();
-                if (!url.startsWith("http")) {
-                    url = ApiClient.absolutePublicUrl(url);
+            // Avatar
+            if (ivAvatar != null) {
+                String avatar = u.getAvatar();
+
+                if (avatar != null && !avatar.trim().isEmpty()) {
+                    // Có ảnh → load từ server
+                    String url = avatar.trim();
+                    if (!url.startsWith("http")) {
+                        url = ApiClient.absolutePublicUrl(url);
+                    }
+
+                    Glide.with(this)
+                            .load(url)
+                            .placeholder(R.drawable.bg_avatar_placeholder)
+                            .error(R.drawable.bg_avatar_placeholder)
+                            .into(ivAvatar);
+
+                } else {
+                    // Không có ảnh → tạo avatar chữ
+                    String initial = getInitial(getDisplayName(u));
+                    Bitmap bmp = createInitialAvatar(initial, 48); // 48dp
+                    ivAvatar.setImageBitmap(bmp);
                 }
-                Glide.with(this)
-                        .load(url)
-                        .placeholder(R.drawable.bg_avatar_placeholder)
-                        .error(R.drawable.bg_avatar_placeholder)
-                        .into(ivAvatar);
-            } else {
-                ivAvatar.setImageResource(R.drawable.bg_avatar_placeholder);
             }
+
         }
     }
 
@@ -525,5 +542,56 @@ public class MainActivity extends AppCompatActivity {
                 iv = (android.widget.ImageView) itemView;
             }
         }
+    }
+
+    private String getInitial(String name) {
+        if (name == null || name.trim().isEmpty()) return "N";
+        return String.valueOf(Character.toUpperCase(name.trim().charAt(0)));
+    }
+
+    // Tạo avatar hình tròn chứa chữ cái đầu
+    private Bitmap createInitialAvatar(String text, int sizeDp) {
+        int sizePx = Math.round(
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        sizeDp,
+                        getResources().getDisplayMetrics()
+                )
+        );
+
+        Bitmap bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+
+        float radius = sizePx / 2f;
+
+        // ===== Background màu xám nhạt =====
+        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bg.setColor(Color.parseColor("#ECECEC"));
+        canvas.drawCircle(radius, radius, radius, bg);
+
+        // ===== Viền xám mờ =====
+        Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stroke.setStyle(Paint.Style.STROKE);
+        stroke.setStrokeWidth(sizePx * 0.03f);
+        stroke.setColor(Color.parseColor("#CDCDCD"));  // đúng style Material
+        canvas.drawCircle(radius, radius, radius - stroke.getStrokeWidth(), stroke);
+
+        // ===== Chữ màu xanh Material =====
+        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(Color.parseColor("#2979FF")); // giống avatar bạn gửi
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(sizePx * 0.55f);
+
+        Rect bounds = new Rect();
+        textPaint.getTextBounds(text, 0, text.length(), bounds);
+
+        canvas.drawText(
+                text,
+                radius,
+                radius - bounds.exactCenterY(),
+                textPaint
+        );
+
+        return bmp;
     }
 }

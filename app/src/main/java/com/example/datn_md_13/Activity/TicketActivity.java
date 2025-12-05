@@ -1,5 +1,6 @@
 package com.example.datn_md_13.Activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -31,22 +32,19 @@ public class TicketActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ticket);
 
-        // ========== Toolbar ==========
+        // ===== Toolbar =====
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        // Hiện nút back trên toolbar
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-
-        // Xử lý khi bấm nút ⬅
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
-        // ========== RecyclerView ==========
+        // ===== RecyclerView =====
         rvHistory = findViewById(R.id.rvHistory);
         rvHistory.setLayoutManager(new LinearLayoutManager(this));
 
+        // ===== API =====
         apiService = ApiClient.authed(this).create(ApiService.class);
 
         loadHistory();
@@ -56,26 +54,33 @@ public class TicketActivity extends AppCompatActivity {
         apiService.getMyTickets().enqueue(new Callback<List<Ticket>>() {
             @Override
             public void onResponse(Call<List<Ticket>> call, Response<List<Ticket>> res) {
-                if (res.isSuccessful()) {
-                    List<Ticket> list = res.body();
-                    List<Ticket> paidList = new ArrayList<>();
-                    for (Ticket t : list) {
-                        if ("paid".equalsIgnoreCase(t.payment_status)) {
-                            paidList.add(t);
-                        }
-                    }
-
-                    TicketAdapter adapter = new TicketAdapter(
-                            TicketActivity.this,
-                            paidList,
-                            ticket -> {}
-                    );
-
-                    rvHistory.setAdapter(adapter);
-
-                } else {
+                if (!res.isSuccessful() || res.body() == null) {
                     Toast.makeText(TicketActivity.this, "Lỗi tải lịch sử vé", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+
+                List<Ticket> list = res.body();
+                List<Ticket> paidList = new ArrayList<>();
+
+                // Lọc vé đã thanh toán
+                for (Ticket t : list) {
+                    if ("paid".equalsIgnoreCase(t.payment_status)) {
+                        paidList.add(t);
+                    }
+                }
+
+                // Adapter
+                TicketAdapter adapter = new TicketAdapter(
+                        TicketActivity.this,
+                        paidList,
+                        ticket -> {
+                            Intent i = new Intent(TicketActivity.this, TicketDetailActivity2.class);
+                            i.putExtra("ticket_id", ticket._id);
+                            startActivity(i);
+                        }
+                );
+
+                rvHistory.setAdapter(adapter);
             }
 
             @Override
@@ -84,5 +89,4 @@ public class TicketActivity extends AppCompatActivity {
             }
         });
     }
-
 }

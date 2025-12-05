@@ -2,8 +2,14 @@ package com.example.datn_md_13.Activity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -90,7 +96,7 @@ public class User_Information extends AppCompatActivity {
                 tvPhoneNumber.setText(nonEmpty(user.getPhone(), "Chưa cập nhật"));
                 tvBirthDate.setText(nonEmpty(user.getBirthDate(), "Chưa cập nhật"));
 
-                loadAvatar(user.getAvatar());
+                loadAvatar(user.getAvatar(), user.getFull_name());
             }
 
             @Override
@@ -102,8 +108,9 @@ public class User_Information extends AppCompatActivity {
         });
     }
 
-    private void loadAvatar(String avatarUrl) {
-        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+    private void loadAvatar(String avatarUrl, String fullName) {
+
+        if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
 
             if (!avatarUrl.startsWith("http")) {
                 avatarUrl = ApiClient.absolutePublicUrl(avatarUrl);
@@ -114,9 +121,63 @@ public class User_Information extends AppCompatActivity {
                     .placeholder(R.drawable.bg_avatar_circle)
                     .error(R.drawable.bg_avatar_circle)
                     .into(ivAvatar);
-        } else {
-            ivAvatar.setImageResource(R.drawable.bg_avatar_circle);
+            return;
         }
+
+        // ========= Avatar chữ ==============
+        String initial = getInitial(fullName);
+        Bitmap bmp = createInitialAvatar(initial, 72); // avatar to hơn màn Main
+        ivAvatar.setImageBitmap(bmp);
+    }
+
+    private String getInitial(String name) {
+        if (name == null || name.trim().isEmpty()) return "U";
+        return String.valueOf(Character.toUpperCase(name.trim().charAt(0)));
+    }
+
+    private Bitmap createInitialAvatar(String text, int sizeDp) {
+        int sizePx = Math.round(
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        sizeDp,
+                        getResources().getDisplayMetrics()
+                )
+        );
+
+        Bitmap bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+
+        float radius = sizePx / 2f;
+
+        // Background gray (#ECECEC)
+        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bg.setColor(Color.parseColor("#ECECEC"));
+        canvas.drawCircle(radius, radius, radius, bg);
+
+        // Border (#CDCDCD)
+        Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stroke.setStyle(Paint.Style.STROKE);
+        stroke.setStrokeWidth(sizePx * 0.04f);
+        stroke.setColor(Color.parseColor("#CDCDCD"));
+        canvas.drawCircle(radius, radius, radius - stroke.getStrokeWidth(), stroke);
+
+        // Text blue (#2979FF)
+        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(Color.parseColor("#2979FF"));
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(sizePx * 0.55f);
+
+        Rect bounds = new Rect();
+        textPaint.getTextBounds(text, 0, text.length(), bounds);
+
+        canvas.drawText(
+                text,
+                radius,
+                radius - bounds.exactCenterY(),
+                textPaint
+        );
+
+        return bmp;
     }
 
     private String nonEmpty(String s, String fallback) {
