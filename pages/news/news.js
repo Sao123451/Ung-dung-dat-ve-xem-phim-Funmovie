@@ -79,6 +79,11 @@ window.FMPages.news = async function (pageEl, ctx) {
     return js.items || [];
   }
 
+  function categoryLabel(cat) {
+  if (cat === 'promotion') return 'Khuyến mãi';
+  return 'Tin tức';
+}
+
   async function loadList() {
     els.table.innerHTML = `<div class="muted">Đang tải...</div>`;
     try {
@@ -110,61 +115,64 @@ window.FMPages.news = async function (pageEl, ctx) {
   }
 
   function renderTable() {
-    const start = (page - 1) * pageSize;
-    const rows = view.slice(start, start + pageSize);
+  const start = (page - 1) * pageSize;
+  const rows = view.slice(start, start + pageSize);
 
-    if (!rows.length) {
-      els.table.innerHTML = `<div class="muted">Không có bài viết.</div>`;
-    } else {
-      els.table.innerHTML = html`
-        <table class="table">
-          <thead>
-            <tr>
-              <th style="width:72px">Ảnh</th>
-              <th>Tiêu đề</th>
-              <th>Slug</th>
-              <th>Tags</th>
-              <th>Trạng thái</th>
-              <th>Publish at</th>
-              <th>Views</th>
-              <th style="width:260px">Hành động</th>
-            </tr>
-          </thead>
+  if (!rows.length) {
+    els.table.innerHTML = `<div class="muted">Không có bài viết.</div>`;
+  } else {
+    els.table.innerHTML = html`
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:72px">Ảnh</th>
+            <th>Tiêu đề</th>
+            <th>Slug</th>
+            <th>Tags</th>
+            <th>Danh mục</th>     <!-- ⭐ THÊM -->
+            <th>Trạng thái</th>
+            <th>Publish at</th>
+            <th>Views</th>
+            <th style="width:260px">Hành động</th>
+          </tr>
+        </thead>
 
-          <tbody>
-            ${rows.map(n => {
-        const src = toAbsImage(n.cover_image);
-        return html`
-                <tr data-id="${n._id}">
-                  <td>${src ? `<img class="news-thumb" src="${src}">` : ''}</td>
-                  <td>${esc(n.title)}</td>
-                  <td>${esc(n.slug)}</td>
-                  <td>${(n.tags || []).join(', ')}</td>
-                  <td>${statusBadge(n)}</td>
-                  <td>${fmtDateTime(n.published_at)}</td>
-                  <td>${n.view_count ?? 0}</td>
-                  <td>
-                    <button class="btn" data-act="toggle" data-id="${n._id}">
-                      ${n.is_published ? 'Unpublish' : 'Publish'}
-                    </button>
-                    <button class="btn" data-act="edit" data-id="${n._id}">Sửa</button>
-                    <button class="btn danger" data-act="del" data-id="${n._id}">Xoá</button>
-                  </td>
-                </tr>
-              `;
-      }).join('')}
-          </tbody>
-        </table>
-      `;
+        <tbody>
+          ${rows.map(n => {
+            const src = toAbsImage(n.cover_image);
+            return html`
+              <tr data-id="${n._id}">
+                <td>${src ? `<img class="news-thumb" src="${src}">` : ''}</td>
+                <td>${esc(n.title)}</td>
+                <td>${esc(n.slug)}</td>
+                <td>${(n.tags || []).join(', ')}</td>
+                <td>${categoryLabel(n.category)}</td>   <!-- ⭐ THÊM -->
+                <td>${statusBadge(n)}</td>
+                <td>${fmtDateTime(n.published_at)}</td>
+                <td>${n.view_count ?? 0}</td>
+                <td>
+                  <button class="btn" data-act="toggle" data-id="${n._id}">
+                    ${n.is_published ? 'Unpublish' : 'Publish'}
+                  </button>
+                  <button class="btn" data-act="edit" data-id="${n._id}">Sửa</button>
+                  <button class="btn danger" data-act="del" data-id="${n._id}">Xoá</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
 
-      els.table.querySelectorAll('button[data-act]').forEach(btn =>
-        btn.addEventListener('click', onRowAction)
-      );
-    }
-
-    els.pg.textContent = page;
-    els.info.textContent = `Trang ${page}`;
+    els.table.querySelectorAll('button[data-act]').forEach(btn =>
+      btn.addEventListener('click', onRowAction)
+    );
   }
+
+  els.pg.textContent = page;
+  els.info.textContent = `Trang ${page}`;
+}
+
 
   /* CREATE / EDIT FORM */
   async function openNewsForm(mode, data = {}) {
@@ -184,6 +192,12 @@ window.FMPages.news = async function (pageEl, ctx) {
 
         <label>Trích dẫn</label>
         <input id="f-excerpt" value="${esc(data.excerpt)}">
+
+         <label>Danh mục</label>
+        <select id="f-category">
+          <option value="news">Tin tức</option>
+          <option value="promotion">Khuyến mãi</option>
+        </select>
 
         <label>Nội dung</label>
         <textarea id="f-content" rows="6">${esc(data.content)}</textarea>
@@ -205,10 +219,13 @@ window.FMPages.news = async function (pageEl, ctx) {
       const iTitle = el.querySelector('#f-title');
       const iSlug = el.querySelector('#f-slug');
       const iEx = el.querySelector('#f-excerpt');
+      const iCat   = el.querySelector('#f-category');
       const iCt = el.querySelector('#f-content');
       const iTags = el.querySelector('#f-tags');
       const iUrl = el.querySelector('#f-cover-url');
       const iFile = el.querySelector('#f-cover-file');
+
+      iCat.value = data.category || 'news';
 
       /* AUTO SLUG FROM TITLE */
       iTitle.addEventListener("input", () => {
@@ -259,6 +276,7 @@ window.FMPages.news = async function (pageEl, ctx) {
         const excerpt = iEx.value.trim();
         const content = iCt.value.trim();
         const tags = iTags.value.trim().split(",").map(t => t.trim()).filter(Boolean);
+        const category = iCat.value; 
         let cover = iUrl.value.trim();
 
         let body, method, url;
@@ -271,10 +289,12 @@ window.FMPages.news = async function (pageEl, ctx) {
           body.append("excerpt", excerpt);
           body.append("content", content);
           body.append("tags", JSON.stringify(tags));
+          body.append("category", category);
         } else {
           body = {
             title, slug, excerpt, content, tags,
-            cover_image: cover
+            cover_image: cover,
+            category
           };
         }
 

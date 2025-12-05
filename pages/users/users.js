@@ -17,6 +17,7 @@ window.FMPages.users = async function (pageEl, ctx) {
   // ----------------- Query elements -------------------
   const els = {
     q: $('#usr-q', pageEl),
+    roleFilter: $('#usr-role-filter', pageEl),
     table: $('#usr-table', pageEl),
     info: $('#usr-info', pageEl),
     prev: $('#usr-prev', pageEl),
@@ -106,14 +107,25 @@ window.FMPages.users = async function (pageEl, ctx) {
   }
 
   function applyFilter() {
-    const q = (els.q.value || "").trim().toLowerCase();
-    view = !q ? raw : raw.filter(u =>
+  const q = (els.q.value || "").trim().toLowerCase();
+  const roleVal = (els.roleFilter && els.roleFilter.value) || ""; // ⭐ role đang chọn
+
+  view = raw.filter(u => {
+    const matchText =
+      !q ||
       (u.username || '').toLowerCase().includes(q) ||
-      (u.email || '').toLowerCase().includes(q)
-    );
-    page = 1;
-    renderTable();
-  }
+      (u.email || '').toLowerCase().includes(q);
+
+    const matchRole =
+      !roleVal || u.role === roleVal; // ⭐ nếu chọn role thì phải trùng
+
+    return matchText && matchRole;
+  });
+
+  page = 1;
+  renderTable();
+}
+
 
   function badgeStatus(s) {
     if (s === "disabled") return `<span class="badge muted">disabled</span>`;
@@ -157,7 +169,7 @@ window.FMPages.users = async function (pageEl, ctx) {
                   <button class="btn" data-act="edit" data-id="${u._id}">Sửa</button>
                   ${u.status === "disabled"
                     ? `<button class="btn" data-act="restore" data-id="${u._id}">Khôi phục</button>`
-                    : `<button class="btn danger" data-act="del" data-id="${u._id}">Xoá</button>`
+                    : `<button class="btn danger" data-act="del" data-id="${u._id}">Khóa</button>`
                   }
                 </div>
               </td>
@@ -344,105 +356,121 @@ window.FMPages.users = async function (pageEl, ctx) {
   }
 
   // ----------------- CREATE USER -------------------
-  async function onCreateUserSubmit() {
-    cuEls.help.textContent = "";
-    [cuEls.username, cuEls.email, cuEls.password,
-     cuEls.fullname, cuEls.phone, cuEls.role,
-     cuEls.birth, cuEls.cinema].forEach(el => el && clearInputError(el));
+async function onCreateUserSubmit() {
+  cuEls.help.textContent = "";
+  [cuEls.username, cuEls.email, cuEls.password,
+   cuEls.fullname, cuEls.phone, cuEls.role,
+   cuEls.birth, cuEls.cinema].forEach(el => el && clearInputError(el));
 
-    let ok = true;
+  let ok = true;
 
-    function requireField(el) {
-      if (!el) return true;
-      if (!(el.value || "").trim()) {
-        setInputError(el, "Hãy nhập đủ thông tin"); ok = false;
-        return false;
+  function requireField(el) {
+    if (!el) return true;
+    if (!(el.value || "").trim()) {
+      setInputError(el, "Hãy nhập đủ thông tin"); ok = false;
+      return false;
+    }
+    clearInputError(el);
+    return true;
+  }
+
+  // basic required
+  requireField(cuEls.username);
+  requireField(cuEls.email);
+  requireField(cuEls.password);
+  requireField(cuEls.fullname);
+  requireField(cuEls.phone);
+  requireField(cuEls.role);
+
+  const roleVal = cuEls.role.value;
+  const needCinema = roleVal === "staff" || roleVal === "manager";
+  if (needCinema) requireField(cuEls.cinema);
+
+  const emailVal = cuEls.email.value.trim().toLowerCase();
+  if (!emailRegex.test(emailVal)) {
+    setInputError(cuEls.email, "Email @gmail.com hợp lệ");
+    ok = false;
+  }
+
+  const phoneVal = cuEls.phone.value.trim();
+  if (!phoneRegex.test(phoneVal)) {
+    setInputError(cuEls.phone, "SĐT phải bắt đầu 0 và đủ 10 số");
+    ok = false;
+  }
+
+  const birthVal = cuEls.birth.value.trim();
+  if (birthVal) {
+    const age = calcAge(birthVal);
+    if (age !== null && (age < 20 || age > 50)) {
+      setInputError(cuEls.birth, "Tuổi phải 20–50");
+      ok = false;
+    }
+  }
+
+  if (cuEls.password.value.length < 8) {
+    setInputError(cuEls.password, "Mật khẩu ≥8 ký tự");
+    ok = false;
+  }
+
+  if (!ok) {
+    if (!cuEls.help.textContent)
+      cuEls.help.textContent = "Vui lòng kiểm tra các trường tô đỏ.";
+    return;
+  }
+
+  const body = {
+    username: cuEls.username.value.trim(),
+    email: emailVal,
+    password: cuEls.password.value,
+    full_name: cuEls.fullname.value.trim(),
+    phone: phoneVal,
+    role: roleVal
+  };
+  if (birthVal) body.birth_date = birthVal;
+  if (needCinema) body.cinema = cuEls.cinema.value;
+
+  try {
+    const res = await authFetch(`${API_BASE}/users/admin-create`, {
+      method: "POST",
+      body
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (e) {
+      // ignore parse error
+    }
+
+    if (!res.ok) {
+      const msg = (data?.message || "").toLowerCase();
+
+      // 🔴 BẮT TRƯỜNG HỢP EMAIL TRÙNG
+      if (msg.includes("email")) {
+        setInputError(cuEls.email, "Email đã tồn tại");
+        cuEls.help.textContent = "Email đã tồn tại, vui lòng nhập email khác.";
+      } else {
+        cuEls.help.textContent = data?.message || "Tạo tài khoản thất bại";
       }
-      clearInputError(el);
-      return true;
-    }
-
-    // basic required
-    requireField(cuEls.username);
-    requireField(cuEls.email);
-    requireField(cuEls.password);
-    requireField(cuEls.fullname);
-    requireField(cuEls.phone);
-    requireField(cuEls.role);
-
-    const roleVal = cuEls.role.value;
-    const needCinema = roleVal === "staff" || roleVal === "manager";
-    if (needCinema) requireField(cuEls.cinema);
-
-    const emailVal = cuEls.email.value.trim().toLowerCase();
-    if (!emailRegex.test(emailVal)) {
-      setInputError(cuEls.email, "Email @gmail.com hợp lệ");
-      ok = false;
-    }
-
-    const phoneVal = cuEls.phone.value.trim();
-    if (!phoneRegex.test(phoneVal)) {
-      setInputError(cuEls.phone, "SĐT phải bắt đầu 0 và đủ 10 số");
-      ok = false;
-    }
-
-    const birthVal = cuEls.birth.value.trim();
-    if (birthVal) {
-      const age = calcAge(birthVal);
-      if (age !== null && (age < 20 || age > 50)) {
-        setInputError(cuEls.birth, "Tuổi phải 20–50");
-        ok = false;
-      }
-    }
-
-    if (cuEls.password.value.length < 8) {
-      setInputError(cuEls.password, "Mật khẩu ≥8 ký tự");
-      ok = false;
-    }
-
-    if (!ok) {
-      if (!cuEls.help.textContent)
-        cuEls.help.textContent = "Vui lòng kiểm tra các trường tô đỏ.";
       return;
     }
 
-    const body = {
-      username: cuEls.username.value.trim(),
-      email: emailVal,
-      password: cuEls.password.value,
-      full_name: cuEls.fullname.value.trim(),
-      phone: phoneVal,
-      role: roleVal
-    };
-    if (birthVal) body.birth_date = birthVal;
-    if (needCinema) body.cinema = cuEls.cinema.value;
+    showToast("Đã tạo tài khoản nhân sự", "ok");
+    cuEls.username.value = "";
+    cuEls.email.value = "";
+    cuEls.password.value = "";
+    cuEls.fullname.value = "";
+    cuEls.phone.value = "";
+    cuEls.birth.value = "";
+    cuEls.role.value = "admin";
+    cuEls.cinema.value = "";
 
-    try {
-      const res = await authFetch(`${API_BASE}/users/admin-create`, {
-        method:"POST",
-        body
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        cuEls.help.textContent = data?.message || "Tạo tài khoản thất bại";
-        return;
-      }
-
-      showToast("Đã tạo tài khoản nhân sự", "ok");
-      cuEls.username.value = "";
-      cuEls.email.value = "";
-      cuEls.password.value = "";
-      cuEls.fullname.value = "";
-      cuEls.phone.value = "";
-      cuEls.birth.value = "";
-      cuEls.role.value = "admin";
-      cuEls.cinema.value = "";
-
-      loadList();
-    } catch {
-      cuEls.help.textContent = "Lỗi kết nối";
-    }
+    loadList();
+  } catch {
+    cuEls.help.textContent = "Lỗi kết nối";
   }
+}
+
 
   // ----------------- EVENTS -------------------
   $("#btn-create-user", pageEl).onclick = onCreateUserSubmit;
@@ -454,6 +482,12 @@ window.FMPages.users = async function (pageEl, ctx) {
   };
 
   els.q.oninput = () => { page = 1; applyFilter(); };
+  if (els.roleFilter) {
+  els.roleFilter.onchange = () => {
+    page = 1;
+    applyFilter();
+  };
+}
   els.prev.onclick = () => { if (page > 1) { page--; renderTable(); } };
   els.next.onclick = () => {
     const max = Math.ceil(view.length / pageSize);

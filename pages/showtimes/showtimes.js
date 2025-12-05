@@ -176,26 +176,73 @@ window.FMPages.showtimes = async function (pageEl, ctx) {
     pager.innerHTML = "";
   }
 
-  /* ============================================================
-   * DELETE SHOWTIME — NO CONFIRM()
+    /* ============================================================
+   * DELETE SHOWTIME — CHẶN NẾU ĐANG CÓ VÉ ĐẶT
    * ============================================================ */
   async function deleteShowtime(id) {
-    const modalHtml = html`
-    <h3>Xóa suất chiếu?</h3>
-    <p>Bạn có chắc chắn muốn xóa suất chiếu này không?</p>
+    // 1) Lấy danh sách vé (có thể backend không lọc theo showtime,
+    //    nên mình sẽ tự lọc trên FE bằng t.showtime)
+    let tickets = [];
+    try {
+      const resTk = await authFetch(`tickets?showtime=${encodeURIComponent(id)}&limit=500`);
+      const jsTk  = await resTk.json().catch(() => ({}));
 
-    <div class="mt-3 text-right">
-      <button class="btn" id="cf-cancel">Hủy</button>
-      <button class="btn danger" id="cf-ok">Xóa</button>
-    </div>
-  `;
+      if (Array.isArray(jsTk.items))      tickets = jsTk.items;
+      else if (Array.isArray(jsTk.data))  tickets = jsTk.data;
+      else if (Array.isArray(jsTk))       tickets = jsTk;
+      else                                tickets = [];
+    } catch (err) {
+      console.error(err);
+      showToast("Không kiểm tra được vé của suất chiếu. Vui lòng thử lại.", "err");
+      return;
+    }
+
+    // 2) Chỉ giữ vé thuộc đúng suất chiếu này + chưa bị hủy
+    const activeTickets = tickets.filter(t => {
+      const st = (t.status || "").toLowerCase();
+      const showtimeId =
+        (t.showtime && (t.showtime._id || t.showtime.id || t.showtime)) ||
+        t.showtimeId ||
+        t.showtime_id;
+
+      const sameShowtime = String(showtimeId) === String(id);
+
+      return sameShowtime && !["cancelled", "canceled"].includes(st);
+    });
+
+    // Nếu CÒN vé active → chặn xoá
+    if (activeTickets.length > 0) {
+      const htmlBlock = html`
+        <h3>Không thể xoá suất chiếu</h3>
+        <p>Suất chiếu này đang có <b>${activeTickets.length}</b> vé trong hệ thống.</p>
+        <p class="muted" style="margin-top:4px">
+          Vui lòng huỷ hoặc xử lý các vé liên quan trước khi xoá suất chiếu.
+        </p>
+        <div class="mt-3 text-right">
+          <button class="btn primary" id="ok-btn">Đã hiểu</button>
+        </div>
+      `;
+      const { el, close } = openModal(htmlBlock);
+      $("#ok-btn", el).onclick = close;
+      return;
+    }
+
+    // 3) Không còn vé → cho phép xoá như bình thường
+    const modalHtml = html`
+      <h3>Xóa suất chiếu?</h3>
+      <p>Bạn có chắc chắn muốn xóa suất chiếu này không?</p>
+      <div class="mt-3 text-right">
+        <button class="btn" id="cf-cancel">Hủy</button>
+        <button class="btn danger" id="cf-ok">Xóa</button>
+      </div>
+    `;
 
     const { el, close } = openModal(modalHtml);
 
     $("#cf-cancel", el).onclick = close;
 
     $("#cf-ok", el).onclick = async () => {
-      const res = await authFetch(`showtimes/${id}`, { method: "DELETE" });
+      const res  = await authFetch(`showtimes/${id}`, { method: "DELETE" });
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
@@ -208,9 +255,10 @@ window.FMPages.showtimes = async function (pageEl, ctx) {
       loadShowtimes();
     };
   }
-  /* ============================================================
-   HÀM HIỂN THỊ CHI TIẾT SUẤT CHIẾU + SƠ ĐỒ GHẾ
-============================================================ */
+
+
+
+  /* HÀM HIỂN THỊ CHI TIẾT SUẤT CHIẾU + SƠ ĐỒ GHẾ*/
 async function openShowtimeDetail(id) {
   try {
     // 1) GET SHOWTIME DETAIL
@@ -366,22 +414,30 @@ function renderSeatMap(grid) {
   }
 
   function toSeatGrid(seats) {
-    const map = {};
+  const map = {};
 
-    seats.forEach(s => {
-      if (!map[s.row]) map[s.row] = [];
-      map[s.row].push({
-        number: s.number,
-        seat_type: s.seat_type,
-        seat_status: s.status  // available / holding / sold / broken
-      });
+  seats.forEach(s => {
+    if (!map[s.row]) map[s.row] = [];
+
+    // 🔴 ƯU TIÊN TRẠNG THÁI HỎNG TỪ GHẾ VẬT LÝ
+    const seatStatus =
+      s.seat_status === "broken"
+        ? "broken"
+        : (s.status || "available");   // status theo suất chiếu
+
+    map[s.row].push({
+      number: s.number,
+      seat_type: s.seat_type,
+      seat_status: seatStatus
     });
+  });
 
-    return Object.keys(map).sort().map(rowLabel => ({
-      row: rowLabel,
-      seats: map[rowLabel].sort((a,b) => a.number - b.number)
-    }));
-  }
+  return Object.keys(map).sort().map(rowLabel => ({
+    row: rowLabel,
+    seats: map[rowLabel].sort((a,b) => a.number - b.number)
+  }));
+}
+
 
 
   /* ============================================================

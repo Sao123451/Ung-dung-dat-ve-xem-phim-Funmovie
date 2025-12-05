@@ -395,29 +395,87 @@
       });
     }
 
-    // -------- Row actions (chỉ Sửa/Xoá) ----------
+        // -------- Row actions (chỉ Sửa/Xoá) ----------
     async function onRowAction(e){
       const id  = e.currentTarget.getAttribute('data-id');
       const act = e.currentTarget.getAttribute('data-act');
       const m   = items.find(x => x._id === id);
       if (!id) return;
 
+      // ======= EDIT =======
       if (act === 'edit'){
         if (!isAdmin){ showToast?.('Chỉ Admin được sửa.', 'err'); return; }
         try{
           const res = await fetch(`${API_BASE}/movies/${id}`, { cache:'no-store' });
           const one = await res.json().catch(()=> ({}));
-          if (!res.ok) { showToast?.(one?.message || 'Không tải được dữ liệu để sửa.', 'err'); return; }
+          if (!res.ok) {
+            showToast?.(one?.message || 'Không tải được dữ liệu để sửa.', 'err');
+            return;
+          }
           openMovieForm('edit', one);
-        } catch { showToast?.('Lỗi mạng khi tải dữ liệu.', 'err'); }
+        } catch {
+          showToast?.('Lỗi mạng khi tải dữ liệu.', 'err');
+        }
         return;
       }
 
+      // ======= DELETE =======
       if (act === 'del'){
         if (!isAdmin){ showToast?.('Chỉ Admin được xoá.', 'err'); return; }
+
+        // 1) Kiểm tra xem phim này có suất chiếu hay không
+        try {
+          const u = new URL(`${API_BASE}/showtimes`);
+          u.searchParams.set('movie', id);
+          u.searchParams.set('limit', '50');
+
+          const resSt = await authFetch(u.toString());
+          const jsSt  = await resSt.json().catch(() => ({}));
+
+          let list = [];
+          if (Array.isArray(jsSt.items)) list = jsSt.items;
+          else if (Array.isArray(jsSt.data)) list = jsSt.data;
+          else if (Array.isArray(jsSt))      list = jsSt;
+
+          // Lọc chính xác các suất chiếu thuộc phim này
+          const related = list.filter(st => {
+            const mv = st.movie || st.movie_id || st.movieId;
+            if (!mv) return false;
+            if (typeof mv === 'string') return mv === id;
+            if (typeof mv === 'object') return mv._id === id;
+            return false;
+          });
+
+          if (related.length > 0) {
+            // Có suất chiếu → không cho xoá
+            openModal(html`
+              <div class="modal-head"><h3>Không thể xoá phim</h3></div>
+              <div class="form">
+                <p>Phim <b>${esc(m?.title || 'này')}</b> hiện vẫn còn suất chiếu trong hệ thống.</p>
+                <p class="muted" style="margin-top:4px">
+                  Vui lòng xoá hoặc cập nhật các suất chiếu liên quan trước khi xoá phim này.
+                </p>
+              </div>
+              <div class="modal-foot">
+                <button class="btn" id="ok-btn">Đã hiểu</button>
+              </div>
+            `, ({ el, close }) => {
+              $('#ok-btn', el).onclick = close;
+            });
+            return;
+          }
+        } catch (err) {
+          // Nếu không check được, báo lỗi chứ không xoá bừa
+          showToast?.('Không kiểm tra được suất chiếu của phim. Vui lòng thử lại.', 'err');
+          return;
+        }
+
+        // 2) Không còn suất chiếu → cho phép xoá như cũ
         const markup = html`
           <div class="modal-head"><h3>Xoá phim</h3></div>
-          <div class="form"><p>Bạn có chắc muốn xoá <b>${esc(m?.title || 'phim này')}</b>?</p></div>
+          <div class="form">
+            <p>Bạn có chắc muốn xoá <b>${esc(m?.title || 'phim này')}</b>?</p>
+          </div>
           <div class="modal-foot">
             <button class="btn" id="cf-cancel">Hủy</button>
             <button class="btn danger" id="cf-ok">Xoá</button>
@@ -427,15 +485,23 @@
           el.querySelector('#cf-ok').onclick = async () => {
             try{
               const res = await authFetch(`${API_BASE}/movies/${id}`, { method:'DELETE' });
-              const d = await res.json().catch(()=> ({}));
-              if (!res.ok){ showToast?.(d?.message || 'Xoá không thành công.', 'err'); return; }
-              close(); showToast?.('Đã xoá 1 phim.', 'ok'); await loadList();
-            } catch { showToast?.('Lỗi kết nối khi xoá.', 'err'); }
+              const d   = await res.json().catch(()=> ({}));
+              if (!res.ok){
+                showToast?.(d?.message || 'Xoá không thành công.', 'err');
+                return;
+              }
+              close();
+              showToast?.('Đã xoá 1 phim.', 'ok');
+              await loadList();
+            } catch {
+              showToast?.('Lỗi kết nối khi xoá.', 'err');
+            }
           };
         });
         return;
       }
     }
+
 
     // -------- Events --------
     els.q.addEventListener('input', () => { q = els.q.value; applyFilter(); });

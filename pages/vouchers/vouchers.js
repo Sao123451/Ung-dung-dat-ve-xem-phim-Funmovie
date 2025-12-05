@@ -1,4 +1,4 @@
-// vouchers.js — BẢN KẾT HỢP GIỐNG 100% VOUCHER CŨ (UI + LOGIC)
+// vouchers.js — BẢN KẾT HỢP GIỐNG 100% VOUCHER CŨ (UI + LOGIC) + distribute_type
 // -------------------------------------------------------------
 
 window.FMPages = window.FMPages || {};
@@ -46,7 +46,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
      Load list
   -------------------------- */
   async function loadList() {
-    
+
     els.tb.innerHTML = `<div class="muted">Đang tải...</div>`;
     try {
       const res = await authFetch(
@@ -64,8 +64,8 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
   }
 
   /* -------------------------
-     Render table
-  -------------------------- */
+   Render table 
+-------------------------- */
   function renderTable() {
     if (!items.length) {
       els.tb.innerHTML = `<div class="muted">Không có voucher nào</div>`;
@@ -73,57 +73,72 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     }
 
     els.tb.innerHTML = html`
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Mã</th><th>Phạm vi</th><th>Loại</th><th>Giá trị</th><th>Tối đa</th>
-              <th>Đơn tối thiểu</th><th>Hiệu lực</th><th>Dùng/Giới hạn</th><th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-          ${items.map(v => {
-      const dtype = v.discount_type || v.type;
-      const val = dtype === 'percent'
-        ? `${v.value}%`
-        : `${v.value.toLocaleString('vi-VN')}đ`;
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Mã</th>
+            <th>Phạm vi</th>
+            <th>Loại</th>
+            <th>Giá trị</th>
+            <th>Tối đa</th>
+            <!-- 🔥 ĐÃ BỎ: <th>Đơn tối thiểu</th> -->
+            <th>Hiệu lực</th>
+            <th>Dùng/Giới hạn</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items
+            .map(v => {
+              const dtype = v.discount_type || v.type;
+              const val =
+                dtype === "percent"
+                  ? `${v.value}%`
+                  : `${v.value.toLocaleString("vi-VN")}đ`;
 
-      const cap = v.max_discount
-        ? `${v.max_discount.toLocaleString('vi-VN')}đ`
-        : '—';
+              const cap = v.max_discount
+                ? `${v.max_discount.toLocaleString("vi-VN")}đ`
+                : "—";
 
-      const min = (v.min_order ?? v.min_total ?? 0).toLocaleString('vi-VN') + 'đ';
+              const end = v.end_date ? fmtYMD(v.end_date) : "—";
+              const used = `${v.used_count || 0}/${v.usage_limit || "∞"}`;
 
+              return html`
+                <tr>
+                  <td><code>${v.code}</code></td>
+                  <td>${badgeScope(v.scope)}</td>
+                  <td>${v.discount_type || v.type}</td>
+                  <td>${val}</td>
+                  <td>${cap}</td>
+                  <!-- 🔥 ĐÃ BỎ Ô ĐƠN TỐI THIỂU -->
+                  <td>đến ${end}</td>
+                  <td>${used}</td>
+                  <td>
+                    <button class="btn" data-act="validate" data-code="${v.code}">
+                      Kiểm tra
+                    </button>
+                    <button class="btn" data-act="edit" data-code="${v.code}">
+                      Sửa
+                    </button>
+                    <button class="btn danger" data-act="del" data-code="${v.code}">
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    `;
 
-      const end = v.end_date ? fmtYMD(v.end_date) : '—';
-      const used = `${v.used_count || 0}/${v.usage_limit || '∞'}`;
-
-      return html`
-              <tr>
-                <td><code>${v.code}</code></td>
-                <td>${badgeScope(v.scope)}</td>
-                <td>${v.discount_type || v.type}</td>
-                <td>${val}</td>
-                <td>${cap}</td>
-                <td>${((v.min_order ?? v.min_total ?? 0)).toLocaleString('vi-VN')}đ</td>
-                <td>đến ${end}</td>
-                <td>${used}</td>
-                <td>
-                  <button class="btn" data-act="validate" data-code="${v.code}">Kiểm tra</button>
-                  <button class="btn" data-act="edit" data-code="${v.code}">Sửa</button>
-                  <button class="btn danger" data-act="del" data-code="${v.code}">Xóa</button>
-                </td>
-              </tr>`;
-    }).join("")}
-          </tbody>
-        </table>
-        `;
-
-    $$("[data-act]", els.tb).forEach(btn => btn.onclick = onRowAction);
+    $$("[data-act]", els.tb).forEach(btn => (btn.onclick = onRowAction));
 
     const maxPg = Math.max(1, Math.ceil(total / pageSize));
     els.pg.textContent = `${page}/${maxPg}`;
-    els.info.textContent = total ? `Tổng ${total} voucher` : '';
+    els.info.textContent = total ? `Tổng ${total} voucher` : "";
   }
+
 
   /* -------------------------
      Fetch detail
@@ -204,7 +219,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
   }
 
   /* -------------------------
-     Voucher Form — 100% bản cũ
+     Voucher Form — ĐÃ BỎ ĐƠN TỐI THIỂU + THÊM LOẠI PHÂN BỐ
   -------------------------- */
   function openVoucherForm(mode = "create", data = null) {
     const isEdit = mode === "edit";
@@ -254,9 +269,14 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
             <input id="v-max" type="number" min="1" step="1000" value="${V.max_discount ?? ""}">
           </div>
 
+          <!-- THÊM TRƯỜNG LOẠI PHÂN BỐ, THAY CHO ĐƠN TỐI THIỂU -->
           <div class="col-6 field">
-            <label>Đơn tối thiểu *</label>
-            <input id="v-min" type="number" min="0" step="1000" value="${V.min_order ?? ""}">
+            <label>Loại phân bố *</label>
+            <select id="v-distribute">
+              <option value="">-- Chọn --</option>
+              <option value="manual" ${ (V.distribute_type || 'manual') === "manual" ? "selected" : ""}>Thủ công (nhập mã)</option>
+              <option value="auto" ${ V.distribute_type === "auto" ? "selected" : ""}>Tự động (phát cho user)</option>
+            </select>
           </div>
 
           <div class="col-6 field">
@@ -300,7 +320,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
         iType = $g("v-type"),
         iVal = $g("v-value"),
         iMax = $g("v-max"),
-        iMin = $g("v-min"),
+        iDis = $g("v-distribute"),
         iStart = $g("v-start"),
         iEnd = $g("v-end"),
         iLim = $g("v-limit"),
@@ -343,7 +363,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
         ok = requireField(iScope, "Phạm vi") && ok;
         ok = requireField(iType, "Loại giảm giá") && ok;
         ok = requireField(iVal, "Giá trị") && ok;
-        ok = requireField(iMin, "Đơn tối thiểu") && ok;
+        ok = requireField(iDis, "Loại phân bố") && ok;
         ok = requireField(iStart, "Ngày bắt đầu") && ok;
         ok = requireField(iEnd, "Ngày kết thúc") && ok;
 
@@ -372,27 +392,27 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
         if (!ok) return;
 
         function toLocalDateISO(dateStr) {
-  if (!dateStr) return null;
-  const [y, m, d] = dateStr.split("-");
-  // Tạo Date theo múi giờ LOCAL (VN +07)
-  const dt = new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0);
-  return dt.toISOString(); // gửi lên dạng ISO có timezone
-}
+          if (!dateStr) return null;
+          const [y, m, d] = dateStr.split("-");
+          // Tạo Date theo múi giờ LOCAL (VN +07)
+          const dt = new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0);
+          return dt.toISOString(); // gửi lên dạng ISO có timezone
+        }
 
-const body = {
-  code,
-  scope: iScope.value,
-  discount_type: iType.value,
-  value: valueNum,
-  max_discount: maxNum,
-  min_order: Number(iMin.value || 0),
-  // ⭐ gửi start/end theo "00:00 giờ LOCAL", không phải chuỗi yyyy-mm-dd
-  start_date: toLocalDateISO(iStart.value),
-  end_date: toLocalDateISO(iEnd.value),
-  usage_limit: Number(iLim.value || 0),
-  active: iAct.value === "true"
-};
-
+        const body = {
+          code,
+          scope: iScope.value,
+          discount_type: iType.value,
+          value: valueNum,
+          max_discount: maxNum,
+          // min_order bỏ khỏi form → backend sẽ nhận default = 0
+          min_order: 0,
+          start_date: toLocalDateISO(iStart.value),
+          end_date: toLocalDateISO(iEnd.value),
+          usage_limit: Number(iLim.value || 0),
+          active: iAct.value === "true",
+          distribute_type: iDis.value || 'manual'
+        };
 
         try {
           let res;
@@ -455,10 +475,9 @@ const body = {
   loadList();
 
   return {
-  onToolbar: {
-    reload: () => loadList(),
-    create: () => openVoucherForm("create", null)
-  }
-};
-
+    onToolbar: {
+      reload: () => loadList(),
+      create: () => openVoucherForm("create", null)
+    }
+  };
 };

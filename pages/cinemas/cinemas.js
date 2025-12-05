@@ -8,6 +8,87 @@
     const me = getUser() || {};
     const canManage = ['admin', 'manager'].includes(me.role);
 
+        // ===== Google Maps API =====
+    const GMAPS_API_KEY = ctx.GMAPS_API_KEY || 'AIzaSyAv2oOzJ8GEmIgoj67AqijfzuWv2nF2Ah4';
+    let gmapsPromise = null;
+
+    function loadGoogleMaps() {
+      if (window.google && window.google.maps) return Promise.resolve();
+      if (gmapsPromise) return gmapsPromise;
+
+      gmapsPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_API_KEY}&language=vi`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Không tải được Google Maps API'));
+        document.head.appendChild(script);
+      });
+
+      return gmapsPromise;
+    }
+
+    function initCinemaMap(mapEl, iLat, iLng, iCoordDisplay, existing) {
+      loadGoogleMaps()
+        .then(() => {
+          const hasExisting =
+            existing &&
+            Number.isFinite(Number(existing.lat)) &&
+            Number.isFinite(Number(existing.lng));
+
+          const center = hasExisting
+            ? { lat: Number(existing.lat), lng: Number(existing.lng) }
+            : { lat: 21.0278, lng: 105.8342 }; // Hà Nội – mặc định
+
+          const map = new google.maps.Map(mapEl, {
+            center,
+            zoom: hasExisting ? 15 : 12,
+          });
+
+          let marker = null;
+          if (hasExisting) {
+            marker = new google.maps.Marker({
+              position: center,
+              map,
+            });
+            const latStr = center.lat.toFixed(6);
+            const lngStr = center.lng.toFixed(6);
+            iLat.value = latStr;
+            iLng.value = lngStr;
+            if (iCoordDisplay) iCoordDisplay.value = `${latStr}, ${lngStr}`;
+          }
+
+          map.addListener('click', (e) => {
+            const pos = e.latLng;
+            const lat = pos.lat();
+            const lng = pos.lng();
+
+            if (!marker) {
+              marker = new google.maps.Marker({
+                position: pos,
+                map,
+              });
+            } else {
+              marker.setPosition(pos);
+            }
+
+            const latStr = lat.toFixed(6);
+            const lngStr = lng.toFixed(6);
+
+            iLat.value = latStr;
+            iLng.value = lngStr;
+            if (iCoordDisplay) iCoordDisplay.value = `${latStr}, ${lngStr}`;
+          });
+        })
+        .catch(() => {
+          if (iCoordDisplay) {
+            iCoordDisplay.value = 'Không tải được Google Maps, kiểm tra API key.';
+          }
+        });
+    }
+
+
     // ===== State =====
     let filter = { q: '', city: '' };
     let page = 1;
@@ -172,29 +253,78 @@
         openCinemaForm('edit', c);
         return;
       }
-      if (act === 'del') {
-        if (!canManage) { showInfo('Chỉ Admin/Manager mới được xoá rạp.', true); return; }
-        const markup = html`
-          <div class="modal-head"><h3>Xoá rạp</h3></div>
-          <div class="form"><p>Bạn có chắc muốn xoá rạp "<b>${esc(c?.name || '')}</b>"?</p></div>
-          <div class="modal-foot">
-            <button class="btn" id="cf-cancel">Hủy</button>
-            <button class="btn danger" id="cf-ok">Xác nhận</button>
-          </div>`;
-        openModal(markup, ({ el, close }) => {
-          el.querySelector('#cf-cancel').onclick = close;
-          el.querySelector('#cf-ok').onclick = async () => {
-            try {
-              const res = await authFetch(`${API_BASE}/cinemas/${id}`, { method: 'DELETE' });
-              const j = await res.json().catch(()=> ({}));
-              if (!res.ok) { showInfo(j?.message || 'Xoá không thành công.', true); return; }
-              await loadCinemas();
-              close(); showInfo('Đã xoá 1 rạp.');
-            } catch { showInfo('Lỗi mạng khi xoá.', true); }
-          };
-        });
+          if (act === 'del') {
+      if (!canManage) { 
+        showInfo('Chỉ Admin/Manager mới được xoá rạp.', true); 
+        return; 
+      }
+
+      // ⭐ 1) Kiểm tra xem rạp còn phòng hay không
+      try {
+        const u = new URL(`${API_BASE}/rooms`);
+        u.searchParams.set('cinema', id);
+        u.searchParams.set('limit', '1'); // chỉ cần biết có 1 phòng là đủ
+
+        const resRooms = await authFetch(u.toString(), { cache: 'no-store' });
+        const roomsJson = await resRooms.json().catch(() => ({}));
+        const { items: rooms } = parseList(roomsJson);
+
+        if (Array.isArray(rooms) && rooms.length > 0) {
+          // ⭐ Có phòng → không cho xoá, hiện popup đẹp
+          openModal(html`
+            <div class="modal-head"><h3>Không thể xoá rạp</h3></div>
+            <div class="form">
+              <p>Rạp <b>${esc(c?.name || '')}</b> hiện vẫn còn phòng chiếu.</p>
+              <p class="muted" style="margin-top:4px">
+                Vui lòng xoá hoặc chuyển toàn bộ phòng sang rạp khác trước khi xoá rạp này.
+              </p>
+            </div>
+            <div class="modal-foot">
+              <button class="btn" id="ok">Đã hiểu</button>
+            </div>
+          `, ({ el, close }) => {
+            el.querySelector('#ok').onclick = close;
+          });
+          return;
+        }
+      } catch (err) {
+        // Nếu không kiểm tra được phòng thì báo lỗi nhẹ, không xoá để tránh nhầm
+        showToast('Không kiểm tra được phòng của rạp. Vui lòng thử lại.', 'err');
         return;
       }
+
+      // ⭐ 2) Không có phòng → cho phép xoá như bình thường
+      const markup = html`
+        <div class="modal-head"><h3>Xoá rạp</h3></div>
+        <div class="form">
+          <p>Bạn có chắc muốn xoá rạp "<b>${esc(c?.name || '')}</b>"?</p>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" id="cf-cancel">Hủy</button>
+          <button class="btn danger" id="cf-ok">Xác nhận</button>
+        </div>`;
+
+      openModal(markup, ({ el, close }) => {
+        el.querySelector('#cf-cancel').onclick = close;
+        el.querySelector('#cf-ok').onclick = async () => {
+          try {
+            const res = await authFetch(`${API_BASE}/cinemas/${id}`, { method: 'DELETE' });
+            const j = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              showInfo(j?.message || 'Xoá không thành công.', true);
+              return;
+            }
+            await loadCinemas();
+            close();
+            showInfo('Đã xoá 1 rạp.');
+          } catch {
+            showInfo('Lỗi mạng khi xoá.', true);
+          }
+        };
+      });
+      return;
+    }
+
     }
 
     function optionList(options, selected) {
@@ -220,24 +350,37 @@
               <select id="f-city">${optionList(VN_PROVINCES_34, data.city)}</select>
             </div>
 
-            <div class="col-12 field">
+                        <div class="col-12 field">
               <label>Địa chỉ *</label>
               <input id="f-address" placeholder="Số nhà, đường, quận/huyện..." value="${esc(data.address || '')}">
             </div>
 
-            <div class="col-6 field">
-              <label>Vĩ độ (latitude) *</label>
-              <input id="f-lat" type="number" step="any" placeholder="VD: 21.0278" value="${esc(data.latitude ?? data.lat ?? '')}">
+            <!-- ⭐ Bản đồ chọn tọa độ -->
+            <div class="col-12 field">
+              <label>Vị trí trên bản đồ *</label>
+              <div id="f-map" style="height:260px;border-radius:8px;overflow:hidden;background:#0b1021"></div>
+              <small class="muted">Nhấn vào bản đồ để chọn vị trí rạp. Hệ thống sẽ tự điền vĩ độ / kinh độ.</small>
             </div>
+
+            <!-- Ẩn hai input thật để gửi lên API -->
+            <input id="f-lat" type="hidden" value="${esc(data.latitude ?? data.lat ?? '')}">
+            <input id="f-lng" type="hidden" value="${esc(data.longitude ?? data.lng ?? '')}">
+
+            <!-- Chỉ hiển thị cho người dùng xem -->
             <div class="col-6 field">
-              <label>Kinh độ (longitude) *</label>
-              <input id="f-lng" type="number" step="any" placeholder="VD: 105.8342" value="${esc(data.longitude ?? data.lng ?? '')}">
+              <label>Tọa độ đã chọn</label>
+              <input id="f-coord-display" readonly
+                     value="${(Number.isFinite(Number(data.latitude ?? data.lat)) && Number.isFinite(Number(data.longitude ?? data.lng)))
+                      ? `${Number(data.latitude ?? data.lat).toFixed(6)}, ${Number(data.longitude ?? data.lng).toFixed(6)}`
+                      : ''}">
             </div>
 
             <div class="col-6 field">
               <label>Hotline *</label>
               <input id="f-hotline" placeholder="VD: 0912345678" value="${esc(data.hotline || '')}">
             </div>
+
+
           </div>
           <div id="f-error" class="error-text" style="margin-top:4px"></div>
         </div>
@@ -256,6 +399,18 @@
         const iLng  = $g('f-lng');
         const iPhone= $g('f-hotline');
         const iErr  = $g('f-error');
+                const iCoordDisplay = $g('f-coord-display');
+        const mapEl         = $g('f-map');
+
+        // Khởi tạo Gg Map với tọa độ đang có hiện tại (nếu đang sửa)
+        const existingCoords = {
+          lat: data.latitude ?? data.lat,
+          lng: data.longitude ?? data.lng,
+        };
+        if (mapEl && iLat && iLng) {
+          initCinemaMap(mapEl, iLat, iLng, iCoordDisplay, existingCoords);
+        }
+
 
         function clearAllErr() {
           [iName, iCity, iAddr, iLat, iLng, iPhone].forEach(x => x && clearInputError(x));
