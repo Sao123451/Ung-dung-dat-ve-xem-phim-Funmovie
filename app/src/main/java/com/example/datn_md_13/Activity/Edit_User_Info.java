@@ -115,16 +115,14 @@ public class Edit_User_Info extends AppCompatActivity {
                     etBirthDate.setText(u.getBirthDate() != null ? u.getBirthDate() : "");
                     loadAvatar(u.getAvatar(), u.getFull_name());
                 } else {
-                    Toast.makeText(Edit_User_Info.this,
-                            "Không thể tải thông tin!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(Edit_User_Info.this, "Không thể tải thông tin!", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<User> call,
                                   @NonNull Throwable t) {
-                Toast.makeText(Edit_User_Info.this,
-                        "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(Edit_User_Info.this, "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -261,8 +259,7 @@ public class Edit_User_Info extends AppCompatActivity {
                 @Override
                 public void onFailure(@NonNull Call<ApiService.UpdateUserResponse> call,
                                       @NonNull Throwable t) {
-                    Toast.makeText(Edit_User_Info.this,
-                            "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(Edit_User_Info.this, "Lỗi kết nối!", Toast.LENGTH_SHORT).show();
                 }
             });
             return;

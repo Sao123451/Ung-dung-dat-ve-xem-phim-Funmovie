@@ -53,7 +53,7 @@ public class AreaPickerActivity extends AppCompatActivity {
         api.getCinemasPublic(null, 200, null, null).enqueue(new Callback<PublicCinemaResponse>() {
             @Override public void onResponse(Call<PublicCinemaResponse> call, Response<PublicCinemaResponse> res) {
                 if (!res.isSuccessful() || res.body()==null || res.body().items==null) {
-                    Toast.makeText(AreaPickerActivity.this, "Không tải được danh sách khu vực", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(AreaPickerActivity.this, "Không tải được danh sách khu vực", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 Map<String, Integer> counts = new LinkedHashMap<>();
@@ -74,7 +74,7 @@ public class AreaPickerActivity extends AppCompatActivity {
                 adapter.submit(rows);
             }
             @Override public void onFailure(Call<PublicCinemaResponse> call, Throwable t) {
-                Toast.makeText(AreaPickerActivity.this, "Lỗi mạng", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(AreaPickerActivity.this, "Lỗi mạng", Toast.LENGTH_SHORT).show();
             }
         });
     }

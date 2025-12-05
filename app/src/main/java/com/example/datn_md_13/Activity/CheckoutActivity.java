@@ -133,7 +133,7 @@ public class CheckoutActivity extends AppCompatActivity {
             if (paymentMethod.equals("vnpay")) {
                 payWithVnpay();
             } else {
-                Toast.makeText(this, "Phương thức chưa hỗ trợ", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, "Phương thức chưa hỗ trợ", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -284,9 +284,7 @@ public class CheckoutActivity extends AppCompatActivity {
                                 : null;
 
                 if (items == null || items.isEmpty()) {
-                    Toast.makeText(CheckoutActivity.this,
-                            "Bạn chưa có voucher nào!",
-                            Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(CheckoutActivity.this, "Bạn chưa có voucher nào!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -302,9 +300,7 @@ public class CheckoutActivity extends AppCompatActivity {
                 }
 
                 if (filtered.isEmpty()) {
-                    Toast.makeText(CheckoutActivity.this,
-                            "Không còn voucher khả dụng!",
-                            Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(CheckoutActivity.this, "Không còn voucher khả dụng!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -327,9 +323,7 @@ public class CheckoutActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<VoucherListRes> call, Throwable t) {
-                Toast.makeText(CheckoutActivity.this,
-                        "Không tải được voucher!",
-                        Toast.LENGTH_SHORT).show();
+                //Toast.makeText(CheckoutActivity.this, "Không tải được voucher!", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -402,7 +396,7 @@ public class CheckoutActivity extends AppCompatActivity {
                 showLoading(false);
 
                 if (!res.isSuccessful() || res.body() == null) {
-                    toast("Không tính được tiền!");
+                    //toast("Không tính được tiền!");
                     return;
                 }
 
@@ -633,13 +627,13 @@ public class CheckoutActivity extends AppCompatActivity {
                         Log.e("VNPAY_INIT_RES", new Gson().toJson(res.body()));
 
                         if (!res.isSuccessful() || res.body() == null) {
-                            toast("Không lấy được link thanh toán!");
+                            //toast("Không lấy được link thanh toán!");
                             return;
                         }
 
                         if (res.body().payment_url == null) {
                             Log.e("VNPAY_ERR", "payment_url = null");
-                            toast("Không tạo được link VNPAY!");
+                            //toast("Không tạo được link VNPAY!");
                             return;
                         }
 
@@ -656,7 +650,7 @@ public class CheckoutActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(Call<VnPayInitResponse> call, Throwable t) {
                         Log.e("VNPAY_ERR", t.getMessage());
-                        toast("Lỗi kết nối VNPAY!");
+                        //toast("Lỗi kết nối VNPAY!");
                     }
                 });
     }

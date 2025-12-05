@@ -362,7 +362,7 @@ public class MainActivity extends AppCompatActivity {
                                    @NonNull Response<List<BannerDto>> response) {
                 if (!response.isSuccessful() || response.body() == null) {
                     setBannerVisible(false);
-                    Toast.makeText(MainActivity.this, "Không tải được banner", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(MainActivity.this, "Không tải được banner", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 List<BannerDto> data = response.body();
@@ -392,7 +392,7 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<List<BannerDto>> call,
                                   @NonNull Throwable t) {
                 setBannerVisible(false);
-                Toast.makeText(MainActivity.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -524,8 +524,7 @@ public class MainActivity extends AppCompatActivity {
                     i.putExtra("movie_id", it.movieId);
                     v.getContext().startActivity(i);
                 } else {
-                    Toast.makeText(v.getContext(),
-                            "Banner này chưa gắn phim", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(v.getContext(), "Banner này chưa gắn phim", Toast.LENGTH_SHORT).show();
                 }
             });
         }

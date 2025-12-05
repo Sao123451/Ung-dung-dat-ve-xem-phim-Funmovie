@@ -231,7 +231,7 @@ public class Activity_seat_selection extends AppCompatActivity {
                 inFlight = null;
 
                 if (!res.isSuccessful() || res.body() == null || res.body().seats == null) {
-                    Toast.makeText(Activity_seat_selection.this, "Lỗi tải ghế!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(Activity_seat_selection.this, "Lỗi tải ghế!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -354,7 +354,7 @@ public class Activity_seat_selection extends AppCompatActivity {
                 if (call.isCanceled()) return;
                 progress.setVisibility(View.GONE);
                 inFlight = null;
-                Toast.makeText(Activity_seat_selection.this, "Không kết nối server!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(Activity_seat_selection.this, "Không kết nối server!", Toast.LENGTH_SHORT).show();
             }
         });
     }

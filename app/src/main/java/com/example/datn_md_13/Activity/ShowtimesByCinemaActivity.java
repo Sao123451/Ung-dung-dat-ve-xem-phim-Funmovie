@@ -148,8 +148,7 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
                 if (progress != null) progress.setVisibility(View.GONE);
 
                 if (!res.isSuccessful() || res.body() == null) {
-                    Toast.makeText(ShowtimesByCinemaActivity.this,
-                            "Lỗi tải suất chiếu", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(ShowtimesByCinemaActivity.this, "Lỗi tải suất chiếu", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -160,8 +159,7 @@ public class ShowtimesByCinemaActivity extends AppCompatActivity {
             public void onFailure(Call<ShowtimesByCinemaResponse> call, Throwable t) {
                 if (progress != null) progress.setVisibility(View.GONE);
                 if (call.isCanceled()) return; // bị huỷ vì load mới, bỏ qua
-                Toast.makeText(ShowtimesByCinemaActivity.this,
-                        "Không thể kết nối", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(ShowtimesByCinemaActivity.this, "Không thể kết nối", Toast.LENGTH_SHORT).show();
             }
         });
     }

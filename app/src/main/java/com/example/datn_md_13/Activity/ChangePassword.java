@@ -168,7 +168,7 @@ public class ChangePassword extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ApiService.ChangePasswordResponse> call,
                                   @NonNull Throwable t) {
-                toast("Lỗi mạng: " + t.getMessage());
+                //toast("Lỗi mạng: " + t.getMessage());
             }
         });
     }

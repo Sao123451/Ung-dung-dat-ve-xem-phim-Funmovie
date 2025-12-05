@@ -39,7 +39,7 @@ public class VnPayActivity extends AppCompatActivity {
         paymentUrl = getIntent().getStringExtra("payment_url");
 
         if (paymentUrl == null || paymentUrl.trim().isEmpty()) {
-            Toast.makeText(this, "Link thanh toán lỗi!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Link thanh toán lỗi!", Toast.LENGTH_SHORT).show();
             setResult(RESULT_CANCELED);
             finish();
             return;
@@ -95,8 +95,7 @@ public class VnPayActivity extends AppCompatActivity {
                 // LỖI MẠNG → FAIL → TRẢ GHẾ
                 exitedUnexpectedly = true;
                 setResult(RESULT_CANCELED);
-                Toast.makeText(VnPayActivity.this,
-                        "Mạng lỗi, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(VnPayActivity.this, "Mạng lỗi, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
                 finish();
             }
         });

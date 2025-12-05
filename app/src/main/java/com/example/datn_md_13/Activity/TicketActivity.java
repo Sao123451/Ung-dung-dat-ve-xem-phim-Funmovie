@@ -55,7 +55,7 @@ public class TicketActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<Ticket>> call, Response<List<Ticket>> res) {
                 if (!res.isSuccessful() || res.body() == null) {
-                    Toast.makeText(TicketActivity.this, "Lỗi tải lịch sử vé", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(TicketActivity.this, "Lỗi tải lịch sử vé", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -85,7 +85,7 @@ public class TicketActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<Ticket>> call, Throwable t) {
-                Toast.makeText(TicketActivity.this, "Lỗi kết nối server", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(TicketActivity.this, "Lỗi kết nối server", Toast.LENGTH_SHORT).show();
             }
         });
     }

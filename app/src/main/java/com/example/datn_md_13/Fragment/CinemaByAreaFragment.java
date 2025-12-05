@@ -75,7 +75,7 @@ public class CinemaByAreaFragment extends Fragment {
             @Override public void onResponse(Call<PublicCinemaResponse> call, Response<PublicCinemaResponse> res) {
                 progress.setVisibility(View.GONE);
                 if (!res.isSuccessful() || res.body() == null) {
-                    Toast.makeText(requireContext(), "Lỗi tải dữ liệu", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(requireContext(), "Lỗi tải dữ liệu", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 List<Cinema> items = res.body().items == null ? new ArrayList<>() : res.body().items;
@@ -91,7 +91,7 @@ public class CinemaByAreaFragment extends Fragment {
 
             @Override public void onFailure(Call<PublicCinemaResponse> call, Throwable t) {
                 progress.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), "Không thể kết nối server", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(requireContext(), "Không thể kết nối server", Toast.LENGTH_SHORT).show();
             }
         });
     }

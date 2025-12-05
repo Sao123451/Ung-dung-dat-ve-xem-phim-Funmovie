@@ -59,7 +59,7 @@ public class TicketDetailActivity extends AppCompatActivity {
 
         ticketId = getIntent().getStringExtra("ticket_id");
         if (ticketId == null || ticketId.isEmpty()) {
-            Toast.makeText(this, "Không tìm thấy mã vé!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Không tìm thấy mã vé!", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -96,7 +96,7 @@ public class TicketDetailActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<TicketDetailResponse> call, Response<TicketDetailResponse> res) {
                 if (!res.isSuccessful() || res.body() == null) {
-                    Toast.makeText(TicketDetailActivity.this, "Không tải được thông tin vé!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(TicketDetailActivity.this, "Không tải được thông tin vé!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -104,8 +104,7 @@ public class TicketDetailActivity extends AppCompatActivity {
 
                 // CHỈ CHO HIỆN NẾU ĐÃ THANH TOÁN
                 if (!"paid".equalsIgnoreCase(t.payment_status)) {
-                    Toast.makeText(TicketDetailActivity.this,
-                            "Vé chưa thanh toán hoặc đã hủy!", Toast.LENGTH_LONG).show();
+                    //Toast.makeText(TicketDetailActivity.this,"Vé chưa thanh toán hoặc đã hủy!", Toast.LENGTH_LONG).show();
                     finish();
                     return;
                 }
@@ -191,8 +190,7 @@ public class TicketDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<TicketDetailResponse> call, Throwable t) {
-                Toast.makeText(TicketDetailActivity.this,
-                        "Lỗi mạng khi tải vé!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(TicketDetailActivity.this, "Lỗi mạng khi tải vé!", Toast.LENGTH_SHORT).show();
             }
         });
     }

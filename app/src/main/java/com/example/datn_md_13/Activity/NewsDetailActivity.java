@@ -55,7 +55,7 @@ public class NewsDetailActivity extends AppCompatActivity {
 
         String idOrSlug = getIntent().getStringExtra("slug");
         if (idOrSlug == null) {
-            Toast.makeText(this, "Thiếu tham số", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Thiếu tham số", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -68,7 +68,7 @@ public class NewsDetailActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call<News> call, @NonNull Response<News> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    Toast.makeText(NewsDetailActivity.this, "Không tìm thấy bài viết", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(NewsDetailActivity.this, "Không tìm thấy bài viết", Toast.LENGTH_SHORT).show();
                     finish();
                     return;
                 }
@@ -93,7 +93,7 @@ public class NewsDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<News> call, @NonNull Throwable t) {
-                Toast.makeText(NewsDetailActivity.this, "Lỗi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(NewsDetailActivity.this, "Lỗi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

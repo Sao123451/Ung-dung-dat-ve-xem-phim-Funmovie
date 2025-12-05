@@ -59,7 +59,7 @@ public class PaymentPendingActivity extends AppCompatActivity {
             @Override public void onFinish() {
                 tvCountdown.setText("00:00");
                 tvStatus.setText("Hết thời gian giữ ghế");
-                Toast.makeText(PaymentPendingActivity.this, "Hết thời gian giữ ghế", Toast.LENGTH_LONG).show();
+                //Toast.makeText(PaymentPendingActivity.this, "Hết thời gian giữ ghế", Toast.LENGTH_LONG).show();
                 finish();
             }
         }.start();

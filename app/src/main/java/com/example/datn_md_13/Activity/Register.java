@@ -349,14 +349,14 @@ public class Register extends AppCompatActivity {
                     startActivity(i);
 
                 } else {
-                    Toast.makeText(Register.this, data.getMessage(), Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(Register.this, data.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<RegisterResponse> call, Throwable t) {
                 showLoading(false);
-                Toast.makeText(Register.this, "Không thể kết nối server", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(Register.this, "Không thể kết nối server", Toast.LENGTH_SHORT).show();
             }
         });
     }

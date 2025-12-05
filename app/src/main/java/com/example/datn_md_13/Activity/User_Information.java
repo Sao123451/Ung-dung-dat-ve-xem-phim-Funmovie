@@ -78,16 +78,13 @@ public class User_Information extends AppCompatActivity {
                 Log.d("UserInfo", "HTTP code = " + res.code());
 
                 if (!res.isSuccessful()) {
-                    Toast.makeText(User_Information.this,
-                            "Không thể tải thông tin người dùng (HTTP " + res.code() + ")",
-                            Toast.LENGTH_SHORT).show();
+                   // Toast.makeText(User_Information.this, "Không thể tải thông tin người dùng (HTTP " + res.code() + ")", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
                 User user = res.body();
                 if (user == null) {
-                    Toast.makeText(User_Information.this,
-                            "Dữ liệu người dùng trống!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(User_Information.this, "Dữ liệu người dùng trống!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -102,8 +99,7 @@ public class User_Information extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<User> call, @NonNull Throwable t) {
                 Log.e("UserInfo", "Lỗi khi gọi API", t);
-                Toast.makeText(User_Information.this,
-                        "Không thể kết nối server!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(User_Information.this, "Không thể kết nối server!", Toast.LENGTH_SHORT).show();
             }
         });
     }

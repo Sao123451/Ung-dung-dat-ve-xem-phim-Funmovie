@@ -105,7 +105,7 @@ public class BookingByMovieActivity extends AppCompatActivity {
         // movie id
         String movieId = getIntent().getStringExtra("movie_id");
         if (movieId == null || movieId.trim().isEmpty()) {
-            Toast.makeText(this, "Thiếu movie_id", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Thiếu movie_id", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -153,7 +153,7 @@ public class BookingByMovieActivity extends AppCompatActivity {
             @Override public void onResponse(@NonNull Call<Movie> call, @NonNull Response<Movie> res) {
                 progress.setVisibility(View.GONE);
                 if (!res.isSuccessful() || res.body()==null) {
-                    Toast.makeText(BookingByMovieActivity.this, "Không tải được thông tin phim", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(BookingByMovieActivity.this, "Không tải được thông tin phim", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 Movie m = res.body();
@@ -177,7 +177,7 @@ public class BookingByMovieActivity extends AppCompatActivity {
             }
             @Override public void onFailure(@NonNull Call<Movie> call, @NonNull Throwable t) {
                 progress.setVisibility(View.GONE);
-                Toast.makeText(BookingByMovieActivity.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(BookingByMovieActivity.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -192,7 +192,7 @@ public class BookingByMovieActivity extends AppCompatActivity {
                                                      @NonNull Response<PublicCinemaResponse> res) {
                         progress.setVisibility(View.GONE);
                         if (!res.isSuccessful() || res.body()==null || res.body().items==null) {
-                            Toast.makeText(BookingByMovieActivity.this, "Không tải được rạp", Toast.LENGTH_SHORT).show();
+                            //Toast.makeText(BookingByMovieActivity.this, "Không tải được rạp", Toast.LENGTH_SHORT).show();
                             return;
                         }
                         List<Cinema> list = res.body().items;
@@ -201,7 +201,7 @@ public class BookingByMovieActivity extends AppCompatActivity {
                     }
                     @Override public void onFailure(@NonNull Call<PublicCinemaResponse> call, @NonNull Throwable t) {
                         progress.setVisibility(View.GONE);
-                        Toast.makeText(BookingByMovieActivity.this, "Không thể kết nối", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(BookingByMovieActivity.this, "Không thể kết nối", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

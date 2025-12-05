@@ -52,25 +52,20 @@ public class MemberCardActivity extends AppCompatActivity {
             public void onResponse(Call<User> call, Response<User> response) {
 
                 if (!response.isSuccessful() || response.body() == null) {
-                    Toast.makeText(MemberCardActivity.this,
-                            "Không lấy được dữ liệu", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(MemberCardActivity.this, "Không lấy được dữ liệu", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
                 User u = response.body();
 
-                // ---------- LEVEL ----------
-                String role = (u.getRole() == null) ? "customer" : u.getRole().toLowerCase();
-                String level;
+                // ---------- MEMBER TITLE ----------
+                String fullName = (u.getFull_name() == null || u.getFull_name().isEmpty())
+                        ? "Người dùng"
+                        : u.getFull_name();
 
-                switch (role) {
-                    case "admin":   level = "ADMIN"; break;
-                    case "manager": level = "MANAGER"; break;
-                    case "staff":   level = "STAFF"; break;
-                    default:        level = "STANDARD"; break;
-                }
+                tvMemberLevel.setText("Thành viên " + fullName);
 
-                tvMemberLevel.setText("Khách hàng " + level);
+
 
                 // ---------- CARD NUMBER ----------
                 String card = (u.getMembership_card() == null || u.getMembership_card().isEmpty())
@@ -89,8 +84,7 @@ public class MemberCardActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<User> call, Throwable t) {
-                Toast.makeText(MemberCardActivity.this,
-                        "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MemberCardActivity.this,"Lỗi kết nối", Toast.LENGTH_SHORT).show();
             }
         });
     }
