@@ -81,7 +81,6 @@ export async function onPickShowtime(st) {
     updateSeatSummary();
     bindGoPay();
     switchView("seats");
-    startSeatTimer();
 }
 
 /* ============================================================
@@ -251,49 +250,6 @@ export function updateSeatSummary() {
             : "Chưa chọn ghế.";
 }
 
-/* ============================================================
-   TIMER
-============================================================ */
-let seatTimeLeft = 0;
-let seatTimerId = null;
-
-export function startSeatTimer() {
-    clearSeatTimer();
-    seatTimeLeft = SEAT_HOLD_SECONDS;
-    updateSeatTimerLabel();
-
-    seatTimerId = setInterval(() => {
-        seatTimeLeft--;
-        updateSeatTimerLabel();
-
-        if (seatTimeLeft <= 0) {
-            clearSeatTimer();
-
-            // 🔥 Nếu ticket đã được tạo (đặt vé thành công) → KHÔNG redirect
-            if (S.lastTicketId) {
-                return;
-            }
-
-            // 🔥 Nếu chưa mua vé → quay về chọn suất như cũ
-            showToast("Hết thời gian giữ ghế!");
-            switchView("schedule");
-            return;
-        }
-    }, 1000);
-}
-
-export function clearSeatTimer() {
-    if (seatTimerId) clearInterval(seatTimerId);
-    seatTimerId = null;
-    $("#seatTimer").textContent = "";
-}
-
-export function updateSeatTimerLabel() {
-    const m = Math.floor(seatTimeLeft / 60);
-    const s = seatTimeLeft % 60;
-    $("#seatTimer").textContent =
-        `Thời gian giữ ghế: ${m}:${String(s).padStart(2, "0")}`;
-}
 
 /* ============================================================
    GO PAY
@@ -328,7 +284,6 @@ export function backFromPayToSeats() {
     // re-render từ cache có sẵn
     renderSeatGrid();
     updateSeatSummary();
-    updateSeatTimerLabel();
 }
 
 
