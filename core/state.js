@@ -2,10 +2,11 @@ export const S = {
     /* ======================================
        MOVIES
     ====================================== */
-    movieTab: "now",
+    movieTab: "now",       // now | early | coming
     allMovies: [],
-    nowMovies: [],
-    comingMovies: [],
+    nowMovies: [],         // now_showing
+    earlyMovies: [],       // coming
+    comingMovies: [],      // archived
     movie: null,
 
     /* ======================================
@@ -25,14 +26,14 @@ export const S = {
        SEATS
     ====================================== */
     seatsRaw: [],
-    seatByKey: new Map(),        // key = "A1", value = Seat info
-    seatIdByKey: new Map(),      // key = "A1", value = seatId (ShowtimeSeat ID)
+    seatByKey: new Map(),
+    seatIdByKey: new Map(),
     seatsSelected: new Set(),
 
     /* ======================================
-       MEMBERSHIP (TÍCH ĐIỂM)
+       MEMBERSHIP
     ====================================== */
-    memberCard: null,            // ⭐ MÃ THẺ THÀNH VIÊN (NEW)
+    memberCard: null,
 
     /* ======================================
        COMBOS
@@ -54,12 +55,12 @@ export const S = {
     lastTicketTotal: 0
 };
 
+
 /* ==========================================
    GHẾ HOLD / STATUS
 ========================================== */
 export const SEAT_HOLD_SECONDS = 2 * 60;
 
-// Ghế thật sự bị khóa (sold/broken)
 export const BAD_STATUSES = new Set([
     "sold",
     "broken"

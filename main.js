@@ -216,26 +216,41 @@ function bindReload() {
 // ============================================================
 function bindMovieTabs() {
     const now = document.getElementById("tab-now");
+    const early = document.getElementById("tab-early");
     const coming = document.getElementById("tab-coming");
 
-    if (!now || !coming) return;
+    if (!now || !early || !coming) return;
 
     now.onclick = () => {
         now.classList.add("active");
+        early.classList.remove("active");
         coming.classList.remove("active");
+
         S.movieTab = "now";
+        renderHome();
+    };
+
+    early.onclick = () => {
+        early.classList.add("active");
+        now.classList.remove("active");
+        coming.classList.remove("active");
+
+        S.movieTab = "early";
         renderHome();
     };
 
     coming.onclick = () => {
         coming.classList.add("active");
         now.classList.remove("active");
+        early.classList.remove("active");
+
         S.movieTab = "coming";
         renderHome();
     };
 
     S.movieTab = "now";
 }
+
 
 
 // ============================================================

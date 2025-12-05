@@ -10,10 +10,10 @@ export async function fetchMovies() {
     const list = await api("/movies?ts=" + Date.now()).catch(() => []);
     S.allMovies = list || [];
 
+    // ⭐ Mapping trạng thái phim
     S.nowMovies = S.allMovies.filter(m => m.status === "now_showing");
-    S.comingMovies = S.allMovies.filter(m =>
-        ["coming", "archived"].includes(m.status)
-    );
+    S.earlyMovies = S.allMovies.filter(m => m.status === "coming");
+    S.comingMovies = S.allMovies.filter(m => m.status === "archived");
 }
 
 /* ============================================================
@@ -23,7 +23,10 @@ export function renderHome() {
     const grid = document.querySelector("#homeGrid");
     grid.innerHTML = "";
 
-    const data = (S.movieTab === "now") ? S.nowMovies : S.comingMovies;
+    let data = [];
+    if (S.movieTab === "now") data = S.nowMovies;
+    else if (S.movieTab === "early") data = S.earlyMovies;
+    else data = S.comingMovies;
 
     if (!data.length) {
         grid.innerHTML = `<div class="muted">Chưa có phim.</div>`;
@@ -36,10 +39,24 @@ export function renderHome() {
         const div = document.createElement("div");
         div.className = "movie-card";
 
+        // Badge theo tab
+        let badge = "Đang chiếu";
+        let badgeColor = "success";
+
+        if (S.movieTab === "early") {
+            badge = "Suất chiếu sớm";
+            badgeColor = "info";
+        }
+
+        if (S.movieTab === "coming") {
+            badge = "Sắp chiếu";
+            badgeColor = "warning";
+        }
+
         div.innerHTML = `
             <img src="${esc(poster)}"/>
-            <span class="badge bg-${S.movieTab === "now" ? "success" : "warning"} badge-top">
-                ${S.movieTab === "now" ? "Đang chiếu" : "Sắp chiếu"}
+            <span class="badge bg-${badgeColor} badge-top">
+                ${badge}
             </span>
             <div class="cap">
                 <div class="title">${esc(m.title)}</div>
@@ -48,24 +65,20 @@ export function renderHome() {
         `;
 
         /* ========================================================
-           CLICK HANDLER — phiên bản ổn định nhất
+           CLICK HANDLER
+           - now_showing → vào chọn suất
+           - coming → popup (không bán)
+           - early (coming) → cho đặt vé!
         ======================================================== */
         div.onclick = async () => {
 
-            // Nếu là phim sắp chiếu → popup
+            // ⭐ Sắp chiếu → KHÔNG cho đặt
             if (S.movieTab === "coming") {
-                
-                // Đảm bảo hàm tồn tại
-                if (typeof window.showMidAlert === "function") {
-                    window.showMidAlert("🎬 Phim sắp được khởi chiếu!\nHiện chưa mở bán vé.");
-                } else {
-                    console.warn("⚠ showMidAlert chưa sẵn sàng!");
-                    alert("Phim sắp được khởi chiếu! Hiện chưa mở bán vé.");
-                }
+                window.showMidAlert("🎬 Phim sắp khởi chiếu!\nHiện chưa mở bán vé.");
                 return;
             }
 
-            // Phim đang chiếu → xem suất chiếu
+            // ⭐ Đang chiếu + Suất chiếu sớm → vào suất chiếu
             const mod = await import("./schedule.js");
             switchView("schedule");
             mod.onPickMovie(m);
