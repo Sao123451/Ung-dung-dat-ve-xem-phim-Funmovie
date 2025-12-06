@@ -252,9 +252,6 @@ export function updateSeatSummary() {
 
 
 /* ============================================================
-   GO PAY
-============================================================ */
-/* ============================================================
    GO PAY — chỉ chuyển sang trang thanh toán
 ============================================================ */
 export function bindGoPay() {
@@ -313,27 +310,48 @@ export function backFromSeatsToSchedule() {
 
 
 
+export function isDisabled(se) {
+    const status = String(se.status).toLowerCase();
+
+    // GHẾ ĐÃ BÁN → KHÔNG CHO STAFF CHỌN
+    if (status === "sold") return true;
+
+    // GHẾ HỎNG → KHÔNG CHO STAFF CHỌN
+    if (status === "broken") return true;
+
+    // GHẾ KHÁCH ĐANG GIỮ → KHÔNG CHO STAFF CHỌN
+    if (status === "holding") return true;
+
+    // Các ghế còn lại → chọn được
+    return false;
+}
+
+
 /* ============================================================
    HELPERS
 ============================================================ */
-export function isDisabled(se) {
-    return BAD_STATUSES.has(String(se.status).toLowerCase());
-}
-
 export function getSeatColor(se) {
     const status = String(se.status).toLowerCase();
     const type = String(se.seat_type).toLowerCase();
     const key = `${se.row}${se.number}`;
 
+    // GHẾ HỎNG
+    if (status === "broken") return "var(--seat-broken)";
+
+    // GHẾ ĐÃ BÁN
     if (status === "sold") return "var(--seat-sold)";
-    if (status === "booked") return "var(--seat-booked)";
+
+    // GHẾ KHÁCH ĐANG GIỮ
     if (status === "holding") return "var(--seat-holding)";
 
+    // STAFF ĐANG CHỌN
     if (S.seatsSelected.has(key)) return "var(--seat-selected)";
 
+    // GHẾ THEO LOẠI
     if (type === "vip") return "var(--seat-vip)";
     if (type === "couple") return "var(--seat-couple)";
 
+    // GHẾ TRỐNG
     return "var(--seat-empty)";
 }
 

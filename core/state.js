@@ -63,5 +63,6 @@ export const SEAT_HOLD_SECONDS = 2 * 60;
 
 export const BAD_STATUSES = new Set([
     "sold",
-    "broken"
+    "broken",
+    "holding"
 ]);

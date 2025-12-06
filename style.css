@@ -16,7 +16,7 @@
   --seat-booked: #ff8f00;
   --seat-vip: #fbbf24;
   --seat-couple: #f472b6;
-  --seat-booked: #FF8A00;
+  --seat-broken: #6b7280; /* Màu xám */
   --border: #202a45;
 }
 
@@ -356,8 +356,8 @@ body {
   background: var(--seat-sold);
 }
 
-.legend-icon.booked {
-  background: var(--seat-booked);
+.legend-icon.broken {
+  background: var(--seat-broken);
 }
 
 .legend-icon.normal {

@@ -3,15 +3,15 @@ import { ymd } from "../core/helper.js";
 import { S } from "../core/state.js";
 
 /* ============================================================
-   FORMAT TIME — DÙNG GIỜ UTC GỐC (KHÔNG CHUYỂN MÚI)
+   FORMAT TIME — CHUẨN GIỜ VIỆT NAM (UTC+7)
 ============================================================ */
-function formatTimeUTC(iso) {
-    const d = new Date(iso);
-
-    const hh = d.getUTCHours().toString().padStart(2, "0");
-    const mm = d.getUTCMinutes().toString().padStart(2, "0");
-
-    return `${hh}:${mm}`;
+function formatVNTime(iso) {
+    return new Intl.DateTimeFormat("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Ho_Chi_Minh"
+    }).format(new Date(iso));
 }
 
 /* =============================
@@ -120,8 +120,8 @@ export function renderScheduleSlots(list) {
         const btn = document.createElement("button");
         btn.className = "slot-btn";
 
-        // ⭐ FIX GIỜ — DÙNG UTC, KHÔNG LỆCH +7
-        const timeStr = formatTimeUTC(st.start_time);
+        // ⭐ FIX GIỜ — HIỂN THỊ ĐÚNG GIỜ VIỆT NAM (KHÔNG LỆCH -7)
+        const timeStr = formatVNTime(st.start_time);
 
         const roomName = st.room_name?.replace(/\(.+?\)/g, "").trim() || "Phòng ?";
         const roomType = st.room_type || "";
