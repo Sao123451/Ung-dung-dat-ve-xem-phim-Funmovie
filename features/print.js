@@ -4,13 +4,13 @@ import { esc } from "../core/helper.js";
 import { S } from "../core/state.js";
 
 /* ============================================================
-   GIỮ NGUYÊN GIỜ BACKEND — KHÔNG BỊ +7H
+   FORMAT GIỜ VIỆT NAM — KHÔNG LỆCH +7
 ============================================================ */
-function formatTimeFromUTC(iso) {
+function formatVN(iso) {
     if (!iso) return "—";
-    const d = new Date(iso);
-    const hh = d.getUTCHours().toString().padStart(2, "0");
-    const mm = d.getUTCMinutes().toString().padStart(2, "0");
+    const d = new Date(iso);     // lấy giờ local
+    const hh = d.getHours().toString().padStart(2, "0");
+    const mm = d.getMinutes().toString().padStart(2, "0");
     return `${hh}:${mm}`;
 }
 
@@ -30,26 +30,26 @@ export async function loadPrintTicket(ticketId = null) {
             return;
         }
 
-        // 🔥 NGỪNG HOÀN TOÀN TIMER GIỮ GHẾ (seats.js)
+        // Ngừng TIMER giữ ghế
         import("../features/seats.js").then(m => m.clearSeatTimer());
 
-        // 🔥 Đánh dấu đã có ticket để seats.js không redirect
         S.lastTicketId = ticketId;
 
-
+        // ===== THÔNG TIN =====
         const movieTitle = esc(t.movie_title || "Không rõ phim");
         const cinemaName = esc(t.cinema_name || "");
         const roomName = esc(t.room_name || "");
 
-        // ⭐⭐⭐ FIX LỆCH GIỜ +7 — DÙNG UTC GỐC ⭐⭐⭐
-        const time = formatTimeFromUTC(t.showtime_start);
+        // ⭐⭐⭐ GIỜ CHIẾU CHUẨN VN ⭐⭐⭐
+        const time = formatVN(t.showtime_start);
 
-        // ⭐ Ngày vẫn dùng Việt Nam (chỉ lệch giờ, không lệch ngày)
+        // Ngày — vẫn theo locale VN
         const start = t.showtime_start ? new Date(t.showtime_start) : null;
         const date = start ? start.toLocaleDateString("vi-VN") : "—";
 
         const seats = t.seats?.length ? t.seats.join(", ") : "—";
 
+        // COMBO
         const comboList = t.combos?.length
             ? t.combos.map(cb => `
                 <div class="ticket-row">
@@ -65,11 +65,12 @@ export async function loadPrintTicket(ticketId = null) {
 
         const memberCard = t.membership_card || "Không có";
 
-        // ⭐ TÍNH TỔNG CHUẨN
+        // TỔNG TIỀN
         const total =
             (t.total_after ?? t.total_before ??
                 (t.seat_subtotal + t.combo_subtotal)) || 0;
 
+        // ===== RENDER VÉ =====
         wrap.innerHTML = `
             <div class="print-ticket-card">
 
@@ -94,8 +95,10 @@ export async function loadPrintTicket(ticketId = null) {
 
                 <div class="ticket-line"></div>
 
-                <div class="ticket-row"><span>Tổng tiền</span>
-                <span>${total.toLocaleString("vi-VN")}đ</span></div>
+                <div class="ticket-row">
+                    <span>Tổng tiền</span>
+                    <span>${total.toLocaleString("vi-VN")}đ</span>
+                </div>
 
                 <div id="printTicketQRCode"></div>
 
@@ -103,6 +106,7 @@ export async function loadPrintTicket(ticketId = null) {
             </div>
         `;
 
+        // QR CODE
         new QRCode(document.getElementById("printTicketQRCode"), {
             width: 170,
             height: 170,
