@@ -6,10 +6,10 @@ window.FMPages.banners = async function (pageEl, ctx) {
     html, $, $$, esc, toAbsImage, setInputError, clearInputError
   } = ctx;
 
-  /* Load HTML */
+
   pageEl.innerHTML = await (await fetch("pages/banners/banners.html")).text();
 
-  /* Elements */
+
   const els = {
     table: $('#bn-table', pageEl),
     info: $('#bn-info', pageEl),
@@ -31,7 +31,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     els.imgInfo.classList.toggle("error-text", err);
   }
 
-  /* FETCH list */
+//lay danh sach b
   async function fetchList() {
     const res = await authFetch(`${API_BASE}/banners`);
     return res.json();
@@ -54,7 +54,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     return raw.filter(x => !x.is_active);
   }
 
-  /* Render table */
+// danh sach tao tu cac item
   function renderList() {
     const rows = filtered();
     if (!rows.length) {
@@ -101,7 +101,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     );
   }
 
-  /* ========= FORM BANNER ========= */
+  //tao form khi sua hay them
   function openBannerForm(mode, data = {}) {
     const isEdit = mode === "edit";
 
@@ -177,7 +177,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     });
   }
 
-  /* ========= UPLOAD DIALOG ========= */
+//upload anh cho banner
   function openUploadDialog(bannerId) {
     openModal(html`
     <div class="modal-head"><h3>Upload ảnh</h3></div>
@@ -216,7 +216,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
         console.log("Uploading...", fd);
 
         try {
-          // ⭐ SỬ DỤNG authFetch → KHÔNG dùng getToken nữa
+
           const res = await authFetch(`${API_BASE}/banners/${bannerId}/images`, {
             method: "POST",
             body: fd
@@ -244,7 +244,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
   }
 
 
-  /* ========= LOAD IMAGES ========= */
+
   async function loadImages(id) {
     els.images.innerHTML = `<div class="muted">Đang nạp ảnh...</div>`;
     showImgInfo("");
@@ -280,7 +280,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     );
   }
 
-  /* ========= IMAGE ACTIONS ========= */
+// sk khi thao tac tren 1 anh
   function onImageAction(e, bannerId) {
     const act = e.target.dataset.act;
     const imgId = e.target.dataset.img;
@@ -307,11 +307,11 @@ window.FMPages.banners = async function (pageEl, ctx) {
         const sel = el.querySelector("#mv-select");
         const err = el.querySelector("#mv-err");
 
-        // lấy danh sách phim đúng chuẩn FunMovie API
+        // lấy danh sách phim 
         let movies = [];
         const rs = await authFetch(`${API_BASE}/movies`);
         movies = await rs.json();
-        movies = movies.items ?? movies; // auto adapt
+        movies = movies.items ?? movies; 
 
         sel.innerHTML = `
       <option value="">-- Chọn phim --</option>
@@ -324,7 +324,8 @@ window.FMPages.banners = async function (pageEl, ctx) {
 
         el.querySelector("#save").onclick = async () => {
           const movieId = sel.value || null;
-
+          
+          //luu id phim vao anh
           const res = await authFetch(`${API_BASE}/banners/${bannerId}/images/${imgId}`, {
             method: "PATCH",
             body: { movie_id: movieId }
@@ -360,7 +361,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     }
   }
 
-  /* ========= ROW ACTION ========= */
+//goi sk khi nhan nut trong tung bang
   async function onRowAction(e) {
     const act = e.target.dataset.act;
     const id = e.target.dataset.id;
@@ -395,7 +396,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     }
   }
 
-  /* ========= TABS ========= */
+//tab loc trang thai banner
   pageEl.querySelectorAll(".tab").forEach(t => {
     t.onclick = () => {
       pageEl.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
@@ -405,7 +406,7 @@ window.FMPages.banners = async function (pageEl, ctx) {
     };
   });
 
-  /* Toolbar Hooks */
+
   return {
     onToolbar: {
       reload: loadList,
@@ -413,6 +414,6 @@ window.FMPages.banners = async function (pageEl, ctx) {
     }
   };
 
-  /* INIT */
+  
   loadList();
 };

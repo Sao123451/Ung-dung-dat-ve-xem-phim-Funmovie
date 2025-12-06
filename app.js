@@ -2,33 +2,27 @@
 (() => {
   "use strict";
 
-  /* ============================================================
-   *  0) Global config
-   * ============================================================ */
+
   const API_BASE = (window.FM_CONFIG && window.FM_CONFIG.API_BASE) || "";
   if (!API_BASE) console.warn("[FM] Missing FM_CONFIG.API_BASE");
 
-  /* ============================================================
-   *  1) Tiny DOM helpers & template
-   * ============================================================ */
+
   const $  = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  // Tagged template literal → no implicit escaping (we control inputs)
+
   const html = (strings, ...values) =>
     strings.reduce((acc, s, i) => acc + s + (i < values.length ? values[i] : ""), "");
-  // Safe escape when needed
+
   const esc = (s) =>
     String(s || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
-  // Expose a few globals (optional)
+
   window.$ = $;
   window.$$ = $$;
   window.html = html;
   window.esc = esc;
 
-  /* ============================================================
-   *  1.1) Common format & URL helpers
-   * ============================================================ */
+
   const z2       = (n) => String(n).padStart(2, "0");
   const fmtTime  = (d) => `${z2(d.getHours())}:${z2(d.getMinutes())}`;
   const fmtDate  = (d) => `${z2(d.getDate())}/${z2(d.getMonth()+1)}/${d.getFullYear()}`;
@@ -57,12 +51,10 @@
     if (u.startsWith("/")) return base + u;
     return base + "/" + u;
   }
-  // expose if a page needs directly
+
   window.toAbsImage = toAbsImage;
 
-  /* ============================================================
-   *  2) Storage (token & user)
-   * ============================================================ */
+  // lu token tai khoan
   const LS_TOKEN_KEY = "FM_TOKEN";
   const LS_USER_KEY  = "FM_USER";
 
@@ -100,12 +92,10 @@
     }
   }
 
-  // Public for pages that need quick access
+
   window.getUser = getUser;
 
-  /* ============================================================
-   *  3) Toast & Modal (lightweight, CSS already in styles.css)
-   * ============================================================ */
+
   function ensureToastHost() {
     let host = $("#fm-toast-host");
     if (!host) {
@@ -160,9 +150,9 @@
     document.body.appendChild(backdrop);
 
     function close() { backdrop.remove(); }
-    // Close on backdrop click (not when clicking inside modal)
+    // dong cua so khi nhan ra ngoai
     backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
-    // ESC key
+
     const onEsc = (e) => e.key === "Escape" && close();
     document.addEventListener("keydown", onEsc, { once: true });
 
@@ -173,9 +163,7 @@
   window.openModal = openModal;
   window.showToast = showToast;
 
-  /* ============================================================
-   *  4) Form field error helpers (match styles.css)
-   * ============================================================ */
+
   function setInputError(inputEl, message = "") {
     if (!inputEl) return;
     inputEl.classList.add("input-error");
@@ -193,9 +181,7 @@
   window.setInputError = setInputError;
   window.clearInputError = clearInputError;
 
-  /* ============================================================
-   *  5) Fetch helpers (JSON & Auth)
-   * ============================================================ */
+
   function normalizeFetchOptions(opts = {}) {
     const out = { ...opts };
     out.headers = new Headers(out.headers || {});
@@ -208,7 +194,7 @@
     return out;
   }
 
-  // Auth fetch that auto adds Authorization header, serializes body if needed, and redirects to login on 401
+
   async function authFetch(path, opts = {}) {
   const token = getToken();
   const isForm = opts.body && typeof FormData !== "undefined" && opts.body instanceof FormData;
@@ -238,10 +224,8 @@
 
   window.authFetch = authFetch;
 
-  /* ============================================================
-   *  6) Router (multi-file pages)
-   * ============================================================ */
-  // Route map → each points to pages/<route>/<route>.js
+
+  // Route map 
   window.FM_PAGES = {
     dashboard: { js: "pages/dashboard/dashboard.js", title: "Dashboard",      mount: "dashboard" },
     movies:    { js: "pages/movies/movies.js",       title: "Phim",           mount: "movies"    },
@@ -276,9 +260,9 @@
     if (__loadedCss.has(cssUrl)) return;
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = cssUrl + `?v=${Date.now()}`; // cache-bust during dev
+    link.href = cssUrl + `?v=${Date.now()}`; 
     link.onload  = () => __loadedCss.add(cssUrl);
-    link.onerror = () => {}; // silent
+    link.onerror = () => {}; 
     document.head.appendChild(link);
   }
 
@@ -318,16 +302,16 @@
       return;
     }
 
-    // Shared ctx passed to every page (centralize helpers here!)
+ 
     const ctx = {
       API_BASE,
-      // auth & user
+      
       authFetch, getUser,
-      // ui
+      
       showToast, openModal, setInputError, clearInputError,
-      // dom/template
+      
       html, $, $$, esc,
-      // utils
+    
       toAbsImage, apiOrigin, z2, fmtTime, fmtDate, ymd, fmtDuration, formatVND,
     };
 
@@ -512,13 +496,21 @@ window.addEventListener("hashchange", () => {
             return;
           }
 
-          // Optional: block non-active users
+
           if (me.status && me.status !== "active") {
             setToken("");
             help.textContent = "Tài khoản chưa hoạt động hoặc bị khoá.";
             help.classList.add("error");
             return;
           }
+          // chi role admin moi duọc dn
+          if (me.role !== "admin") {
+          setToken("");
+          setUser(null);
+          help.textContent = "Tài khoản không có quyền đăng nhập trang quản trị.";
+          help.classList.add("error");
+          return;
+        }
 
           setUser(me);
           renderAppShell();
@@ -533,21 +525,19 @@ window.addEventListener("hashchange", () => {
     }
   }
 
-  /* ============================================================
- *  9) App bootstrap  — ALWAYS start at Login
- * ============================================================ */
+
 function bootstrap() {
   try {
     // Luôn xoá phiên cũ để buộc đăng nhập lại khi mở web
     setToken("");
     setUser(null);
-    location.hash = "";   // dọn hash để tránh auto-route
+    location.hash = "";   
   } catch {}
   renderLogin();          // mở màn hình đăng nhập
 }
 
 
-  // Kick things off
+
   document.addEventListener("DOMContentLoaded", bootstrap);
 
 })();

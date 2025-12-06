@@ -1,5 +1,4 @@
-// vouchers.js — BẢN KẾT HỢP GIỐNG 100% VOUCHER CŨ (UI + LOGIC) + distribute_type
-// -------------------------------------------------------------
+// vouchers.js 
 
 window.FMPages = window.FMPages || {};
 
@@ -28,9 +27,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     next: $('#vc-next', pageEl)
   };
 
-  /* -------------------------
-     Helpers
-  -------------------------- */
+// tien ich dung chung
   function badgeScope(s) {
     if (s === 'seat') return `<span class="badge">seat</span>`;
     if (s === 'combo') return `<span class="badge warn">combo</span>`;
@@ -42,9 +39,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     return isNaN(dt) ? '' : `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
   };
 
-  /* -------------------------
-     Load list
-  -------------------------- */
+
   async function loadList() {
 
     els.tb.innerHTML = `<div class="muted">Đang tải...</div>`;
@@ -63,9 +58,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     }
   }
 
-  /* -------------------------
-   Render table 
--------------------------- */
+// dung bang tu cac item
   function renderTable() {
     if (!items.length) {
       els.tb.innerHTML = `<div class="muted">Không có voucher nào</div>`;
@@ -81,7 +74,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
             <th>Loại</th>
             <th>Giá trị</th>
             <th>Tối đa</th>
-            <!-- 🔥 ĐÃ BỎ: <th>Đơn tối thiểu</th> -->
+
             <th>Hiệu lực</th>
             <th>Dùng/Giới hạn</th>
             <th>Hành động</th>
@@ -110,7 +103,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
                   <td>${v.discount_type || v.type}</td>
                   <td>${val}</td>
                   <td>${cap}</td>
-                  <!-- 🔥 ĐÃ BỎ Ô ĐƠN TỐI THIỂU -->
+
                   <td>đến ${end}</td>
                   <td>${used}</td>
                   <td>
@@ -132,6 +125,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
       </table>
     `;
 
+    //gắn sự kiện click
     $$("[data-act]", els.tb).forEach(btn => (btn.onclick = onRowAction));
 
     const maxPg = Math.max(1, Math.ceil(total / pageSize));
@@ -140,9 +134,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
   }
 
 
-  /* -------------------------
-     Fetch detail
-  -------------------------- */
+ // lay chi tiet voucher
   async function fetchDetail(code) {
     const res = await authFetch(`${API_BASE}/vouchers/${encodeURIComponent(code)}/validate`);
     const d = await res.json();
@@ -151,9 +143,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     return d.voucher;
   }
 
-  /* -------------------------
-     Confirm modal (UI chuẩn cũ)
-  -------------------------- */
+// thong bao xac nhan
   function openConfirm(msg, onYes) {
     const markup = html`
       <div class="modal-head"><h3>Xác nhận</h3></div>
@@ -169,9 +159,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     });
   }
 
-  /* -------------------------
-     Row actions
-  -------------------------- */
+  //goi sk khi nhan nut trong tung bang
   async function onRowAction(e) {
     const code = e.target.getAttribute("data-code");
     const act = e.target.getAttribute("data-act");
@@ -218,9 +206,8 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     }
   }
 
-  /* -------------------------
-     Voucher Form — ĐÃ BỎ ĐƠN TỐI THIỂU + THÊM LOẠI PHÂN BỐ
-  -------------------------- */
+
+  // form khi nhan nut tao/sua
   function openVoucherForm(mode = "create", data = null) {
     const isEdit = mode === "edit";
     const V = data || {};
@@ -327,10 +314,11 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
         iAct = $g("v-active"),
         iErr = $g("v-err");
 
+        // k cho chon ngay trong qua khu
       const today = ymd(new Date());
       iStart.min = today;
       iEnd.min = today;
-
+      // neu giam truc tiep thi k giam toi da
       function syncMax() {
         if (iType.value === "amount") {
           iMax.disabled = true;
@@ -343,7 +331,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
 
       syncMax();
       iType.addEventListener("change", syncMax);
-
+      // ham bat buoc nhap cac truong
       function requireField(el, label) {
         if (!el.value.trim()) {
           setInputError(el, `${label} không được để trống`);
@@ -354,7 +342,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
       }
 
       $g("v-cancel").onclick = close;
-
+      // xu ly khi bam tao moi
       $g("v-submit").onclick = async () => {
         iErr.textContent = "";
 
@@ -405,7 +393,7 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
           discount_type: iType.value,
           value: valueNum,
           max_discount: maxNum,
-          // min_order bỏ khỏi form → backend sẽ nhận default = 0
+
           min_order: 0,
           start_date: toLocalDateISO(iStart.value),
           end_date: toLocalDateISO(iEnd.value),
@@ -446,10 +434,9 @@ window.FMPages.vouchers = async function (pageEl, ctx) {
     });
   }
 
-  /* -------------------------
-     Events
-  -------------------------- */
+  
 
+//bat sk tim kiem
   els.q.oninput = () => {
     q = els.q.value.trim();
     page = 1;

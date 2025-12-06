@@ -7,11 +7,11 @@
       setInputError, clearInputError, html, $
     } = ctx;
 
-    // -------- Load skeleton ----------
+    
     const tpl = await fetch('pages/movies/movies.html', { cache: 'no-store' }).then(r => r.text());
     container.innerHTML = tpl;
 
-    // -------- State ----------
+   
     const me = getUser() || {};
     const isAdmin = me?.role === 'admin';
 
@@ -22,7 +22,7 @@
     let currentTab = 'all'; // all|now|coming|archived
     let q = '';
 
-    // -------- Els ----------
+    
     const els = {
       table: $('#mv-table', container),
       info:  $('#mv-info', container),
@@ -33,14 +33,14 @@
       tabs:  [...container.querySelectorAll('.tab')]
     };
 
-    // -------- Helpers ----------
+
     const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const asText = v => (Array.isArray(v) ? v.join(', ') : (v || ''));
 
     const badgeStatus = (st) => {
       if (st === 'now_showing') return '<span class="badge ok">Đang chiếu</span>';
       if (st === 'coming')      return '<span class="badge warn">Sắp chiếu</span>';
-      return '<span class="badge muted">Đã lưu trữ</span>';
+      return '<span class="badge muted">Suất chiếu sớm</span>';
     };
 
     const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -55,7 +55,7 @@
       });
     }
 
-    // -------- Load list ----------
+
     async function loadList() {
       els.table.innerHTML = `<div class="muted">Đang tải danh sách phim...</div>`;
       els.info.textContent = '';
@@ -77,7 +77,7 @@
       }
     }
 
-    // -------- Filter ----------
+
     function applyFilter(){
       const ql = (q||'').trim().toLowerCase();
       view = items.filter(m => {
@@ -91,7 +91,7 @@
       renderTable();
     }
 
-    // -------- Render ----------
+    // dung bang tu cac item
     function renderTable(){
       const start = (page - 1) * pageSize;
       const rows  = view.slice(start, start + pageSize);
@@ -144,7 +144,7 @@
       els.pg.textContent   = String(page);
     }
 
-    // -------- Modal Create/Edit ----------
+    // form khi sua va them
     function openMovieForm(mode='create', data={}){
       if (!isAdmin){ showToast?.('Chỉ Admin được phép thao tác phim.', 'err'); return; }
       const isEdit = mode === 'edit';
@@ -165,11 +165,7 @@
       };
       const rd = V.release_date ? ymd(V.release_date) : '';
 
-      // Hàng 1: Tên (dài nhất) + Thời lượng + Độ tuổi
-      // Hàng 2: Ngày phát hành + Trạng thái
-      // Hàng 3: Ngôn ngữ + Thể loại
-      // Hàng 4: Đạo diễn + Diễn viên
-      // Hàng 5: Chọn file hoặc nhập URL
+
       const markup = html`
         <div class="modal-head"><h3>${title}</h3><div class="spacer"></div></div>
         <div class="form">
@@ -198,7 +194,7 @@
               <select id="f-status">
                 <option value="coming" ${V.status==='coming'?'selected':''}>Sắp chiếu</option>
                 <option value="now_showing" ${V.status==='now_showing'?'selected':''}>Đang chiếu</option>
-                <option value="archived" ${V.status==='archived'?'selected':''}>Đã lưu trữ</option>
+                <option value="archived" ${V.status==='archived'?'selected':''}>Suất chiếu sớm</option>
               </select>
             </div>
 
@@ -266,7 +262,7 @@
         const iDesc  = $g('f-desc');
         const iErr   = $g('f-err');
 
-        // Preview
+        
         iPoster.addEventListener('input', () => { iPrev.src = iPoster.value.trim(); });
         iFile.addEventListener('change', async () => {
           const f = iFile.files?.[0];
@@ -285,7 +281,7 @@
 
         $g('f-cancel').onclick = close;
 
-        // -------- Submit (validate sau khi bấm) --------
+        //validate sau khi bấm
         $g('f-submit').onclick = async () => {
           clearAllErr();
           let ok = true;
@@ -345,7 +341,7 @@
               } else {
                 const minPast = addMonths(today, -2);
                 if (!(relDate <= today && relDate >= minPast)) {
-                  setInputError(iRel, `Đang chiếu/Đã lưu trữ: chỉ chọn ngày quá khứ từ ${ymd(minPast)} → ${ymd(today)}.`);
+                  setInputError(iRel, `Đang chiếu/Suất chiếu sớm: chỉ chọn ngày quá khứ từ ${ymd(minPast)} → ${ymd(today)}.`);
                   ok=false;
                 }
               }
@@ -395,14 +391,14 @@
       });
     }
 
-        // -------- Row actions (chỉ Sửa/Xoá) ----------
+//hanh dong sua, xoa trong item
     async function onRowAction(e){
       const id  = e.currentTarget.getAttribute('data-id');
       const act = e.currentTarget.getAttribute('data-act');
       const m   = items.find(x => x._id === id);
       if (!id) return;
 
-      // ======= EDIT =======
+
       if (act === 'edit'){
         if (!isAdmin){ showToast?.('Chỉ Admin được sửa.', 'err'); return; }
         try{
@@ -419,11 +415,11 @@
         return;
       }
 
-      // ======= DELETE =======
+   
       if (act === 'del'){
         if (!isAdmin){ showToast?.('Chỉ Admin được xoá.', 'err'); return; }
 
-        // 1) Kiểm tra xem phim này có suất chiếu hay không
+        //Kiểm tra xem phim này có suất chiếu hay không
         try {
           const u = new URL(`${API_BASE}/showtimes`);
           u.searchParams.set('movie', id);
@@ -437,7 +433,7 @@
           else if (Array.isArray(jsSt.data)) list = jsSt.data;
           else if (Array.isArray(jsSt))      list = jsSt;
 
-          // Lọc chính xác các suất chiếu thuộc phim này
+          // Lọc các suất chiếu thuộc phim này
           const related = list.filter(st => {
             const mv = st.movie || st.movie_id || st.movieId;
             if (!mv) return false;
@@ -465,12 +461,12 @@
             return;
           }
         } catch (err) {
-          // Nếu không check được, báo lỗi chứ không xoá bừa
+          
           showToast?.('Không kiểm tra được suất chiếu của phim. Vui lòng thử lại.', 'err');
           return;
         }
 
-        // 2) Không còn suất chiếu → cho phép xoá như cũ
+        //Không còn suất chiếu → cho phép xoá
         const markup = html`
           <div class="modal-head"><h3>Xoá phim</h3></div>
           <div class="form">
@@ -503,7 +499,7 @@
     }
 
 
-    // -------- Events --------
+
     els.q.addEventListener('input', () => { q = els.q.value; applyFilter(); });
     els.prev.onclick = () => { if (page > 1){ page--; renderTable(); } };
     els.next.onclick = () => { const max = Math.ceil(view.length / pageSize) || 1; if (page < max){ page++; renderTable(); } };
@@ -514,13 +510,13 @@
       await loadList();
     }));
 
-    // -------- Toolbar hooks --------
+    
     const toolbar = {
       reload: () => loadList(),
       create: isAdmin ? () => openMovieForm('create') : null
     };
 
-    // First load
+    
     await loadList();
     return { onToolbar: toolbar };
   };

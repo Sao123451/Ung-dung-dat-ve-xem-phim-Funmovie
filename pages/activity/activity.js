@@ -22,7 +22,7 @@ window.FMPages.activity = async function (pageEl, ctx) {
   const limit = 20;
   let total = 0;
 
-  // Elements
+
   const tbody = $("#actTableBody", pageEl);
   const pager = $("#actPager", pageEl);
 
@@ -127,7 +127,7 @@ window.FMPages.activity = async function (pageEl, ctx) {
     });
   }
 
-  // First load
+  // load lan dau
   loadLogs();
 
   return {

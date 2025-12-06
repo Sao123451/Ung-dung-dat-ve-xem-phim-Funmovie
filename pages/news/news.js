@@ -320,7 +320,7 @@ window.FMPages.news = async function (pageEl, ctx) {
     });
   }
 
-  /* ROW ACTIONS */
+
   async function onRowAction(e) {
     const id = e.currentTarget.dataset.id;
     const act = e.currentTarget.dataset.act;
@@ -356,7 +356,7 @@ window.FMPages.news = async function (pageEl, ctx) {
     }
   }
 
-  /* EVENTS */
+
   let timer;
   els.q.oninput = () => {
     clearTimeout(timer);

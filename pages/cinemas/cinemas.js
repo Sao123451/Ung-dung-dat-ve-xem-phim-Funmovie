@@ -4,11 +4,11 @@
   window.FMPages.cinemas = async function mountCinemas(container, ctx) {
     const { API_BASE, getUser, authFetch, showToast, openModal, setInputError, clearInputError, html, $ } = ctx;
 
-    // ===== Quyền =====
+    //Quyền 
     const me = getUser() || {};
-    const canManage = ['admin', 'manager'].includes(me.role);
+    const canManage = ['admin'].includes(me.role);
 
-        // ===== Google Maps API =====
+        //Google Maps API 
     const GMAPS_API_KEY = ctx.GMAPS_API_KEY || 'AIzaSyAv2oOzJ8GEmIgoj67AqijfzuWv2nF2Ah4';
     let gmapsPromise = null;
 
@@ -28,7 +28,7 @@
 
       return gmapsPromise;
     }
-
+    //set map mac dinh o ha noi
     function initCinemaMap(mapEl, iLat, iLng, iCoordDisplay, existing) {
       loadGoogleMaps()
         .then(() => {
@@ -39,7 +39,7 @@
 
           const center = hasExisting
             ? { lat: Number(existing.lat), lng: Number(existing.lng) }
-            : { lat: 21.0278, lng: 105.8342 }; // Hà Nội – mặc định
+            : { lat: 21.0278, lng: 105.8342 }; // Hà Nội
 
           const map = new google.maps.Map(mapEl, {
             center,
@@ -58,7 +58,7 @@
             iLng.value = lngStr;
             if (iCoordDisplay) iCoordDisplay.value = `${latStr}, ${lngStr}`;
           }
-
+          //lay to do khi click
           map.addListener('click', (e) => {
             const pos = e.latLng;
             const lat = pos.lat();
@@ -89,7 +89,7 @@
     }
 
 
-    // ===== State =====
+    
     let filter = { q: '', city: '' };
     let page = 1;
     const limit = 10;
@@ -98,7 +98,7 @@
     let total = 0;
     let cities = [];
 
-    // ===== Danh sách 34 tỉnh/thành dùng cho form =====
+    //Danh sách 34 tỉnh/thành dùng cho form
     const VN_PROVINCES_34 = [
       'Hà Nội','Hải Phòng','Quảng Ninh','Bắc Ninh','Bắc Giang','Lạng Sơn','Cao Bằng','Bắc Kạn',
       'Thái Nguyên','Tuyên Quang','Hà Giang','Yên Bái','Lào Cai','Phú Thọ','Vĩnh Phúc','Hưng Yên',
@@ -107,7 +107,7 @@
       'Đà Nẵng','Quảng Nam','Lạng Sơn','Bắc Giang'
     ].slice(0,34);
 
-    // ===== Helpers =====
+    //Helpers
     const esc = s => (typeof s === 'string' ? s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) : s);
     function parseList(json) {
       if (Array.isArray(json)) return { items: json, total: json.length };
@@ -124,11 +124,11 @@
     }
     const pinPink = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#ff4da6" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>`;
 
-    // Giới hạn VN (xấp xỉ)
+    // Giới hạn VN 
     const LAT_MIN = 8.18, LAT_MAX = 23.5;
     const LNG_MIN = 102.14, LNG_MAX = 109.65;
 
-    // ===== Load skeleton =====
+    //Load skeleton
     try {
       const tpl = await fetch('pages/cinemas/cinemas.html', { cache: 'no-store' }).then(r => r.text());
       container.innerHTML = tpl;
@@ -137,7 +137,7 @@
       return {};
     }
 
-    // ===== Elements =====
+    //Elements
     const els = {
       table:  $('#cn-table', container),
       q:      $('#cn-q', container),
@@ -148,7 +148,7 @@
       page:   $('#cn-page', container),
     };
 
-    // ===== API calls =====
+    //lay ds cac thanh pho dung cho filter
     async function loadCitiesOptions() {
       try {
         const res = await authFetch(`${API_BASE}/cinemas?limit=1000`, { cache: 'no-store' });
@@ -160,10 +160,11 @@
           cities.map(c => `<option value="${esc(c)}" ${c===filter.city?'selected':''}>${esc(c)}</option>`).join('');
       } catch {}
     }
-
+    // lay ds rap
     async function loadCinemas() {
       els.table.innerHTML = `<div class="muted">Đang tải danh sách rạp...</div>`;
       showInfo('');
+      //Build URL /cinemas
       const u = new URL(`${API_BASE}/cinemas`);
       if (filter.q)    u.searchParams.set('q', filter.q);
       if (filter.city) u.searchParams.set('city', filter.city);
@@ -189,7 +190,7 @@
       el.classList.toggle('error-text', !!isError);
     }
 
-    // ===== Render =====
+    // hien thi bang 
     function renderTable() {
       if (!items.length) {
         els.table.innerHTML = `<div class="muted">Không có rạp cho bộ lọc hiện tại.</div>`;
@@ -242,7 +243,7 @@
       els.page.textContent = hasServerPaging ? `${page}/${maxPage}` : `${items.length} mục`;
     }
 
-    // ===== Actions =====
+    //cac hanh dong trong tung item
     async function onRowAction(e) {
       const id  = e.currentTarget.getAttribute('data-id');
       const act = e.currentTarget.getAttribute('data-act');
@@ -255,11 +256,11 @@
       }
           if (act === 'del') {
       if (!canManage) { 
-        showInfo('Chỉ Admin/Manager mới được xoá rạp.', true); 
+        showInfo('Chỉ Admin mới được xoá rạp.', true); 
         return; 
       }
 
-      // ⭐ 1) Kiểm tra xem rạp còn phòng hay không
+      //Kiểm tra xem rạp còn phòng hay không
       try {
         const u = new URL(`${API_BASE}/rooms`);
         u.searchParams.set('cinema', id);
@@ -270,7 +271,7 @@
         const { items: rooms } = parseList(roomsJson);
 
         if (Array.isArray(rooms) && rooms.length > 0) {
-          // ⭐ Có phòng → không cho xoá, hiện popup đẹp
+          // co phong thi k duoc xoa
           openModal(html`
             <div class="modal-head"><h3>Không thể xoá rạp</h3></div>
             <div class="form">
@@ -288,12 +289,12 @@
           return;
         }
       } catch (err) {
-        // Nếu không kiểm tra được phòng thì báo lỗi nhẹ, không xoá để tránh nhầm
+        
         showToast('Không kiểm tra được phòng của rạp. Vui lòng thử lại.', 'err');
         return;
       }
 
-      // ⭐ 2) Không có phòng → cho phép xoá như bình thường
+      //Không có phòng → cho phép xoá như bình thường
       const markup = html`
         <div class="modal-head"><h3>Xoá rạp</h3></div>
         <div class="form">
@@ -355,7 +356,7 @@
               <input id="f-address" placeholder="Số nhà, đường, quận/huyện..." value="${esc(data.address || '')}">
             </div>
 
-            <!-- ⭐ Bản đồ chọn tọa độ -->
+            
             <div class="col-12 field">
               <label>Vị trí trên bản đồ *</label>
               <div id="f-map" style="height:260px;border-radius:8px;overflow:hidden;background:#0b1021"></div>
@@ -402,7 +403,7 @@
                 const iCoordDisplay = $g('f-coord-display');
         const mapEl         = $g('f-map');
 
-        // Khởi tạo Gg Map với tọa độ đang có hiện tại (nếu đang sửa)
+        // Khởi tạo Gg Map với tọa độ đang có hiện tại(nut sửa)
         const existingCoords = {
           lat: data.latitude ?? data.lat,
           lng: data.longitude ?? data.lng,
@@ -446,7 +447,7 @@
             ok = false;
           }
 
-          // Hotline: chỉ kiểm tra khi bấm Lưu — phải đúng 10 chữ số, bắt đầu 0, không ký tự khác
+          // Hotline: phải đúng 10 chữ số, bắt đầu 0, không ký tự khác
           const phoneRaw = (iPhone.value || '').trim();
           if (!/^0\d{9}$/.test(phoneRaw)) {
             setInputError(iPhone, 'Hotline phải gồm 10 chữ số, bắt đầu bằng 0 (VD: 0912345678).');
@@ -487,7 +488,7 @@
       });
     }
 
-    // ===== Events =====
+    //Sự kiện filter
     els.q.addEventListener('input', () => {
       filter.q = els.q.value.trim();
       page = 1;
@@ -504,15 +505,15 @@
       if (page < maxPage) { page++; loadCinemas(); }
     };
 
-    // ===== First load =====
+
     await loadCitiesOptions();
     await loadCinemas();
 
-    // ===== Toolbar hooks =====
+
     return {
       onToolbar: {
         reload: () => loadCinemas(),
-        create: () => { if (!canManage) { showInfo('Chỉ Admin/Manager được tạo rạp.', true); return; } openCinemaForm('create'); }
+        create: () => { if (!canManage) { showInfo('Chỉ Admin được tạo rạp.', true); return; } openCinemaForm('create'); }
       }
     };
   };

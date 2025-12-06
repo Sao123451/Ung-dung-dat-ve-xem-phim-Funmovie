@@ -16,9 +16,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
   // Load HTML
   pageEl.innerHTML = await (await fetch("pages/dashboard/dashboard.html")).text();
 
-  // ==========================
-  // LOAD TICKETS 1 LẦN
-  // ==========================
+//load lan 1 kiem tra
   let ALL_TICKETS = [];
 
   async function loadAllTickets() {
@@ -33,9 +31,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
 
   await loadAllTickets();
 
-  /* ============================================================
-   * TAB SWITCHING (Capsule Tabs)
-   * ============================================================ */
+
   const tabs = $$(".dash-tab", pageEl);
   const sections = $$(".dash-section", pageEl);
 
@@ -56,9 +52,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
     };
   });
 
-  /* ============================================================
-   * TAB 1 — DOANH THU THEO RẠP
-   * ============================================================ */
+//doanh thu theo rap
   const cinemaCanvas = $("#chartCinema", pageEl);
   const tblCinema = $("#tblCinemaRevenue", pageEl);
   let chartCinema = null;
@@ -106,9 +100,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
     }
   }
 
-  /* ============================================================
-   * TAB 2 — DOANH THU THEO THÁNG (LINE CHART)
-   * ============================================================ */
+//doanh thu theo thang
   const selYear = $("#yearSelect", pageEl);
   const monthCanvas = $("#chartMonth", pageEl);
   const tblMonth = $("#tblMonthRevenue", pageEl);
@@ -133,7 +125,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
 
       // tạo mảng 12 tháng mặc định = 0
       const values = Array(12).fill(0);
-      // Thêm mảng đếm số vé
+      //mảng số vé
       const ticketCounts = Array(12).fill(0);
 
       // FE tự tính số vé bán trong tháng từ ALL_TICKETS
@@ -191,9 +183,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
     }
   }
 
-  /* ============================================================
-   * TAB 3 — DOANH THU THEO NGÀY (LINE CHART)
-   * ============================================================ */
+//doanh thu theo ngay
   const selDayMonth = $("#dayMonthSelect", pageEl);
   const selDayYear = $("#dayYearSelect", pageEl);
   const dayCanvas = $("#chartDay", pageEl);
@@ -286,10 +276,9 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
     }
   }
 
-  /* ============================================================
-   * TAB 4 — DOANH THU THEO PHIM (RANKING)
-   * ============================================================ */
 
+
+// doanh thu theo phim
   const movieCanvas = $("#chartMovie", pageEl);
   const tblMovie = $("#tblMovieRevenue", pageEl);
   let chartMovie = null;
@@ -312,7 +301,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
     return data;
   }
 
-  // Gom nhóm vé theo phim (sau khi đã có showtimeCache)
+  // Gom nhóm vé theo phim
   function buildMovieStats() {
     const map = new Map();
 
@@ -333,7 +322,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
       const movieId = mv._id || mv.id || null;
       const movieTitle = mv.title || mv.name || "Không rõ tên phim";
 
-      // KEY gom nhóm: ưu tiên movieId, fallback theo title + id vé
+
       const key = movieId || `unknown-${movieTitle}-${t._id}`;
 
       if (!map.has(key)) {
@@ -417,9 +406,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
   $("#btnLoadMonth", pageEl).onclick = loadMonthRevenue;
   $("#btnLoadDay", pageEl).onclick = loadDayRevenue;
 
-  /* ============================================================
-   * INIT PAGE
-   * ============================================================ */
+
   initMonthYear();
   loadCinemaRevenue(); // tab mặc định
 
@@ -429,7 +416,7 @@ window.FMPages.dashboard = async function (pageEl, ctx) {
         showtimeCache.clear();
         await loadAllTickets();
         await loadCinemaRevenue();
-        // nếu đang đứng ở tab movie, có thể bấm lại tab để loadMovieRevenue()
+
       },
       create: null,
     },

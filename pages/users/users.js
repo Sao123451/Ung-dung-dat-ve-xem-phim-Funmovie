@@ -8,10 +8,8 @@ window.FMPages.users = async function (pageEl, ctx) {
     getUser, ymd
   } = ctx;
 
-  /* ============================================================
-   *  COPY TOÀN BỘ CODE CŨ — GIỮ NGUYÊN FULL LOGIC
-   * ============================================================ */
 
+  
   pageEl.innerHTML = await (await fetch("pages/users/users.html")).text();
 
   // ----------------- Query elements -------------------
