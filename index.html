@@ -18,18 +18,20 @@
       <div class="brand">HD Movie Staff</div>
 
       <nav class="pt-2">
+
+        <!-- FLOW bán vé -->
         <a href="#" class="nav-linkx active" data-view="home">Bán vé tại quầy</a>
-        <a href="#" class="nav-linkx" data-view="online">Quét mã vé online</a>
-        <a href="#" class="nav-linkx" data-view="loyalty">Tích điểm thành viên</a>
-
-        <!-- ĐÃ SỬA: menu In vé -->
-        <a href="#" class="nav-linkx" data-view="printlist">In vé</a>
-
-        <!-- HIDDEN VIEWS (flow bán vé) -->
         <a href="#" class="nav-linkx d-none" data-view="schedule"></a>
         <a href="#" class="nav-linkx d-none" data-view="seats"></a>
         <a href="#" class="nav-linkx d-none" data-view="pay"></a>
-        <a href="#" class="nav-linkx d-none" data-view="print"></a>
+
+        <!-- MENU KHÁC -->
+        <a href="#" class="nav-linkx" data-view="online">Quét mã vé online</a>
+        <a href="#" class="nav-linkx" data-view="loyalty">Tích điểm thành viên</a>
+
+        <!-- PRINT PAGE -->
+        <a href="#" class="nav-linkx" data-view="print">In vé</a>
+
       </nav>
 
       <div class="logout-wrap">
@@ -202,7 +204,7 @@
         </div>
       </section>
 
-      <!-- ================= PRINT (after sales flow) ================= -->
+      <!-- ================= PRINT ================= -->
       <section id="view-print" class="cardx d-none">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="m-0">Vé đã đặt</h5>
@@ -210,16 +212,6 @@
         </div>
 
         <div id="printWrap" class="print-ticket-container"></div>
-      </section>
-
-      <!-- ================= PRINT LIST (menu In vé) ================= -->
-      <section id="view-printlist" class="cardx d-none">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="m-0">Danh sách vé</h5>
-          <button class="btn btn-secondary btn-sm" onclick="switchView('home')">Quay lại bán vé</button>
-        </div>
-
-        <div id="printListWrap" class="print-ticket-container"></div>
       </section>
 
     </main>
