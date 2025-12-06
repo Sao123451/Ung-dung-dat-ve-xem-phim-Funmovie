@@ -108,3 +108,15 @@ document.getElementById("formLogin").addEventListener("submit", async (e) => {
         showAlert("error", "Không thể kết nối máy chủ");
     }
 });
+// Hiện popup
+window.showMidAlert = function (msg) {
+    const box = document.getElementById("midAlert");
+    const txt = document.getElementById("midAlertMsg");
+    txt.textContent = msg;
+    box.classList.remove("d-none");
+};
+
+// Đóng popup
+document.getElementById("midAlertBtn").onclick = () => {
+    document.getElementById("midAlert").classList.add("d-none");
+};

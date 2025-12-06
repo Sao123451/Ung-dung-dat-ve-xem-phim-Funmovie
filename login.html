@@ -46,12 +46,23 @@
           <label class="form-check-label">
             <input type="checkbox" id="remember"> Ghi nhớ đăng nhập
           </label>
-          <a href="#" onclick="alert('Liên hệ quản trị');return false;">Quên mật khẩu?</a>
+          <a href="#" onclick="showMidAlert('Vui lòng liên hệ quản trị viên để đặt lại mật khẩu');return false;">
+            Quên mật khẩu?
+          </a>
+
         </div>
 
         <button class="btn-login" type="submit">Đăng nhập</button>
       </form>
 
+    </div>
+  </div>
+
+  <!-- MID ALERT POPUP -->
+  <div id="midAlert" class="d-none">
+    <div class="mid-alert-box">
+      <div id="midAlertMsg">Thông báo</div>
+      <button id="midAlertBtn" class="mid-alert-btn">OK</button>
     </div>
   </div>
 
