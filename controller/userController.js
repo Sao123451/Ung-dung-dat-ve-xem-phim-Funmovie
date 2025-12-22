@@ -202,3 +202,32 @@ exports.findByCard = async (req, res) => {
     res.status(500).json({ message: "Find member error", error: err.message });
   }
 };
+const Ticket = require("../models/Ticket");
+const mongoose = require("mongoose");
+
+exports.getTotalSpent = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const result = await Ticket.aggregate([
+      { 
+        $match: { 
+          user: new mongoose.Types.ObjectId(userId),
+          status: "paid"
+        }
+      },
+      { 
+        $group: { 
+          _id: null, 
+          total: { $sum: "$total_after" } 
+        } 
+      }
+    ]);
+
+    const total = result.length ? result[0].total : 0;
+    res.json({ total });
+
+  } catch (err) {
+    res.status(500).json({ message: "Cannot calculate total", error: err.message });
+  }
+};

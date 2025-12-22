@@ -199,6 +199,22 @@ const ticket = await Ticket.create({
   room: showtime.room,
   membership_card: user.membership_card || null,
 
+  movie_snapshot: {
+  title: showtime.movie.title,
+  rating: showtime.movie.rating || ""
+},
+
+cinema_snapshot: {
+  name: showtime.cinema.name,
+  address: showtime.cinema.address,
+  city: showtime.cinema.city
+},
+
+showtime_snapshot: {
+  date: showtime.start_time.toISOString().slice(0,10),
+  time: showtime.start_time.toISOString().slice(11,16)
+},
+
   status: "pending",
   payment_status: "unpaid",
   payment_method: payment_method || "unknown",

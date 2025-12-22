@@ -62,7 +62,7 @@ const UserSchema = new Schema({
   otp_expire: { type: Date, default: null },
 
   // ⭐ Membership Card (10 digits)
-  membership_card: { type: String, default: null, unique: true },
+  membership_card: { type: String, default: null, unique: true, sparse: null },
 
   created_at: { type: Date, default: Date.now }
 });
