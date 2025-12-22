@@ -235,6 +235,8 @@ showtime_snapshot: {
   voucher_codes,
 });
 
+
+
 // 2) LƯU COMBO (BẠN CHÈN ĐÚNG ĐOẠN NÀY)
 for (const c of combos) {
   const prod = await Product.findById(c.productId);
@@ -409,6 +411,8 @@ exports.staffCreate = async (req, res) => {
     // ============================
     // 8) TẠO TicketSeat như staffCreatePending
     // ============================
+
+    
     for (const s of stSeats) {
       await TicketSeat.create({
         ticket: ticket._id,
@@ -1077,6 +1081,25 @@ exports.staffCreatePending = async (req, res) => {
       expires_at,
       voucher_codes: vouchers || []
     });
+
+    // ============================
+// SAVE COMBOS (VNPAY - PENDING)
+// ============================
+for (const cb of combos) {
+  const prod = await Product.findById(cb.productId);
+  if (!prod) continue;
+
+  await TicketCombo.create({
+    ticket: ticket._id,
+    product: prod._id,
+    name: prod.name,
+    type: prod.type,
+    qty: cb.qty || 1,
+    unit_price: prod.price,
+    line_total: prod.price * (cb.qty || 1)
+  });
+}
+
 
     // CREATE TICKET SEATS (reserved)
     for (const ss of validSeats) {
